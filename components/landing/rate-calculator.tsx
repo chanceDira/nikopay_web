@@ -67,7 +67,7 @@ export function RateCalculator() {
       <p className="text-sm text-niko-muted">Recipient receives</p>
       <div className="mt-2 rounded-xl border border-niko-teal/30 bg-niko-teal/5 px-4 py-4">
         <p className="font-mono text-2xl font-bold text-niko-teal-bright sm:text-3xl">
-          {payout ? formatRwf(payout.netRwf) : "—"}
+          {payout ? formatRwf(payout.netRwf) : "-"}
         </p>
         <p className="mt-1 text-xs text-niko-muted">via MTN Mobile Money</p>
       </div>
@@ -104,7 +104,7 @@ export function RateCalculator() {
       )}
 
       <p className="mt-4 text-xs leading-relaxed text-niko-muted">
-        Rates are illustrative — final rate shown at confirmation.
+        Rates are illustrative. Final rate shown at confirmation.
       </p>
     </div>
   );

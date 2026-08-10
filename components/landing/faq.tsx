@@ -11,7 +11,7 @@ const faqs = [
   {
     question: "Is NikoPay a wallet or exchange?",
     answer:
-      "No. NikoPay is a payment bridge — not a custodial wallet, exchange, or trading platform. You retain custody of your assets until you initiate a transaction.",
+      "No. NikoPay is a payment bridge, not a custodial wallet, exchange, or trading platform. You retain custody of your assets until you initiate a transaction.",
   },
   {
     question: "Which mobile money networks are supported?",
@@ -26,7 +26,7 @@ const faqs = [
   {
     question: "What are the fees?",
     answer:
-      "NikoPay charges a transparent service fee on each transaction. The exact rate and net payout are displayed before you confirm — no hidden spreads.",
+      "NikoPay charges a transparent service fee on each transaction. The exact rate and net payout are displayed before you confirm. No hidden spreads.",
   },
   {
     question: "Is my crypto safe?",

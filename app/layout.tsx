@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description:
     "Convert USDT to Rwandan Francs via MTN Mobile Money. Instant, transparent, non-custodial.",
   openGraph: {
-    title: "NikoPay — Making Stablecoins Spendable",
+    title: "NikoPay | Making Stablecoins Spendable",
     description:
       "Convert USDT to Rwandan Francs via MTN Mobile Money. Instant, transparent, non-custodial.",
     images: ["/nikopay-logo.png"],

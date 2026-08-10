@@ -80,7 +80,7 @@ export function Features() {
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-niko-muted">
             Everything you need to move value from blockchain to everyday
-            spending — without the complexity.
+            spending, without the complexity.
           </p>
         </div>
 

@@ -38,7 +38,7 @@ export function Personas() {
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-niko-muted">
             Whether you work remotely, freelance globally, or support family
-            abroad — NikoPay turns stablecoins into real purchasing power.
+            abroad, NikoPay turns stablecoins into real purchasing power.
           </p>
         </div>
 

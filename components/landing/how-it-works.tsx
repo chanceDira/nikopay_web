@@ -7,7 +7,7 @@ const steps = [
     number: "01",
     title: "Connect your wallet",
     description:
-      "Link your WalletConnect-compatible wallet — Trust Wallet, MetaMask, or Coinbase Wallet. You keep custody until you send.",
+      "Link your WalletConnect-compatible wallet (Trust Wallet, MetaMask, or Coinbase Wallet). You keep custody until you send.",
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -120,7 +120,7 @@ export function HowItWorks() {
             Three steps to spendable money
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-niko-muted">
-            From your crypto wallet to a Mobile Money account in Rwanda — no
+            From your crypto wallet to a Mobile Money account in Rwanda. No
             exchange accounts, no bank delays.
           </p>
         </div>
