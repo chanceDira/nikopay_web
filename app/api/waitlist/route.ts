@@ -14,8 +14,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("[waitlist] New signup:", { email, role: role || "unspecified" });
-
     return NextResponse.json(
       { message: "Successfully joined the waitlist" },
       { status: 201 },
