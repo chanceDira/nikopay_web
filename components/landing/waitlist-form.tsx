@@ -18,9 +18,9 @@ type WaitlistFormProps = {
 export function WaitlistForm({ compact = false }: WaitlistFormProps) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
-    "idle",
-  );
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
   async function handleSubmit(e: FormEvent) {
@@ -89,7 +89,10 @@ export function WaitlistForm({ compact = false }: WaitlistFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className={compact ? "space-y-2" : "space-y-4"}>
+    <form
+      onSubmit={handleSubmit}
+      className={compact ? "space-y-2" : "space-y-4"}
+    >
       <div className={compact ? "flex gap-2" : "grid gap-4 sm:grid-cols-2"}>
         <input
           type="email"

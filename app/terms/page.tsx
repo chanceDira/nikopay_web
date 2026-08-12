@@ -12,10 +12,7 @@ export default function TermsPage() {
           Back to home
         </Link>
       </div>
-      <PageHeader
-        title="Terms of use"
-        description="Terms for using NikoPay"
-      />
+      <PageHeader title="Terms of use" description="Terms for using NikoPay" />
     </main>
   );
 }

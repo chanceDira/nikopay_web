@@ -22,10 +22,7 @@ export default function Home() {
         <Personas />
         <Security />
         <Faq />
-        <section
-          id="waitlist"
-          className="px-4 py-20 sm:px-6 sm:py-28"
-        >
+        <section id="waitlist" className="px-4 py-20 sm:px-6 sm:py-28">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-medium uppercase tracking-wider text-niko-teal">
               Early Access

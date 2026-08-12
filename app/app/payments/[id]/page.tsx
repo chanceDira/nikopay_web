@@ -11,10 +11,7 @@ export default async function PaymentStatusPage({
   const { id } = await params;
 
   return (
-    <PageHeader
-      title="Payment status"
-      description={`Track payment ${id}`}
-    >
+    <PageHeader title="Payment status" description={`Track payment ${id}`}>
       <StatusTimeline />
     </PageHeader>
   );

@@ -1,12 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  calculatePayout,
-  formatRwf,
-  formatUsdt,
-  MOCK_RATE,
-} from "@/lib/rates";
+import { calculatePayout, formatRwf, formatUsdt, MOCK_RATE } from "@/lib/rates";
 
 export function RateCalculator() {
   const [amount, setAmount] = useState("100");
@@ -90,9 +85,7 @@ export function RateCalculator() {
           </div>
           <div className="flex justify-between font-medium">
             <dt className="text-foreground">You send</dt>
-            <dd className="font-mono text-foreground">
-              {formatUsdt(parsed)}
-            </dd>
+            <dd className="font-mono text-foreground">{formatUsdt(parsed)}</dd>
           </div>
         </dl>
       )}
