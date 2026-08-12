@@ -38,7 +38,11 @@ body {
   }
 
   .niko-gradient-text {
-    background: linear-gradient(135deg, var(--niko-teal-bright), var(--niko-teal));
+    background: linear-gradient(
+      135deg,
+      var(--niko-teal-bright),
+      var(--niko-teal)
+    );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;

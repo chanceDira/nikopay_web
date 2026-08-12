@@ -25,8 +25,8 @@ export function Hero() {
           </div>
 
           <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-            Making{" "}
-            <span className="niko-gradient-text">Stablecoins</span> Spendable
+            Making <span className="niko-gradient-text">Stablecoins</span>{" "}
+            Spendable
           </h1>
 
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-niko-muted">
