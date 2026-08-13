@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -43,7 +44,12 @@ next-env.d.ts
 # local agent tooling (never commit)
 .cursor/
 .claude/
+.vscode/
 AGENTS.md
 CLAUDE.md
 
 docs/
+
+# supabase local
+supabase/.temp/
+supabase/.branches/

@@ -29,7 +29,7 @@ const ADMIN_TRANSITIONS: Readonly<
 export function allowedTransitions(
   from: PaymentStatus,
   actor: TransitionActor = "system",
-) : readonly PaymentStatus[] {
+): readonly PaymentStatus[] {
   if (actor === "admin") {
     return uniqueStatuses([
       ...SYSTEM_TRANSITIONS[from],
@@ -44,7 +44,7 @@ export function canTransition(
   from: PaymentStatus,
   to: PaymentStatus,
   actor: TransitionActor = "system",
-) : boolean {
+): boolean {
   if (from === to) {
     return false;
   }
