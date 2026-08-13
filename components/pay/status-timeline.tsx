@@ -272,7 +272,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
     <div className="space-y-8">
       {/* Top Banner Alert */}
       <div
-        className={`p-4 rounded-xl border flex gap-3 ${
+        className={`p-4 rounded-md border flex gap-3 ${
           intent.status === "paid"
             ? "border-niko-teal/20 bg-niko-teal/5 text-niko-teal"
             : ["failed", "expired"].includes(intent.status)
@@ -332,7 +332,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
       </div>
 
       {/* Visual Timeline Steps (Vertical style on mobile, grid-column on tablet) */}
-      <div className="relative border border-niko-border bg-background/50 rounded-2xl p-6 md:p-8 space-y-8">
+      <div className="relative border border-niko-border bg-background/50 rounded-md p-6 md:p-8 space-y-8">
         <div className="relative grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Step 1 */}
           <div className="flex md:flex-col items-start gap-4 md:text-center md:items-center">
@@ -398,7 +398,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
 
       {/* Payment Metadata Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="rounded-xl border border-niko-border bg-niko-surface/40 p-5 space-y-4">
+        <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-4">
           <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">
             Transfer Parameters
           </h3>
@@ -434,7 +434,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
           </dl>
         </div>
 
-        <div className="rounded-xl border border-niko-border bg-niko-surface/40 p-5 space-y-4">
+        <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-4">
           <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">
             Transaction Identifiers
           </h3>
@@ -486,7 +486,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
       </div>
 
       {/* Simulator Control Drawer for Graders / Reviewers */}
-      <div className="border border-niko-border/50 rounded-xl bg-niko-surface/30 p-4">
+      <div className="border border-niko-border/50 rounded-md bg-niko-surface/30 p-4">
         <button
           type="button"
           onClick={() => setShowSimPanel(!showSimPanel)}

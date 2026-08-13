@@ -277,7 +277,7 @@ export function PayWizard() {
               <button
                 type="button"
                 onClick={() => setChain("polygon")}
-                className={`flex flex-col items-start p-4 rounded-xl border transition-all text-left ${
+                className={`flex flex-col items-start p-4 rounded-md border transition-all text-left ${
                   chain === "polygon"
                     ? "border-niko-teal bg-niko-teal/5 shadow-[0_0_15px_rgba(0,212,200,0.05)]"
                     : "border-niko-border bg-background hover:bg-niko-surface/35"
@@ -295,7 +295,7 @@ export function PayWizard() {
               <button
                 type="button"
                 onClick={() => setChain("base")}
-                className={`flex flex-col items-start p-4 rounded-xl border transition-all text-left ${
+                className={`flex flex-col items-start p-4 rounded-md border transition-all text-left ${
                   chain === "base"
                     ? "border-niko-teal bg-niko-teal/5 shadow-[0_0_15px_rgba(0,212,200,0.05)]"
                     : "border-niko-border bg-background hover:bg-niko-surface/35"
@@ -321,7 +321,7 @@ export function PayWizard() {
             >
               Send Amount
             </label>
-            <div className="relative mt-2 flex items-center rounded-xl border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
+            <div className="relative mt-2 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
               <input
                 id="usdt-input"
                 type="number"
@@ -349,7 +349,7 @@ export function PayWizard() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-niko-teal/10 bg-niko-teal/5 p-4 space-y-3">
+          <div className="rounded-md border border-niko-teal/10 bg-niko-teal/5 p-4 space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-niko-muted">Gross Amount</span>
               <span className="font-mono">{formatRwf(grossRwf)}</span>
@@ -410,7 +410,7 @@ export function PayWizard() {
               Provide the MTN Rwanda number where the RWF payout should be
               deposited.
             </p>
-            <div className="relative mt-3 flex items-center rounded-xl border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
+            <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
               <input
                 id="msisdn-input"
                 type="text"
@@ -443,7 +443,7 @@ export function PayWizard() {
             )}
           </div>
 
-          <div className="p-4 rounded-xl border border-yellow-500/10 bg-yellow-500/5 text-xs text-amber-300 leading-relaxed flex gap-3">
+          <div className="p-4 rounded-md border border-yellow-500/10 bg-yellow-500/5 text-xs text-amber-300 leading-relaxed flex gap-3">
             <svg
               className="h-5 w-5 shrink-0 text-amber-400"
               fill="none"
@@ -469,14 +469,14 @@ export function PayWizard() {
             <button
               type="button"
               onClick={handlePrevStep}
-              className="w-1/3 py-4 border border-niko-border hover:border-niko-teal/30 hover:bg-niko-surface/40 text-foreground font-semibold rounded-xl transition-all"
+              className="w-1/3 py-4 border border-niko-border hover:border-niko-teal/30 hover:bg-niko-surface/40 text-foreground font-semibold rounded-md transition-all"
             >
               Back
             </button>
             <button
               type="button"
               onClick={handleNextStep}
-              className="w-2/3 py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(0,212,200,0.15)] flex justify-center items-center gap-2"
+              className="w-2/3 py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all shadow-[0_0_20px_rgba(0,212,200,0.15)] flex justify-center items-center gap-2"
             >
               Review Payment
               <svg
@@ -500,7 +500,7 @@ export function PayWizard() {
       {/* Step 3: Review & Confirmation */}
       {step === 3 && (
         <div className="space-y-6">
-          <div className="rounded-xl border border-niko-border bg-background p-6 space-y-4">
+          <div className="rounded-md border border-niko-border bg-background p-6 space-y-4">
             <h3 className="text-sm font-semibold text-niko-teal uppercase tracking-wider mb-2">
               Transaction Details
             </h3>
@@ -546,14 +546,14 @@ export function PayWizard() {
             <button
               type="button"
               onClick={handlePrevStep}
-              className="w-1/3 py-4 border border-niko-border hover:border-niko-teal/30 hover:bg-niko-surface/40 text-foreground font-semibold rounded-xl transition-all"
+              className="w-1/3 py-4 border border-niko-border hover:border-niko-teal/30 hover:bg-niko-surface/40 text-foreground font-semibold rounded-md transition-all"
             >
               Back
             </button>
             <button
               type="button"
               onClick={handleConfirmPayment}
-              className="w-2/3 py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(0,212,200,0.2)] flex justify-center items-center gap-2"
+              className="w-2/3 py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all shadow-[0_0_20px_rgba(0,212,200,0.2)] flex justify-center items-center gap-2"
             >
               Confirm & Create Intent
               <svg
@@ -602,7 +602,7 @@ export function PayWizard() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-niko-teal/20 bg-niko-surface p-5 sm:p-6 space-y-5">
+          <div className="rounded-md border border-niko-teal/20 bg-niko-surface p-5 sm:p-6 space-y-5">
             {/* Countdown timer */}
             <div className="flex justify-between items-center pb-4 border-b border-niko-border/60">
               <span className="text-sm text-niko-muted">
@@ -623,7 +623,7 @@ export function PayWizard() {
                   </span>
                 )}
               </div>
-              <div className="flex gap-2 items-center rounded-xl bg-background border border-niko-border px-3.5 py-3">
+              <div className="flex gap-2 items-center rounded-md bg-background border border-niko-border px-3.5 py-3">
                 <span className="font-mono text-sm text-foreground overflow-x-auto whitespace-nowrap scrollbar-none flex-1 select-all">
                   {createdIntentAddress}
                 </span>
@@ -650,7 +650,7 @@ export function PayWizard() {
                   </span>
                 )}
               </div>
-              <div className="flex gap-2 items-center rounded-xl bg-background border border-niko-border px-3.5 py-3">
+              <div className="flex gap-2 items-center rounded-md bg-background border border-niko-border px-3.5 py-3">
                 <span className="font-mono text-lg font-bold text-foreground flex-1">
                   {usdtAmount.toFixed(2)}
                 </span>
@@ -668,7 +668,7 @@ export function PayWizard() {
             </div>
           </div>
 
-          <div className="p-4 rounded-xl border border-niko-teal/20 bg-niko-teal/5 text-xs text-niko-muted leading-relaxed flex items-start gap-3">
+          <div className="p-4 rounded-md border border-niko-teal/20 bg-niko-teal/5 text-xs text-niko-muted leading-relaxed flex items-start gap-3">
             <svg
               className="h-5 w-5 shrink-0 text-niko-teal"
               fill="none"
@@ -703,7 +703,7 @@ export function PayWizard() {
             <button
               type="button"
               onClick={() => router.push(`/app/payments/${createdIntentId}`)}
-              className="w-full py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(0,212,200,0.2)] flex justify-center items-center gap-2"
+              className="w-full py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all shadow-[0_0_20px_rgba(0,212,200,0.2)] flex justify-center items-center gap-2"
             >
               I have transferred USDT
               <svg

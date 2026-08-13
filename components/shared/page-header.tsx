@@ -10,7 +10,7 @@ export function PageHeader({ title, description, children }: PageHeaderProps) {
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
       <p className="mt-2 max-w-2xl text-niko-muted">{description}</p>
       {children ? (
-        <div className="mt-8 rounded-2xl border border-niko-border bg-niko-surface/50 p-6">
+        <div className="mt-8 rounded-md border border-niko-border bg-niko-surface/50 p-6">
           {children}
         </div>
       ) : null}
