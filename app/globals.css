@@ -22,14 +22,24 @@
   --color-niko-surface: var(--niko-surface);
   --color-niko-muted: var(--niko-muted);
   --color-niko-border: var(--niko-border);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-afacad);
+  --font-heading: var(--font-outfit);
+  --font-mono: var(--font-afacad);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-sans), sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading), sans-serif;
 }
 
 @layer utilities {

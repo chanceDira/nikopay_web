@@ -13,14 +13,14 @@ export function parseInstant(value: string): Date {
 export function isPastExpiry(
   expiresAt: string,
   now: Date = new Date(),
-) : boolean {
+): boolean {
   return parseInstant(expiresAt).getTime() <= now.getTime();
 }
 
 export function shouldExpireIntent(
   intent: ExpirableIntent,
   now: Date = new Date(),
-) : boolean {
+): boolean {
   return (
     intent.status === "awaiting_payment" && isPastExpiry(intent.expiresAt, now)
   );
@@ -29,7 +29,7 @@ export function shouldExpireIntent(
 export function statusAfterExpiryCheck(
   intent: ExpirableIntent,
   now: Date = new Date(),
-) : PaymentStatus {
+): PaymentStatus {
   if (shouldExpireIntent(intent, now)) {
     return "expired";
   }
