@@ -40,7 +40,7 @@ export function Security() {
             {securityItems.map((item) => (
               <div
                 key={item.title}
-                className="rounded-xl border border-niko-border bg-niko-surface p-5"
+                className="rounded-md border border-niko-border bg-niko-surface p-5"
               >
                 <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-niko-teal/10">
                   <svg

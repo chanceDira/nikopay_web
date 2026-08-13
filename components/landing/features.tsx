@@ -1,9 +1,11 @@
+"use client";
+
 const features = [
   {
+    id: "non-custodial",
     title: "Non-custodial",
     description:
       "You retain custody of your assets until the moment you initiate a transaction. NikoPay is a bridge, not a wallet.",
-    span: "col-span-1",
     icon: (
       <svg
         className="h-5 w-5"
@@ -22,10 +24,10 @@ const features = [
     ),
   },
   {
+    id: "fees",
     title: "Transparent fees",
     description:
       "See the exchange rate, service fee, and net payout before you confirm. No hidden spreads.",
-    span: "col-span-1",
     icon: (
       <svg
         className="h-5 w-5"
@@ -44,10 +46,10 @@ const features = [
     ),
   },
   {
+    id: "tracking",
     title: "Real-time tracking",
     description:
       "Monitor every transaction from USDT sent to RWF delivered. Status updates at each stage.",
-    span: "col-span-1 sm:col-span-2 lg:col-span-1",
     icon: (
       <svg
         className="h-5 w-5"
@@ -66,10 +68,10 @@ const features = [
     ),
   },
   {
+    id: "receipts",
     title: "Downloadable receipts",
     description:
       "Access your full transaction history and download receipts for accounting or records.",
-    span: "col-span-1",
     icon: (
       <svg
         className="h-5 w-5"
@@ -88,10 +90,10 @@ const features = [
     ),
   },
   {
+    id: "security",
     title: "Secure treasury",
     description:
       "Enterprise-grade encryption, role-based access, and full audit trails protect every settlement.",
-    span: "col-span-1",
     icon: (
       <svg
         className="h-5 w-5"
@@ -110,10 +112,10 @@ const features = [
     ),
   },
   {
+    id: "rwanda",
     title: "Rwanda-first",
     description:
       "Built for Rwanda's mobile money ecosystem. Expanding across East Africa next.",
-    span: "col-span-1 sm:col-span-2",
     icon: (
       <svg
         className="h-5 w-5"
@@ -140,33 +142,41 @@ export function Features() {
       className="bg-niko-surface/30 px-4 py-20 sm:px-6 sm:py-28"
     >
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
+        <div className="text-left">
           <p className="text-sm font-medium uppercase tracking-wider text-niko-teal">
             Features
           </p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
             Built for trust and speed
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-niko-muted">
+          <p className="mt-4 max-w-2xl text-niko-muted leading-relaxed">
             Everything you need to move value from blockchain to everyday
             spending, without the complexity.
           </p>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Dynamic Card Grid (3 columns on desktop, 2 on tablet, 1 on mobile) */}
+        <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => (
-            <article
-              key={feature.title}
-              className={`rounded-2xl border border-niko-border bg-niko-surface p-6 transition-colors hover:border-niko-teal/30 ${feature.span}`}
+            <div
+              key={feature.id}
+              className="flex flex-col rounded-md border border-niko-border/40 bg-niko-surface p-6 hover:border-niko-teal/30 hover:shadow-[0_0_15px_rgba(0,212,200,0.04)] transition-all group"
             >
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-niko-teal/10 text-niko-teal">
+              {/* Icon container */}
+              <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-niko-teal/10 text-niko-teal group-hover:bg-niko-teal group-hover:text-niko-navy transition-all duration-300">
                 {feature.icon}
               </div>
-              <h3 className="text-lg font-semibold">{feature.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-niko-muted">
-                {feature.description}
-              </p>
-            </article>
+
+              {/* Title & Description */}
+              <div className="space-y-2">
+                <h3 className="text-base font-bold text-foreground group-hover:text-niko-teal transition-colors">
+                  {feature.title}
+                </h3>
+                <p className="text-xs leading-relaxed text-niko-muted">
+                  {feature.description}
+                </p>
+              </div>
+            </div>
           ))}
         </div>
       </div>

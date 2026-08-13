@@ -37,13 +37,13 @@ export function Hero() {
           <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
             <a
               href="#waitlist"
-              className="inline-flex h-12 items-center justify-center rounded-full bg-niko-teal px-8 text-sm font-semibold text-niko-navy transition-colors hover:bg-niko-teal-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-niko-teal"
+              className="inline-flex h-12 items-center justify-center rounded-md bg-niko-teal px-8 text-sm font-semibold text-niko-navy transition-colors hover:bg-niko-teal-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-niko-teal"
             >
               Join Waitlist
             </a>
             <a
               href="#how-it-works"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-niko-border px-8 text-sm font-medium text-foreground transition-colors hover:border-niko-teal/50 hover:bg-niko-surface"
+              className="inline-flex h-12 items-center justify-center rounded-md border border-niko-border px-8 text-sm font-medium text-foreground transition-colors hover:border-niko-teal/50 hover:bg-niko-surface"
             >
               See How It Works
             </a>

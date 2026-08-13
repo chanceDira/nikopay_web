@@ -111,7 +111,7 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
       </div>
 
       {/* Printable Receipt Card */}
-      <div className="bg-niko-surface/60 border border-niko-border rounded-2xl p-6 sm:p-8 space-y-6 print:border-none print:bg-white print:text-black">
+      <div className="bg-niko-surface/60 border border-niko-border rounded-md p-6 sm:p-8 space-y-6 print:border-none print:bg-white print:text-black">
         {/* Branding header */}
         <div className="flex justify-between items-start border-b border-niko-border/60 pb-5 print:border-neutral-200">
           <div>
@@ -153,7 +153,7 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
         </div>
 
         {/* Transfer details block */}
-        <div className="p-4 rounded-xl bg-background/50 border border-niko-border/50 print:bg-neutral-50 print:border-neutral-200 space-y-3.5">
+        <div className="p-4 rounded-md bg-background/50 border border-niko-border/50 print:bg-neutral-50 print:border-neutral-200 space-y-3.5">
           <div className="flex justify-between text-xs">
             <span className="text-niko-muted print:text-neutral-500">
               USDT Sent
