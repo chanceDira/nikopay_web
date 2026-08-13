@@ -1,8 +1,10 @@
+import Image from "next/image";
+
 const wallets = [
-  { name: "Trust Wallet", abbr: "TW" },
-  { name: "MetaMask", abbr: "MM" },
-  { name: "Coinbase Wallet", abbr: "CB" },
-  { name: "WalletConnect", abbr: "WC" },
+  { name: "Trust Wallet", src: "/logos/trustwallet-logo.webp" },
+  { name: "MetaMask", src: "/logos/metamask-logo.png" },
+  { name: "Coinbase Wallet", src: "/logos/coinbase-logo.webp" },
+  { name: "WalletConnect", src: "/logos/walletconnect-logo.png" },
 ];
 
 export function TrustBar() {
@@ -16,29 +18,51 @@ export function TrustBar() {
           {wallets.map((wallet) => (
             <div
               key={wallet.name}
-              className="flex items-center gap-2 text-niko-muted"
+              className="flex items-center gap-2.5 text-niko-muted hover:text-foreground transition-colors group"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-niko-border bg-niko-navy text-xs font-bold text-niko-teal">
-                {wallet.abbr}
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-niko-border bg-niko-navy/60 overflow-hidden p-1.5 transition-all group-hover:border-niko-teal/30 group-hover:shadow-[0_0_8px_rgba(0,212,200,0.15)]">
+                <Image
+                  src={wallet.src}
+                  alt={wallet.name}
+                  width={24}
+                  height={24}
+                  className="object-contain"
+                />
+              </div>
+              <span className="hidden text-sm sm:inline font-medium">
+                {wallet.name}
               </span>
-              <span className="hidden text-sm sm:inline">{wallet.name}</span>
             </div>
           ))}
-          <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-niko-border bg-[#FFCC00]/10 text-xs font-bold text-[#FFCC00]">
-              MTN
-            </span>
-            <span className="hidden text-sm text-niko-muted sm:inline">
+
+          {/* MTN Mobile Money */}
+          <div className="flex items-center gap-2.5 text-niko-muted hover:text-foreground transition-colors group">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-niko-border bg-niko-navy/60 overflow-hidden p-1.5 transition-all group-hover:border-niko-teal/30 group-hover:shadow-[0_0_8px_rgba(0,212,200,0.15)]">
+              <Image
+                src="/logos/mtn-logo.jpg"
+                alt="MTN Mobile Money"
+                width={24}
+                height={24}
+                className="object-contain rounded-sm"
+              />
+            </div>
+            <span className="hidden text-sm sm:inline font-medium">
               MTN Mobile Money
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-niko-border bg-niko-navy text-xs font-bold text-niko-teal">
-              TRC
-            </span>
-            <span className="hidden text-sm text-niko-muted sm:inline">
-              USDT (TRC20)
-            </span>
+
+          {/* USDT Stablecoin */}
+          <div className="flex items-center gap-2.5 text-niko-muted hover:text-foreground transition-colors group">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-niko-border bg-niko-navy/60 overflow-hidden p-1.5 transition-all group-hover:border-niko-teal/30 group-hover:shadow-[0_0_8px_rgba(0,212,200,0.15)]">
+              <Image
+                src="/logos/usdt-logo.png"
+                alt="USDT"
+                width={24}
+                height={24}
+                className="object-contain"
+              />
+            </div>
+            <span className="hidden text-sm sm:inline font-medium">USDT</span>
           </div>
         </div>
       </div>
