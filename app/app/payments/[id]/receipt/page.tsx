@@ -12,7 +12,7 @@ export default async function PaymentReceiptPage({
 
   return (
     <PageHeader title="Receipt" description={`Receipt for payment ${id}`}>
-      <PaymentReceipt />
+      <PaymentReceipt id={id} />
     </PageHeader>
   );
 }

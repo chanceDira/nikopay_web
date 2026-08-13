@@ -12,7 +12,7 @@ export default async function PaymentStatusPage({
 
   return (
     <PageHeader title="Payment status" description={`Track payment ${id}`}>
-      <StatusTimeline />
+      <StatusTimeline id={id} />
     </PageHeader>
   );
 }

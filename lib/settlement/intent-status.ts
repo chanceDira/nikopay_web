@@ -23,7 +23,7 @@ export function transitionStatus(
   from: PaymentStatus,
   to: PaymentStatus,
   actor: TransitionActor = "system",
-) : TransitionResult {
+): TransitionResult {
   if (from === to) {
     return {
       ok: false,
@@ -49,7 +49,7 @@ export function assertTransition(
   from: PaymentStatus,
   to: PaymentStatus,
   actor: TransitionActor = "system",
-) : void {
+): void {
   const result = transitionStatus(from, to, actor);
   if (!result.ok) {
     throw new IntentTransitionError(from, to, result.reason);

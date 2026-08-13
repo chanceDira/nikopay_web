@@ -5,71 +5,26 @@ import { useEffect, useRef, useState } from "react";
 const steps = [
   {
     number: "01",
+    label: "First",
     title: "Connect your wallet",
     description:
       "Link your WalletConnect-compatible wallet (Trust Wallet, MetaMask, or Coinbase Wallet). You keep custody until you send.",
-    icon: (
-      <svg
-        className="h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        aria-hidden
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-        />
-      </svg>
-    ),
     visual: "wallet",
   },
   {
     number: "02",
+    label: "Next",
     title: "Send USDT",
     description:
       "Enter the recipient's Mobile Money number, review the transparent exchange rate and fees, then confirm your USDT transfer.",
-    icon: (
-      <svg
-        className="h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        aria-hidden
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    ),
     visual: "send",
   },
   {
     number: "03",
+    label: "Finally",
     title: "Recipient gets RWF",
     description:
       "RWF lands on the recipient's MTN Mobile Money account. Track status in real time and download your receipt.",
-    icon: (
-      <svg
-        className="h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        aria-hidden
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
-        />
-      </svg>
-    ),
     visual: "phone",
   },
 ];
@@ -198,8 +153,8 @@ export function HowItWorks() {
                   <span className="text-xs font-bold">{i + 1}</span>
                 </div>
                 <div className="rounded-2xl border border-niko-border bg-niko-surface p-6">
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-niko-teal/10 text-niko-teal">
-                    {step.icon}
+                  <div className="mb-3 text-xs font-bold uppercase tracking-wider text-niko-teal">
+                    {step.label}
                   </div>
                   <h3 className="text-lg font-semibold">{step.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-niko-muted">
@@ -221,18 +176,16 @@ export function HowItWorks() {
               data-step={i}
               className="rounded-2xl border border-niko-border bg-niko-surface p-6"
             >
-              <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-niko-teal text-sm font-bold text-niko-navy">
-                  {i + 1}
+              <div>
+                <div className="mb-2 text-xs font-bold uppercase tracking-wider text-niko-teal">
+                  {step.label}
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-niko-muted">
-                    {step.description}
-                  </p>
-                  <div className="mt-4">
-                    <StepVisual type={step.visual} />
-                  </div>
+                <h3 className="text-lg font-semibold">{step.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-niko-muted">
+                  {step.description}
+                </p>
+                <div className="mt-4">
+                  <StepVisual type={step.visual} />
                 </div>
               </div>
             </div>
