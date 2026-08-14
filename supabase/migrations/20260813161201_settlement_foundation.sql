@@ -1,5 +1,4 @@
--- Settlement foundation: core tables, RLS, and auth profile hook.
--- Aligns with lib/settlement PaymentStatus / ChainId.
+-- Settlement foundation
 
 create extension if not exists "pgcrypto";
 

@@ -15,6 +15,13 @@ export const CHAIN_IDS = ["polygon", "base"] as const;
 
 export type ChainId = (typeof CHAIN_IDS)[number];
 
+export function isChainId(value: unknown): value is ChainId {
+  return (
+    typeof value === "string" &&
+    (CHAIN_IDS as readonly string[]).includes(value)
+  );
+}
+
 export type FxConfig = {
   usdtToRwf: number;
   feePercent: number;
@@ -35,6 +42,7 @@ export type PaymentIntent = {
   id: string;
   status: PaymentStatus;
   chain: ChainId;
+  walletAddress: string;
   msisdn: string;
   usdtAmount: number;
   rate: number;

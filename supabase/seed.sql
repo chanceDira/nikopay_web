@@ -9,7 +9,7 @@ on conflict (id) do nothing;
 insert into public.fx_rates (usdt_to_rwf, fee_percent, min_usdt, effective_from)
 values (1450.000000, 1.5000, 5.00000000, timezone('utc', now()));
 
--- Placeholder USDT contracts
+-- Placeholder USDT contracts (replace with P3 addresses)
 insert into public.tokens (chain_id, symbol, contract_address, decimals, is_active)
 values
   (
@@ -17,14 +17,14 @@ values
     'USDT',
     '0x0000000000000000000000000000000000000001',
     6,
-    false
+    true
   ),
   (
     'base',
     'USDT',
     '0x0000000000000000000000000000000000000002',
     6,
-    false
+    true
   )
 on conflict (chain_id, symbol) do nothing;
 
@@ -37,7 +37,7 @@ select
     else '0x0000000000000000000000000000000000000012'
   end,
   'placeholder. replace with D4 treasury',
-  false
+  true
 from public.tokens t
 where t.symbol = 'USDT'
 on conflict (chain_id, token_id, address) do nothing;

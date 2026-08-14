@@ -159,7 +159,8 @@ export type Database = {
       payment_intents: {
         Row: {
           id: string;
-          user_id: string;
+          user_id: string | null;
+          wallet_address: string;
           status:
             | "awaiting_payment"
             | "detected"
@@ -185,7 +186,8 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          user_id: string;
+          user_id?: string | null;
+          wallet_address: string;
           status?:
             | "awaiting_payment"
             | "detected"
@@ -211,7 +213,8 @@ export type Database = {
         };
         Update: {
           id?: string;
-          user_id?: string;
+          user_id?: string | null;
+          wallet_address?: string;
           status?:
             | "awaiting_payment"
             | "detected"

@@ -1,4 +1,4 @@
--- Pin search_path on helper functions (security advisor).
+-- Pin search_path on helper functions 
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -32,7 +32,7 @@ as $$
   select auth.uid();
 $$;
 
--- Platform helper if present: not callable from Data API roles.
+-- Platform helper 
 do $$
 begin
   if exists (

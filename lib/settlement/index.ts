@@ -13,7 +13,7 @@ export type {
   CreateQuoteResult,
 } from "@/lib/settlement/quote";
 
-export { CHAIN_IDS, PAYMENT_STATUSES } from "@/lib/settlement/types";
+export { CHAIN_IDS, PAYMENT_STATUSES, isChainId } from "@/lib/settlement/types";
 
 export {
   allowedTransitions,
