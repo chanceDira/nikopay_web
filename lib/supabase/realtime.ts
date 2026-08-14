@@ -1,17 +1,11 @@
 import type { SupabaseClientOptions } from "@supabase/supabase-js";
+import ws from "ws";
 
 import type { Database } from "@/lib/supabase/database";
 
 type RealtimeOptions = Pick<SupabaseClientOptions<"public">, "realtime">;
 
-
 export function getNodeRealtimeOptions(): RealtimeOptions {
-  if (typeof WebSocket !== "undefined") {
-    return {};
-  }
-
-  const ws = require("ws");
-
   return {
     realtime: {
       transport: ws as unknown as NonNullable<

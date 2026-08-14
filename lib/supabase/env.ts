@@ -35,14 +35,14 @@ export function getSupabasePublishableKey(): string {
 }
 
 export function getSupabaseServiceRoleKey(): string {
-  const secret = process.env.SUPABASE_SECRET_KEY?.trim();
-  if (secret) {
-    return secret;
-  }
-
   const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (serviceRole) {
     return serviceRole;
+  }
+
+  const secret = process.env.SUPABASE_SECRET_KEY?.trim();
+  if (secret) {
+    return secret;
   }
 
   throw new Error("missing SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY");
