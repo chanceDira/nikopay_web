@@ -2,13 +2,10 @@ import { normalizeMsisdn, normalizeWalletAddress } from "@/lib/identity";
 import { toNumber } from "@/lib/numbers";
 import { createServerQuote } from "@/lib/quotes";
 import { isPaymentStatus } from "@/lib/settlement/intent-status";
-import {
-  isChainId,
-  type ChainId,
-  type PaymentIntent,
-} from "@/lib/settlement/types";
+import { isChainId, type PaymentIntent } from "@/lib/settlement/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { PaymentIntentRow } from "@/lib/supabase/types";
+import { loadActiveTreasury } from "@/lib/treasury";
 
 const LIST_LIMIT = 50;
 
@@ -37,43 +34,12 @@ export function toPaymentIntent(row: PaymentIntentRow): PaymentIntent | null {
   };
 }
 
-export async function loadActiveTreasury(
-  chain: ChainId,
-): Promise<{ ok: true; address: string } | { ok: false; reason: string }> {
-  const supabase = createAdminClient();
-
-  const { data: token, error: tokenError } = await supabase
-    .from("tokens")
-    .select("id")
-    .eq("chain_id", chain)
-    .eq("symbol", "USDT")
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (tokenError || !token) {
-    return { ok: false, reason: "token is not configured for this chain" };
-  }
-
-  const { data: wallet, error: walletError } = await supabase
-    .from("treasury_wallets")
-    .select("address")
-    .eq("token_id", token.id)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (walletError || !wallet) {
-    return { ok: false, reason: "treasury is not configured for this chain" };
-  }
-
-  return { ok: true, address: wallet.address };
-}
-
 export async function createPaymentIntent(input: {
   usdtAmount: number;
   chain: unknown;
   msisdn: unknown;
   walletAddress: unknown;
-}): Promise<
+}) : Promise<
   | { ok: true; intent: PaymentIntent }
   | { ok: false; reason: string; status: number }
 > {
@@ -138,7 +104,7 @@ export async function createPaymentIntent(input: {
 
 export async function getPaymentIntent(
   id: string,
-): Promise<
+) : Promise<
   | { ok: true; intent: PaymentIntent }
   | { ok: false; reason: string; status: number }
 > {
@@ -167,7 +133,7 @@ export async function getPaymentIntent(
 
 export async function listPaymentIntents(
   walletAddress: unknown,
-): Promise<
+) : Promise<
   | { ok: true; intents: PaymentIntent[] }
   | { ok: false; reason: string; status: number }
 > {

@@ -10,7 +10,7 @@ export function jsonData<T>(data: T, status = 200) {
 
 export async function readJsonBody(
   request: Request,
-): Promise<{ ok: true; body: unknown } | { ok: false }> {
+) : Promise<{ ok: true; body: unknown } | { ok: false }> {
   try {
     return { ok: true, body: await request.json() };
   } catch {
@@ -27,11 +27,21 @@ export function asRecord(value: unknown): Record<string, unknown> | null {
 
 export function parseUsdtAmount(
   value: unknown,
-): { ok: true; amount: number } | { ok: false; reason: string } {
+) : { ok: true; amount: number } | { ok: false; reason: string } {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return { ok: false, reason: "usdt amount must be a number" };
   }
   return { ok: true, amount: value };
+}
+
+export function parseNonNegativeInt(
+  value: unknown,
+  field: string,
+) : { ok: true; value: number } | { ok: false; reason: string } {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    return { ok: false, reason: `${field} must be a non-negative integer` };
+  }
+  return { ok: true, value };
 }
 
 const UUID_REGEX =
