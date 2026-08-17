@@ -354,6 +354,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      chain_sync: {
+        Row: {
+          chain_id: "polygon" | "base";
+          last_block: number;
+          updated_at: string;
+        };
+        Insert: {
+          chain_id: "polygon" | "base";
+          last_block?: number;
+          updated_at?: string;
+        };
+        Update: {
+          chain_id?: "polygon" | "base";
+          last_block?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

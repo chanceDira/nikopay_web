@@ -35,3 +35,10 @@ export {
 } from "@/lib/settlement/expiry";
 
 export { createQuote } from "@/lib/settlement/quote";
+
+export { matchDeposit } from "@/lib/settlement/match-deposit";
+export type {
+  DepositMatch,
+  DepositMatchInput,
+  MatchableIntent,
+} from "@/lib/settlement/match-deposit";

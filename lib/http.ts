@@ -34,6 +34,16 @@ export function parseUsdtAmount(
   return { ok: true, amount: value };
 }
 
+export function parseNonNegativeInt(
+  value: unknown,
+  field: string,
+): { ok: true; value: number } | { ok: false; reason: string } {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    return { ok: false, reason: `${field} must be a non-negative integer` };
+  }
+  return { ok: true, value };
+}
+
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 

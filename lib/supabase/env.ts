@@ -47,3 +47,11 @@ export function getSupabaseServiceRoleKey(): string {
 
   throw new Error("missing SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY");
 }
+
+export function getSettlementIngestSecret(): string | null {
+  const value = process.env.SETTLEMENT_INGEST_SECRET?.trim();
+  if (!value) {
+    return null;
+  }
+  return value;
+}

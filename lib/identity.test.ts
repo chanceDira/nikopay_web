@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { normalizeMsisdn, normalizeWalletAddress } from "@/lib/identity";
+import {
+  normalizeMsisdn,
+  normalizeTxHash,
+  normalizeWalletAddress,
+} from "@/lib/identity";
 
 describe("normalizeWalletAddress", () => {
   it("lowercases a valid address", () => {
@@ -15,6 +19,23 @@ describe("normalizeWalletAddress", () => {
 
   it("rejects a short address", () => {
     expect(normalizeWalletAddress("0xabc").ok).toBe(false);
+  });
+});
+
+describe("normalizeTxHash", () => {
+  it("lowercases a valid tx hash", () => {
+    const hash = "0x" + "Ab".repeat(32);
+    const result = normalizeTxHash(hash);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.txHash).toBe(hash.toLowerCase());
+  });
+
+  it("rejects a short hash", () => {
+    expect(normalizeTxHash("0xabc").ok).toBe(false);
   });
 });
 
