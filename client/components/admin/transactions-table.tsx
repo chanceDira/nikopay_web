@@ -60,7 +60,7 @@ export function AdminTransactionsTable() {
         );
       case "failed":
         return (
-          <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
+          <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
             Failed
           </span>
         );

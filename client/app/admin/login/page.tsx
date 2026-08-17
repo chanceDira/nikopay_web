@@ -51,13 +51,13 @@ export default function AdminLoginPage() {
 
   return (
     <main className="flex min-h-screen flex-col justify-center bg-background px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Red/amber warning-toned decorative background glow for admin safety area */}
+      {/* Primary navy/cyan warning-toned decorative background glow for admin safety area */}
       <div
         className="pointer-events-none absolute inset-0 opacity-15"
         aria-hidden
       >
-        <div className="absolute left-1/3 top-1/3 h-96 w-96 rounded-full bg-rose-500/10 blur-3xl" />
-        <div className="absolute right-1/3 bottom-1/3 h-96 w-96 rounded-full bg-amber-500/10 blur-3xl" />
+        <div className="absolute left-1/3 top-1/3 h-96 w-96 rounded-full bg-niko-blue/20 blur-3xl" />
+        <div className="absolute right-1/3 bottom-1/3 h-96 w-96 rounded-full bg-niko-teal/15 blur-3xl" />
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
@@ -74,7 +74,7 @@ export default function AdminLoginPage() {
           </Link>
         </div>
 
-        <div className="mb-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-rose-500/20 bg-rose-500/5 px-3 py-1 text-center text-xs font-semibold text-rose-400 max-w-max mx-auto block">
+        <div className="mb-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-niko-teal/20 bg-niko-teal/5 px-3 py-1 text-center text-xs font-semibold text-niko-teal max-w-max mx-auto block">
           <svg
             className="h-3.5 w-3.5"
             fill="none"
@@ -100,7 +100,7 @@ export default function AdminLoginPage() {
         <div className="bg-niko-surface/60 border border-niko-border py-8 px-6 shadow-2xl rounded-2xl sm:px-10 backdrop-blur-sm">
           <form className="space-y-5" onSubmit={handleSubmit}>
             {error && (
-              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400">
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">
                 {error}
               </div>
             )}
@@ -125,7 +125,7 @@ export default function AdminLoginPage() {
                     setEmail(e.target.value);
                     if (error) setError("");
                   }}
-                  className="block w-full rounded-xl border border-niko-border bg-background px-4 py-3 text-foreground shadow-sm focus:border-rose-500/30 focus:ring-1 focus:ring-rose-500/30 sm:text-sm outline-none transition-colors font-sans"
+                  className="block w-full rounded-xl border border-niko-border bg-background px-4 py-3 text-foreground shadow-sm focus:border-niko-teal/30 focus:ring-1 focus:ring-niko-teal/30 sm:text-sm outline-none transition-colors font-sans"
                   placeholder="admin@nikopay.com"
                 />
               </div>
@@ -151,7 +151,7 @@ export default function AdminLoginPage() {
                     setPassword(e.target.value);
                     if (error) setError("");
                   }}
-                  className="block w-full rounded-xl border border-niko-border bg-background px-4 py-3 text-foreground shadow-sm focus:border-rose-500/30 focus:ring-1 focus:ring-rose-500/30 sm:text-sm outline-none transition-colors font-sans"
+                  className="block w-full rounded-xl border border-niko-border bg-background px-4 py-3 text-foreground shadow-sm focus:border-niko-teal/30 focus:ring-1 focus:ring-niko-teal/30 sm:text-sm outline-none transition-colors font-sans"
                   placeholder="••••••••"
                 />
               </div>
@@ -186,7 +186,7 @@ export default function AdminLoginPage() {
                     setOtp(val);
                     if (error) setError("");
                   }}
-                  className="block w-full rounded-xl border border-niko-border bg-background px-4 py-3 text-center text-lg font-bold tracking-[0.25em] text-foreground shadow-sm focus:border-rose-500/30 focus:ring-1 focus:ring-rose-500/30 outline-none transition-colors font-mono"
+                  className="block w-full rounded-xl border border-niko-border bg-background px-4 py-3 text-center text-lg font-bold tracking-[0.25em] text-foreground shadow-sm focus:border-niko-teal/30 focus:ring-1 focus:ring-niko-teal/30 outline-none transition-colors font-mono"
                   placeholder="000000"
                 />
               </div>
@@ -204,7 +204,7 @@ export default function AdminLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full justify-center items-center rounded-xl bg-rose-500 px-4 py-3.5 text-sm font-bold text-white shadow-[0_0_15px_rgba(244,63,94,0.1)] hover:bg-rose-600 transition-all disabled:opacity-50 cursor-pointer"
+                className="flex w-full justify-center items-center rounded-xl bg-niko-teal px-4 py-3.5 text-sm font-bold text-niko-navy shadow-[0_0_15px_rgba(0,212,200,0.2)] hover:bg-niko-teal-bright transition-all disabled:opacity-50 cursor-pointer"
               >
                 {loading ? (
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />

@@ -177,7 +177,7 @@ export function AdminFxForm() {
           </div>
 
           {error && (
-            <div className="p-3 rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-sans leading-relaxed">
+            <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-sans leading-relaxed">
               {error}
             </div>
           )}

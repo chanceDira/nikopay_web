@@ -137,7 +137,7 @@ export function AdminNav() {
                 localStorage.removeItem("nikopay_admin_session");
                 window.location.href = "/admin/login";
               }}
-              className="text-rose-400 font-sans text-xs transition-colors hover:text-rose-300 border border-rose-500/30 hover:border-rose-500/50 px-2.5 py-1 rounded bg-rose-500/5 cursor-pointer font-bold outline-none"
+              className="text-niko-muted font-sans text-xs transition-colors hover:text-niko-teal border border-niko-border hover:border-niko-teal/40 px-2.5 py-1 rounded bg-background/30 cursor-pointer font-bold outline-none"
             >
               Logout
             </button>

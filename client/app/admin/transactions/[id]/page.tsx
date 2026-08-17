@@ -90,7 +90,7 @@ export default function AdminTransactionDetailPage({
         );
       case "failed":
         return (
-          <span className="px-2.5 py-1 text-xs font-semibold rounded bg-rose-500/15 text-rose-400 border border-rose-500/20 font-bold">
+          <span className="px-2.5 py-1 text-xs font-semibold rounded bg-red-500/15 text-red-400 border border-red-500/20 font-bold">
             Failed
           </span>
         );
@@ -317,7 +317,7 @@ export default function AdminTransactionDetailPage({
                 <button
                   type="button"
                   onClick={() => handleStatusChange("failed")}
-                  className="w-full py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold rounded-md text-xs transition-all cursor-pointer"
+                  className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold rounded-md text-xs transition-all cursor-pointer"
                 >
                   Mark Fail/Cancelled
                 </button>

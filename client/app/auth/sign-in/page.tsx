@@ -109,7 +109,7 @@ export default function SignInPage() {
             </h3>
 
             {walletError && (
-              <div className="p-3 rounded-md bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400">
+              <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20 text-xs text-red-400">
                 {walletError}
               </div>
             )}
@@ -260,7 +260,7 @@ export default function SignInPage() {
             </h3>
 
             {emailError && (
-              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400">
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">
                 {emailError}
               </div>
             )}

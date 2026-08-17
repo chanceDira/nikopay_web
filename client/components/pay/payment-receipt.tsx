@@ -182,7 +182,7 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
             <span className="text-niko-muted print:text-neutral-500">
               Service Fee ({intent.feePercent}%)
             </span>
-            <span className="font-mono text-rose-400 print:text-neutral-700">
+            <span className="font-mono text-red-400 print:text-neutral-700">
               -{formatRwf(intent.feeRwf)}
             </span>
           </div>

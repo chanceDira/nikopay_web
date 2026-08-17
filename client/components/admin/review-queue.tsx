@@ -191,7 +191,7 @@ export function AdminReviewQueue() {
                   <button
                     type="button"
                     onClick={() => handleAction(item.id, "fail")}
-                    className="px-3 py-2 border border-rose-500/30 hover:bg-rose-500/10 text-rose-400 text-xs font-semibold rounded-md transition-all cursor-pointer"
+                    className="px-3 py-2 border border-red-500/30 hover:bg-red-500/10 text-red-400 text-xs font-semibold rounded-md transition-all cursor-pointer"
                   >
                     Fail/Reject
                   </button>

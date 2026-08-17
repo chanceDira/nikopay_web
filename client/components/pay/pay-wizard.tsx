@@ -438,7 +438,7 @@ export function PayWizard() {
               </span>
             </div>
             {amountError && (
-              <p className="mt-2 text-xs text-rose-400">{amountError}</p>
+              <p className="mt-2 text-xs text-red-400">{amountError}</p>
             )}
             <p className="mt-2 text-xs text-niko-muted flex items-center gap-1.5">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-niko-teal" />
@@ -531,7 +531,7 @@ export function PayWizard() {
               </span>
             </div>
             {msisdnError && (
-              <p className="mt-2 text-xs text-rose-400">{msisdnError}</p>
+              <p className="mt-2 text-xs text-red-400">{msisdnError}</p>
             )}
 
             {formattedMsisdn && !msisdnError && (
@@ -610,7 +610,7 @@ export function PayWizard() {
               </h3>
               <div className="flex items-center gap-1.5">
                 <div
-                  className={`h-2 w-2 rounded-full ${walletConnected ? "bg-niko-teal animate-pulse-glow" : "bg-rose-400 animate-pulse"}`}
+                  className={`h-2 w-2 rounded-full ${walletConnected ? "bg-niko-teal animate-pulse-glow" : "bg-red-500 animate-pulse"}`}
                 />
                 <span className="text-xs text-niko-muted font-medium">
                   {walletConnected ? "Wallet Connected" : "Wallet Disconnected"}
@@ -902,7 +902,7 @@ export function PayWizard() {
             </div>
 
             {modalEmailError && (
-              <div className="p-3 rounded-md bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400">
+              <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20 text-xs text-red-400">
                 {modalEmailError}
               </div>
             )}

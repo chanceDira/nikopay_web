@@ -75,9 +75,9 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
   if (!intent) {
     return (
       <div className="text-center py-16 space-y-4">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/10 border border-rose-500/20">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
           <svg
-            className="h-6 w-6 text-rose-400"
+            className="h-6 w-6 text-red-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -162,7 +162,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
     if (state === "error") {
       return (
         <svg
-          className="h-5 w-5 text-rose-500"
+          className="h-5 w-5 text-red-500"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -203,7 +203,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
       case "active":
         return "bg-niko-teal/10 text-niko-teal border-niko-teal animate-pulse shadow-[0_0_12px_rgba(0,212,200,0.3)]";
       case "error":
-        return "bg-rose-500/10 text-rose-400 border-rose-500";
+        return "bg-red-500/10 text-red-400 border-red-500";
       case "warning":
       case "expired":
         return "bg-[#fffbeb] dark:bg-amber-500/10 text-[#92400e] dark:text-amber-400 border-amber-200/60 dark:border-amber-500";
@@ -286,7 +286,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
           intent.status === "paid"
             ? "border-niko-teal/20 bg-niko-teal/5 text-niko-teal"
             : ["failed", "expired"].includes(intent.status)
-              ? "border-rose-500/20 bg-rose-500/5 text-rose-400"
+              ? "border-red-500/20 bg-red-500/5 text-red-400"
               : intent.status === "manual_review"
                 ? "border-amber-200/60 dark:border-amber-500/20 bg-[#fffbeb] dark:bg-amber-500/5 text-[#92400e] dark:text-amber-300"
                 : "border-niko-border bg-niko-surface/80 text-foreground"
@@ -308,7 +308,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
           </svg>
         ) : ["failed", "expired"].includes(intent.status) ? (
           <svg
-            className="h-5 w-5 shrink-0 text-rose-400"
+            className="h-5 w-5 shrink-0 text-red-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -455,7 +455,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
             <dt className="text-niko-muted">
               Network Fee ({intent.feePercent}%)
             </dt>
-            <dd className="font-mono text-right text-rose-400">
+            <dd className="font-mono text-right text-red-400">
               -{formatRwf(intent.feeRwf)}
             </dd>
 
@@ -578,7 +578,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
               <button
                 type="button"
                 onClick={() => handleSimulateStatus("failed")}
-                className="px-2.5 py-1.5 text-xs font-semibold rounded bg-rose-950/20 text-rose-400 border border-rose-500/40 hover:bg-rose-500 hover:text-white transition-all"
+                className="px-2.5 py-1.5 text-xs font-semibold rounded bg-red-950/20 text-red-400 border border-red-500/40 hover:bg-red-500 hover:text-white transition-all"
               >
                 Set Failed
               </button>
