@@ -32,11 +32,8 @@ insert into public.treasury_wallets (chain_id, token_id, address, label, is_acti
 select
   t.chain_id,
   t.id,
-  case t.chain_id
-    when 'polygon' then '0x0000000000000000000000000000000000000011'
-    else '0x0000000000000000000000000000000000000012'
-  end,
-  'placeholder. replace with D4 treasury',
+  '0x0dfdb5bbaeece3871f826df1c6fe24a2772f5d38',
+  'testnet receive',
   true
 from public.tokens t
 where t.symbol = 'USDT'
