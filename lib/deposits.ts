@@ -33,7 +33,7 @@ export type IngestDepositResult = {
 
 export function parseDepositEvent(
   body: unknown,
-) : { ok: true; event: DepositEvent } | { ok: false; reason: string } {
+): { ok: true; event: DepositEvent } | { ok: false; reason: string } {
   const record = asRecord(body);
   if (!record) {
     return { ok: false, reason: "invalid request body" };
@@ -101,7 +101,7 @@ export function parseDepositEvent(
 
 export async function ingestDeposit(
   event: DepositEvent,
-) : Promise<
+): Promise<
   | { ok: true; result: IngestDepositResult }
   | { ok: false; reason: string; status: number }
 > {
@@ -158,7 +158,7 @@ export async function ingestDeposit(
 
 async function storeDeposit(
   event: DepositEvent,
-) : Promise<
+): Promise<
   | { ok: true; deposit: ChainDepositRow; replay: boolean }
   | { ok: false; reason: string; status: number }
 > {
@@ -243,7 +243,7 @@ async function resumeIfClaimed(deposit: ChainDepositRow): Promise<
 
 async function findClaimedIntentId(
   deposit: ChainDepositRow,
-) : Promise<string | null> {
+): Promise<string | null> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("payment_intents")
@@ -261,7 +261,7 @@ async function findClaimedIntentId(
 async function applyFreshMatch(
   event: DepositEvent,
   depositId: string,
-) : Promise<
+): Promise<
   | {
       ok: true;
       result: { outcome: IngestDepositResult["outcome"]; intentIds: string[] };
@@ -316,7 +316,7 @@ async function claimAndCredit(
   intentId: string,
   event: DepositEvent,
   depositId: string,
-) : Promise<
+): Promise<
   { ok: true; claimed: boolean } | { ok: false; reason: string; status: number }
 > {
   const detected = transitionStatus("awaiting_payment", "detected");
@@ -366,7 +366,7 @@ async function claimAndCredit(
 async function finishCredit(
   intentId: string,
   deposit: Pick<ChainDepositRow, "id" | "tx_hash">,
-) : Promise<{ ok: true } | { ok: false; reason: string; status: number }> {
+): Promise<{ ok: true } | { ok: false; reason: string; status: number }> {
   const supabase = createAdminClient();
   const current = await supabase
     .from("payment_intents")
@@ -439,7 +439,7 @@ async function finishCredit(
 async function moveIntents(
   intentIds: string[],
   to: "manual_review" | "expired",
-) : Promise<{ ok: true } | { ok: false; reason: string; status: number }> {
+): Promise<{ ok: true } | { ok: false; reason: string; status: number }> {
   const moved = transitionStatus("awaiting_payment", to);
   if (!moved.ok) {
     return { ok: false, reason: moved.reason, status: 503 };

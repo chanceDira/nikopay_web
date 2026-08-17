@@ -39,7 +39,7 @@ export async function createPaymentIntent(input: {
   chain: unknown;
   msisdn: unknown;
   walletAddress: unknown;
-}) : Promise<
+}): Promise<
   | { ok: true; intent: PaymentIntent }
   | { ok: false; reason: string; status: number }
 > {
@@ -104,7 +104,7 @@ export async function createPaymentIntent(input: {
 
 export async function getPaymentIntent(
   id: string,
-) : Promise<
+): Promise<
   | { ok: true; intent: PaymentIntent }
   | { ok: false; reason: string; status: number }
 > {
@@ -133,7 +133,7 @@ export async function getPaymentIntent(
 
 export async function listPaymentIntents(
   walletAddress: unknown,
-) : Promise<
+): Promise<
   | { ok: true; intents: PaymentIntent[] }
   | { ok: false; reason: string; status: number }
 > {

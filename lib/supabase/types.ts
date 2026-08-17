@@ -11,4 +11,5 @@ export type TreasuryWalletRow = Tables["treasury_wallets"]["Row"];
 export type FxRateRow = Tables["fx_rates"]["Row"];
 export type PaymentIntentRow = Tables["payment_intents"]["Row"];
 export type ChainDepositRow = Tables["chain_deposits"]["Row"];
+export type ChainSyncRow = Tables["chain_sync"]["Row"];
 export type MomoTransferRow = Tables["momo_transfers"]["Row"];

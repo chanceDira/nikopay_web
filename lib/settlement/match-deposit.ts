@@ -27,7 +27,7 @@ export function matchDeposit(
   deposit: DepositMatchInput,
   intents: readonly MatchableIntent[],
   now: Date = new Date(),
-) : DepositMatch {
+): DepositMatch {
   const treasury = deposit.toAddress.toLowerCase();
   const onTreasury = intents.filter(
     (intent) =>

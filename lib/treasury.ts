@@ -3,14 +3,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function loadActiveUsdtToken(
   chain: ChainId,
-) : Promise<
-  | { ok: true; id: string; contractAddress: string }
+): Promise<
+  | { ok: true; id: string; contractAddress: string; decimals: number }
   | { ok: false; reason: string }
 > {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("tokens")
-    .select("id, contract_address")
+    .select("id, contract_address, decimals")
     .eq("chain_id", chain)
     .eq("symbol", "USDT")
     .eq("is_active", true)
@@ -24,12 +24,13 @@ export async function loadActiveUsdtToken(
     ok: true,
     id: data.id,
     contractAddress: data.contract_address.toLowerCase(),
+    decimals: data.decimals,
   };
 }
 
 export async function loadActiveTreasury(
   chain: ChainId,
-) : Promise<{ ok: true; address: string } | { ok: false; reason: string }> {
+): Promise<{ ok: true; address: string } | { ok: false; reason: string }> {
   const token = await loadActiveUsdtToken(chain);
   if (!token.ok) {
     return token;

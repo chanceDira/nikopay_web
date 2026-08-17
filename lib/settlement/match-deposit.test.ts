@@ -14,7 +14,7 @@ const OTHER = "0x0000000000000000000000000000000000000099";
 function intent(
   id: string,
   overrides: Partial<MatchableIntent> = {},
-) : MatchableIntent {
+): MatchableIntent {
   return {
     id,
     status: "awaiting_payment",
