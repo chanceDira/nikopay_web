@@ -8,7 +8,7 @@ export default function AppLayout({
   return (
     <div className="flex min-h-full flex-col">
       <AppNav />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pt-36 pb-12 px-4 sm:px-6">{children}</main>
     </div>
   );
 }

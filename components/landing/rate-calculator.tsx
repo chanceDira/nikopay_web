@@ -7,11 +7,11 @@ export function RateCalculator() {
   const [amount, setAmount] = useState("100");
 
   const parsed = parseFloat(amount) || 0;
-  const isValid = parsed >= MOCK_RATE.minUsdt;
+  const isValid = parsed > 0;
   const payout = isValid ? calculatePayout(parsed) : null;
 
   return (
-    <div className="niko-glow w-full max-w-md rounded-2xl border border-niko-border bg-niko-surface p-5 sm:p-6">
+    <div className="niko-glow w-full max-w-md rounded-md border border-niko-border bg-niko-surface p-5 sm:p-6">
       <div className="mb-4 flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-wider text-niko-muted">
           Rate Calculator
@@ -25,7 +25,7 @@ export function RateCalculator() {
       <label htmlFor="usdt-amount" className="block text-sm text-niko-muted">
         You send
       </label>
-      <div className="mt-2 flex items-center gap-3 rounded-xl border border-niko-border bg-background px-4 py-3">
+      <div className="mt-2 flex items-center gap-3 rounded-md border border-niko-border bg-background px-4 py-3">
         <input
           id="usdt-amount"
           type="number"
@@ -60,7 +60,7 @@ export function RateCalculator() {
       </div>
 
       <p className="text-sm text-niko-muted">Recipient receives</p>
-      <div className="mt-2 rounded-xl border border-niko-teal/30 bg-niko-teal/5 px-4 py-4">
+      <div className="mt-2 rounded-md border border-niko-teal/30 bg-niko-teal/5 px-4 py-4">
         <p className="font-mono text-2xl font-bold text-niko-teal-bright sm:text-3xl">
           {payout ? formatRwf(payout.netRwf) : "-"}
         </p>
@@ -88,12 +88,6 @@ export function RateCalculator() {
             <dd className="font-mono text-foreground">{formatUsdt(parsed)}</dd>
           </div>
         </dl>
-      )}
-
-      {!isValid && parsed > 0 && (
-        <p className="mt-3 text-xs text-amber-400">
-          Minimum transfer is {MOCK_RATE.minUsdt} USDT
-        </p>
       )}
 
       <p className="mt-4 text-xs leading-relaxed text-niko-muted">
