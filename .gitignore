@@ -55,4 +55,3 @@ docs/
 # supabase local
 supabase/.temp/
 supabase/.branches/
-supabase/migrations/0[0-9]_*.sql
