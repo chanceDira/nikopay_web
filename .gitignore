@@ -45,9 +45,11 @@ next-env.d.ts
 .cursor/
 .claude/
 .vscode/
+.idea/
 AGENTS.md
 CLAUDE.md
 
+# docs
 docs/
 
 # supabase local
