@@ -22,7 +22,7 @@ export function topicForAddress(address: string): string {
 
 export function addressFromTopic(
   topic: string,
-) : { ok: true; address: string } | { ok: false } {
+): { ok: true; address: string } | { ok: false } {
   if (!ADDRESS_TOPIC.test(topic)) {
     return { ok: false };
   }
@@ -32,7 +32,7 @@ export function addressFromTopic(
 
 export function parseRpcQuantity(
   value: unknown,
-) : { ok: true; value: number } | { ok: false } {
+): { ok: true; value: number } | { ok: false } {
   if (typeof value === "number" && Number.isInteger(value) && value >= 0) {
     return { ok: true, value };
   }
@@ -79,7 +79,7 @@ export function parseTransferLog(
     removed?: unknown;
   },
   decimals: number,
-) : ParsedTransferLog | null {
+): ParsedTransferLog | null {
   if (log.removed === true) {
     return null;
   }
@@ -150,7 +150,7 @@ export function nextScanRange(input: {
   lastBlock: number;
   confirmedHead: number;
   maxSpan: number;
-}) : { fromBlock: number; toBlock: number } | null {
+}): { fromBlock: number; toBlock: number } | null {
   const fromBlock = input.lastBlock + 1;
   if (fromBlock > input.confirmedHead) {
     return null;

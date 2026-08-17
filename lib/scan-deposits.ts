@@ -33,7 +33,7 @@ export type ChainScanResult =
 
 export async function scanDeposits(
   chainFilter?: ChainId,
-) : Promise<ChainScanResult[]> {
+): Promise<ChainScanResult[]> {
   const chains = chainFilter ? [chainFilter] : [...CHAIN_IDS];
   const results: ChainScanResult[] = [];
 
@@ -46,7 +46,7 @@ export async function scanDeposits(
 
 export function parseScanChain(
   value: string | null,
-) : { ok: true; chain?: ChainId } | { ok: false; reason: string } {
+): { ok: true; chain?: ChainId } | { ok: false; reason: string } {
   if (value === null || value === "") {
     return { ok: true };
   }
@@ -166,7 +166,7 @@ async function scanChain(chain: ChainId): Promise<ChainScanResult> {
 async function loadLastBlock(
   chain: ChainId,
   safeHead: number,
-) : Promise<
+): Promise<
   { ok: true; value: number } | { ok: false; chain: ChainId; reason: string }
 > {
   const supabase = createAdminClient();
@@ -190,7 +190,7 @@ async function loadLastBlock(
 async function saveLastBlock(
   chain: ChainId,
   lastBlock: number,
-) : Promise<{ ok: true } | { ok: false; chain: ChainId; reason: string }> {
+): Promise<{ ok: true } | { ok: false; chain: ChainId; reason: string }> {
   const supabase = createAdminClient();
   const { error } = await supabase.from("chain_sync").upsert(
     {
