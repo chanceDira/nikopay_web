@@ -30,7 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env (commit .env.example only)
 .env*
 !.env.example
 
@@ -55,3 +55,4 @@ docs/
 # supabase local
 supabase/.temp/
 supabase/.branches/
+supabase/migrations/0[0-9]_*.sql
