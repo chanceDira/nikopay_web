@@ -30,7 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env (commit .env.example only)
+# env 
 .env*
 !.env.example
 
@@ -41,7 +41,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local agent tooling (never commit)
+# local agent tooling 
 .cursor/
 .claude/
 .vscode/
