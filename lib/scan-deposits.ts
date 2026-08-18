@@ -11,8 +11,9 @@ import {
 } from "@/lib/transfer-log";
 import { loadActiveTreasury, loadActiveUsdtToken } from "@/lib/treasury";
 
-const MAX_SPAN = 200;
-const FIRST_LOOKBEHIND = 64;
+const MAX_SPAN = 500;
+const FIRST_LOOKBEHIND = 4096;
+const MAX_WINDOWS = 4;
 
 export type ChainScanResult =
   | {
@@ -88,44 +89,86 @@ async function scanChain(chain: ChainId): Promise<ChainScanResult> {
   }
 
   const safeHead = confirmedHead(head.head, chainRow.data.confirm_blocks);
-  const lastBlock = await loadLastBlock(chain, safeHead);
-  if (!lastBlock.ok) {
-    return lastBlock;
-  }
-
-  const range = nextScanRange({
-    lastBlock: lastBlock.value,
-    confirmedHead: safeHead,
-    maxSpan: MAX_SPAN,
-  });
-
-  if (!range) {
-    return {
-      ok: true,
-      chain,
-      skipped: true,
-      reason: "waiting for confirmations",
-    };
-  }
-
-  const logs = await rpcGetLogs(rpcUrl, {
-    fromBlock: range.fromBlock,
-    toBlock: range.toBlock,
-    address: token.contractAddress,
-    topics: [TRANSFER_TOPIC, null, topicForAddress(treasury.address)],
-  });
-
-  if (!logs.ok) {
-    return { ok: false, chain, reason: logs.reason };
-  }
-
   const ingested: IngestDepositResult[] = [];
-  for (const log of logs.logs) {
+  let fromBlock: number | null = null;
+  let toBlock: number | null = null;
+
+  for (let window = 0; window < MAX_WINDOWS; window += 1) {
+    const lastBlock = await loadLastBlock(chain, safeHead);
+    if (!lastBlock.ok) {
+      return lastBlock;
+    }
+
+    const range = nextScanRange({
+      lastBlock: lastBlock.value,
+      confirmedHead: safeHead,
+      maxSpan: MAX_SPAN,
+    });
+
+    if (!range) {
+      if (fromBlock === null) {
+        return {
+          ok: true,
+          chain,
+          skipped: true,
+          reason: "waiting for confirmations",
+        };
+      }
+      break;
+    }
+
+    fromBlock ??= range.fromBlock;
+    toBlock = range.toBlock;
+
+    const logs = await rpcGetLogs(rpcUrl, {
+      fromBlock: range.fromBlock,
+      toBlock: range.toBlock,
+      address: token.contractAddress,
+      topics: [TRANSFER_TOPIC, null, topicForAddress(treasury.address)],
+    });
+
+    if (!logs.ok) {
+      return { ok: false, chain, reason: logs.reason };
+    }
+
+    const stored = await ingestTransferLogs(chain, logs.logs, token.decimals);
+    if (!stored.ok) {
+      return stored;
+    }
+    ingested.push(...stored.ingested);
+
+    const saved = await saveLastBlock(chain, range.toBlock);
+    if (!saved.ok) {
+      return saved;
+    }
+  }
+
+  return {
+    ok: true,
+    chain,
+    fromBlock: fromBlock ?? 0,
+    toBlock: toBlock ?? 0,
+    found: ingested.length,
+    ingested,
+  };
+}
+
+async function ingestTransferLogs(
+  chain: ChainId,
+  logs: unknown[],
+  decimals: number,
+): Promise<
+  | { ok: true; ingested: IngestDepositResult[] }
+  | { ok: false; chain: ChainId; reason: string }
+> {
+  const ingested: IngestDepositResult[] = [];
+
+  for (const log of logs) {
     if (!log || typeof log !== "object") {
       continue;
     }
 
-    const parsed = parseTransferLog(log, token.decimals);
+    const parsed = parseTransferLog(log, decimals);
     if (!parsed) {
       continue;
     }
@@ -148,19 +191,7 @@ async function scanChain(chain: ChainId): Promise<ChainScanResult> {
     ingested.push(result.result);
   }
 
-  const saved = await saveLastBlock(chain, range.toBlock);
-  if (!saved.ok) {
-    return saved;
-  }
-
-  return {
-    ok: true,
-    chain,
-    fromBlock: range.fromBlock,
-    toBlock: range.toBlock,
-    found: ingested.length,
-    ingested,
-  };
+  return { ok: true, ingested };
 }
 
 async function loadLastBlock(

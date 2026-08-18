@@ -105,20 +105,20 @@ describe("matchDeposit", () => {
     ).toEqual({ outcome: "unmatched" });
   });
 
-  it("expires a unique exact match that is past expiry", () => {
+  it("credits a unique exact match even after quote expiry", () => {
     expect(
       matchDeposit(deposit(), [intent("a", { expiresAt: PAST })], NOW),
-    ).toEqual({ outcome: "expired", intentIds: ["a"] });
+    ).toEqual({ outcome: "credited", intentId: "a" });
   });
 
-  it("credits a live exact match and leaves an expired duplicate alone", () => {
+  it("sends two exact awaiting matches to review even if one is past expiry", () => {
     expect(
       matchDeposit(
         deposit(),
         [intent("live"), intent("old", { expiresAt: PAST })],
         NOW,
       ),
-    ).toEqual({ outcome: "credited", intentId: "live" });
+    ).toEqual({ outcome: "manual_review", intentIds: ["live", "old"] });
   });
 
   it("does not expire wrong-amount intents just because a deposit arrived", () => {
