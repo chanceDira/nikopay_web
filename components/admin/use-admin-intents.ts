@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { PaymentIntent } from "@/lib/settlement/types";
 
 const POLL_MS = 8000;
@@ -9,19 +9,27 @@ export function useAdminIntents() {
   const [intents, setIntents] = useState<PaymentIntent[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const reload = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/intents");
+      if (!res.ok) {
+        return;
+      }
+      const json = (await res.json()) as { data: PaymentIntent[] };
+      setIntents(json.data ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
-      try {
-        const res = await fetch("/api/admin/intents");
-        if (!cancelled && res.ok) {
-          const json = (await res.json()) as { data: PaymentIntent[] };
-          setIntents(json.data ?? []);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+      if (cancelled) {
+        return;
       }
+      await reload();
     };
 
     void load();
@@ -30,7 +38,7 @@ export function useAdminIntents() {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, []);
+  }, [reload]);
 
-  return { intents, loading };
+  return { intents, loading, reload };
 }
