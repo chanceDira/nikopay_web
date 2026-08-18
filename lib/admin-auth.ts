@@ -2,7 +2,6 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { NextResponse } from "next/server";
 
 import { recoverPersonalSigner } from "@/lib/eth-personal";
-import { getSettlementIngestSecret } from "@/lib/supabase/env";
 import { loadActiveTreasuryAddresses } from "@/lib/treasury";
 
 export const ADMIN_COOKIE = "nikopay_admin";
@@ -12,7 +11,27 @@ const SESSION_TTL_SEC = 12 * 60 * 60;
 const MESSAGE_HEAD = "NikoPay admin\nSign this to open the ops console.\n";
 
 export function getAdminHmacSecret(): string | null {
-  return getSettlementIngestSecret();
+  return resolveAdminHmacSecret(process.env);
+}
+
+export function resolveAdminHmacSecret(
+  env: Record<string, string | undefined>,
+): string | null {
+  const keys = [
+    "ADMIN_SESSION_SECRET",
+    "SETTLEMENT_INGEST_SECRET",
+    "SUPABASE_SECRET_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+  ] as const;
+
+  for (const key of keys) {
+    const value = env[key]?.trim();
+    if (value) {
+      return value;
+    }
+  }
+
+  return null;
 }
 
 export function buildAdminChallenge(

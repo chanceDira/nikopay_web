@@ -3,6 +3,7 @@ import {
   buildAdminChallenge,
   getAdminHmacSecret,
 } from "@/lib/admin-auth";
+import { loadActiveTreasuryAddresses } from "@/lib/treasury";
 
 export async function GET() {
   const secret = getAdminHmacSecret();
@@ -10,5 +11,13 @@ export async function GET() {
     return jsonError("admin is not configured", 503);
   }
 
-  return jsonData({ message: buildAdminChallenge(secret) });
+  const treasuries = await loadActiveTreasuryAddresses();
+  if (!treasuries.ok) {
+    return jsonError(treasuries.reason, 503);
+  }
+
+  return jsonData({
+    message: buildAdminChallenge(secret),
+    treasuries: treasuries.addresses,
+  });
 }

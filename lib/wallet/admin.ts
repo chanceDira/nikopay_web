@@ -1,26 +1,16 @@
 import {
   getInjectedProvider,
+  requestAccounts,
   signPersonalMessage,
   type WalletKind,
 } from "@/lib/wallet/browser";
-import { connectInjectedWallet } from "@/lib/wallet/offramp";
 
 export async function proveTreasuryAdmin(
   kind: WalletKind,
 ): Promise<{ ok: true; address: string } | { ok: false; reason: string }> {
-  const connected = await connectInjectedWallet(kind, "base");
-  if (!connected.ok) {
-    return connected;
-  }
-
-  const found = getInjectedProvider(kind);
-  if (!found.ok) {
-    return found;
-  }
-
   const challenge = await fetch("/api/admin/challenge");
   const challengeBody = (await challenge.json()) as {
-    data?: { message?: string };
+    data?: { message?: string; treasuries?: string[] };
     error?: string;
   };
   if (!challenge.ok || typeof challengeBody.data?.message !== "string") {
@@ -30,9 +20,26 @@ export async function proveTreasuryAdmin(
     };
   }
 
+  const found = getInjectedProvider(kind);
+  if (!found.ok) {
+    return found;
+  }
+
+  const account = await requestAccounts(found.provider);
+  if (!account.ok) {
+    return account;
+  }
+
+  const treasuries = (challengeBody.data.treasuries ?? []).map((item) =>
+    item.toLowerCase(),
+  );
+  if (treasuries.length > 0 && !treasuries.includes(account.address)) {
+    return { ok: false, reason: "connected wallet is not the treasury" };
+  }
+
   const signed = await signPersonalMessage(
     found.provider,
-    connected.address,
+    account.address,
     challengeBody.data.message,
   );
   if (!signed.ok) {

@@ -63,7 +63,7 @@ export default function AdminLoginPage() {
           Ops console
         </h2>
         <p className="mt-2 text-center text-sm text-niko-muted">
-          Connect the treasury wallet to open ops.
+          Connect an active treasury wallet.
         </p>
       </div>
 
@@ -122,7 +122,7 @@ export default function AdminLoginPage() {
                   : `Confirm in ${selectedWallet}`}
               </p>
               <p className="text-xs text-niko-muted mt-1 text-center">
-                Switch to the treasury account, then sign the admin message.
+                Approve the connection in your wallet.
               </p>
             </div>
           )}

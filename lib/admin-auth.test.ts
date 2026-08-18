@@ -5,6 +5,7 @@ import {
   createAdminCookieValue,
   parseAdminChallenge,
   readAdminCookieAddress,
+  resolveAdminHmacSecret,
 } from "@/lib/admin-auth";
 
 const SECRET = "test-admin-secret";
@@ -27,6 +28,30 @@ describe("admin challenge", () => {
     expect(
       parseAdminChallenge(message, SECRET, NOW + 6 * 60 * 1000).ok,
     ).toBe(false);
+  });
+});
+
+describe("resolveAdminHmacSecret", () => {
+  it("prefers admin session secret", () => {
+    expect(
+      resolveAdminHmacSecret({
+        ADMIN_SESSION_SECRET: "admin",
+        SETTLEMENT_INGEST_SECRET: "ingest",
+        SUPABASE_SECRET_KEY: "supabase",
+      }),
+    ).toBe("admin");
+  });
+
+  it("falls back to supabase secret", () => {
+    expect(
+      resolveAdminHmacSecret({
+        SUPABASE_SECRET_KEY: " supabase-secret ",
+      }),
+    ).toBe("supabase-secret");
+  });
+
+  it("returns null when no server secret is set", () => {
+    expect(resolveAdminHmacSecret({})).toBeNull();
   });
 });
 
