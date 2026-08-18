@@ -2,6 +2,12 @@ const ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
 const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
 const MSISDN_DIGITS = /^[0-9]{10,15}$/;
 const RWANDA_MSISDN = /^250[7-9][0-9]{8}$/;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isUuid(value: string): boolean {
+  return UUID_REGEX.test(value);
+}
 
 export function normalizeHexAddress(
   value: unknown,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isUuid,
   normalizeMsisdn,
   normalizeTxHash,
   normalizeWalletAddress,
@@ -56,5 +57,15 @@ describe("normalizeMsisdn", () => {
 
   it("rejects non-Rwanda numbers", () => {
     expect(normalizeMsisdn("254700000000").ok).toBe(false);
+  });
+});
+
+describe("isUuid", () => {
+  it("accepts a v4 uuid", () => {
+    expect(isUuid("2d15c261-b5a3-4052-9b56-bed860e2f108")).toBe(true);
+  });
+
+  it("rejects mock fixture ids", () => {
+    expect(isUuid("tx-7392a")).toBe(false);
   });
 });

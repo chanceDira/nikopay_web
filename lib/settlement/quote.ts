@@ -67,3 +67,21 @@ export function createQuote(input: CreateQuoteInput): CreateQuoteResult {
     },
   };
 }
+
+export function usdtForTargetRwf(
+  rwfPayout: number,
+  rate: number,
+  feePercent: number,
+): number | null {
+  const factor = rate * (1 - feePercent / 100);
+  if (
+    !Number.isFinite(rwfPayout) ||
+    rwfPayout <= 0 ||
+    !Number.isFinite(factor) ||
+    factor <= 0
+  ) {
+    return null;
+  }
+
+  return Number((rwfPayout / factor).toFixed(6));
+}
