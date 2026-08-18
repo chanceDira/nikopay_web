@@ -41,7 +41,7 @@ export function PayWizard() {
 
   // Wizard state (3-step pay flow)
   const [step, setStep] = useState<Step>(1);
-  const [chain, setChain] = useState<ChainId>("polygon");
+  const [chain, setChain] = useState<ChainId>("base");
   const [amount, setAmount] = useState<string>(""); // Starts empty, uses placeholder
   const [msisdn, setMsisdn] = useState<string>("");
   const [formattedMsisdn, setFormattedMsisdn] = useState<string>("");
