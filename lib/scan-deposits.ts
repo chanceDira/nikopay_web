@@ -11,7 +11,7 @@ import {
 } from "@/lib/transfer-log";
 import { loadActiveTreasury, loadActiveUsdtToken } from "@/lib/treasury";
 
-const MAX_SPAN = 500;
+const MAX_SPAN = 100;
 const FIRST_LOOKBEHIND = 4096;
 const MAX_WINDOWS = 4;
 

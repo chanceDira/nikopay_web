@@ -22,7 +22,47 @@ type RpcResponse<T> = {
   error?: { message?: string };
 };
 
+export function rpcClientReason(input: {
+  timedOut?: boolean;
+  httpStatus?: number;
+  rpcMessage?: string;
+}): string {
+  if (input.timedOut) {
+    return "chain rpc timed out";
+  }
+  if (input.httpStatus === 429) {
+    return "chain rpc is rate limited";
+  }
+
+  const text = (input.rpcMessage ?? "").toLowerCase();
+  if (text.includes("rate") || text.includes("too many")) {
+    return "chain rpc is rate limited";
+  }
+  if (
+    text.includes("block range") ||
+    text.includes("too large") ||
+    text.includes("query exceeds") ||
+    text.includes("limited to")
+  ) {
+    return "chain rpc rejected the log range";
+  }
+
+  return "chain rpc is unavailable";
+}
+
 export async function rpcCall<T>(
+  url: string,
+  method: string,
+  params: unknown[],
+): Promise<{ ok: true; result: T } | { ok: false; reason: string }> {
+  const first = await rpcCallOnce<T>(url, method, params);
+  if (first.ok) {
+    return first;
+  }
+  return rpcCallOnce<T>(url, method, params);
+}
+
+async function rpcCallOnce<T>(
   url: string,
   method: string,
   params: unknown[],
@@ -35,12 +75,21 @@ export async function rpcCall<T>(
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
       signal: AbortSignal.timeout(12_000),
     });
-  } catch {
-    return { ok: false, reason: "chain rpc is unavailable" };
+  } catch (err) {
+    const name = err instanceof Error ? err.name : "";
+    return {
+      ok: false,
+      reason: rpcClientReason({
+        timedOut: name === "TimeoutError" || name === "AbortError",
+      }),
+    };
   }
 
   if (!response.ok) {
-    return { ok: false, reason: "chain rpc is unavailable" };
+    return {
+      ok: false,
+      reason: rpcClientReason({ httpStatus: response.status }),
+    };
   }
 
   let payload: RpcResponse<T>;
@@ -51,7 +100,10 @@ export async function rpcCall<T>(
   }
 
   if (payload.error || payload.result === undefined) {
-    return { ok: false, reason: "chain rpc is unavailable" };
+    return {
+      ok: false,
+      reason: rpcClientReason({ rpcMessage: payload.error?.message }),
+    };
   }
 
   return { ok: true, result: payload.result };
