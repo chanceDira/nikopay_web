@@ -4,27 +4,33 @@ export const WALLET_ADDRESS_KEY = "nikopay_wallet_address";
 export const WALLET_CONNECTED_KEY = "nikopay_wallet_connected";
 export const WALLET_NAME_KEY = "nikopay_wallet_name";
 
-export const SIMULATED_WALLET_ADDRESS =
-  "0x71c7656ec7ab88b098defb751b7401b5f6d8976f";
-
-export function persistSimulatedWallet(walletName: string): string {
+export function persistConnectedWallet(
+  address: string,
+  walletName: string,
+): string {
+  const normalized = address.toLowerCase();
   localStorage.setItem(WALLET_CONNECTED_KEY, "true");
   localStorage.setItem(WALLET_NAME_KEY, walletName);
-  localStorage.setItem(WALLET_ADDRESS_KEY, SIMULATED_WALLET_ADDRESS);
-  return SIMULATED_WALLET_ADDRESS;
+  localStorage.setItem(WALLET_ADDRESS_KEY, normalized);
+  return normalized;
+}
+
+export function clearConnectedWallet(): void {
+  localStorage.removeItem(WALLET_CONNECTED_KEY);
+  localStorage.removeItem(WALLET_NAME_KEY);
+  localStorage.removeItem(WALLET_ADDRESS_KEY);
 }
 
 export function readStoredWalletAddress(): string {
-  const stored = readLocal(WALLET_ADDRESS_KEY, "");
-  if (stored) {
-    return stored;
-  }
+  return readLocal(WALLET_ADDRESS_KEY, "");
+}
 
-  if (isStoredTrue(WALLET_CONNECTED_KEY)) {
-    return SIMULATED_WALLET_ADDRESS;
-  }
+export function readStoredWalletName(): string {
+  return readLocal(WALLET_NAME_KEY, "MetaMask");
+}
 
-  return "";
+export function isWalletConnected(): boolean {
+  return isStoredTrue(WALLET_CONNECTED_KEY) && Boolean(readStoredWalletAddress());
 }
 
 export function shortAddress(address: string): string {
