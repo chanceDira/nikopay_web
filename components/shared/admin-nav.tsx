@@ -9,6 +9,7 @@ const links = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/transactions", label: "Transactions" },
   { href: "/admin/review", label: "Review" },
+  { href: "/admin/payouts", label: "Payouts" },
   { href: "/admin/fx", label: "FX" },
   { href: "/admin/treasury", label: "Treasury" },
   { href: "/admin/users", label: "Users" },
@@ -84,7 +85,7 @@ export function AdminNav() {
           </div>
 
           <div className="flex items-center gap-5 text-sm">
-            <div className="hidden md:flex items-center gap-5">
+            <div className="hidden md:flex items-center gap-3 lg:gap-5">
               {links.map((link) => (
                 <Link
                   key={link.href}
@@ -108,6 +109,12 @@ export function AdminNav() {
                 className="text-niko-muted font-sans text-xs transition-colors hover:text-niko-teal"
               >
                 Tx
+              </Link>
+              <Link
+                href="/admin/payouts"
+                className="text-niko-muted font-sans text-xs transition-colors hover:text-niko-teal"
+              >
+                MoMo
               </Link>
               <Link
                 href="/admin/review"

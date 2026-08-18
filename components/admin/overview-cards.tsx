@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useAdminIntents } from "@/components/admin/use-admin-intents";
 import { summarizeAdminIntents } from "@/lib/admin-metrics";
 import { formatRwf, formatUsdt } from "@/lib/rates";
@@ -64,9 +65,12 @@ export function AdminOverviewCards() {
           </h3>
           <div className="mt-3 flex items-center justify-between text-xs text-niko-muted font-sans border-t border-niko-border/20 pt-3">
             <span>Paid payouts</span>
-            <span className="font-semibold text-niko-teal">
+            <Link
+              href="/admin/payouts?status=successful"
+              className="font-semibold text-niko-teal hover:underline"
+            >
               {metrics.paidCount} transactions
-            </span>
+            </Link>
           </div>
         </div>
 
