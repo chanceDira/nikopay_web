@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { encodeErc20Transfer, usdtToTokenUnits } from "@/lib/wallet/encoding";
+import {
+  encodeErc20BalanceOf,
+  encodeErc20Transfer,
+  usdtToTokenUnits,
+} from "@/lib/wallet/encoding";
 
 describe("usdtToTokenUnits", () => {
   it("converts 6-decimal amounts without float drift", () => {
@@ -31,5 +35,20 @@ describe("encodeErc20Transfer", () => {
 
   it("rejects a bad treasury address", () => {
     expect(encodeErc20Transfer("0xabc", BigInt(1)).ok).toBe(false);
+  });
+});
+
+describe("encodeErc20BalanceOf", () => {
+  it("encodes balanceOf(address)", () => {
+    const encoded = encodeErc20BalanceOf(
+      "0x0dfdb5bbaeece3871f826df1c6fe24a2772f5d38",
+    );
+    expect(encoded.ok).toBe(true);
+    if (!encoded.ok) {
+      return;
+    }
+    expect(encoded.data).toBe(
+      "0x70a082310000000000000000000000000dfdb5bbaeece3871f826df1c6fe24a2772f5d38",
+    );
   });
 });

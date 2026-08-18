@@ -1,6 +1,7 @@
 import { normalizeHexAddress } from "@/lib/identity";
 
 const TRANSFER_SELECTOR = "a9059cbb";
+const BALANCE_OF_SELECTOR = "70a08231";
 
 export function usdtToTokenUnits(
   amount: number,
@@ -42,5 +43,20 @@ export function encodeErc20Transfer(
   return {
     ok: true,
     data: `0x${TRANSFER_SELECTOR}${paddedTo}${paddedAmount}`,
+  };
+}
+
+export function encodeErc20BalanceOf(
+  holder: string,
+): { ok: true; data: `0x${string}` } | { ok: false; reason: string } {
+  const address = normalizeHexAddress(holder, "holder address");
+  if (!address.ok) {
+    return address;
+  }
+
+  const paddedHolder = address.address.slice(2).padStart(64, "0");
+  return {
+    ok: true,
+    data: `0x${BALANCE_OF_SELECTOR}${paddedHolder}`,
   };
 }

@@ -101,3 +101,23 @@ export async function rpcGetLogs(
 
   return { ok: true, logs: result.result };
 }
+
+export async function rpcEthCall(
+  url: string,
+  to: string,
+  data: string,
+): Promise<{ ok: true; data: string } | { ok: false; reason: string }> {
+  const result = await rpcCall<string>(url, "eth_call", [
+    { to, data },
+    "latest",
+  ]);
+  if (!result.ok) {
+    return result;
+  }
+
+  if (typeof result.result !== "string") {
+    return { ok: false, reason: "chain rpc is unavailable" };
+  }
+
+  return { ok: true, data: result.result };
+}

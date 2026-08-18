@@ -49,23 +49,35 @@ export function parseRpcQuantity(
   return { ok: true, value: parsed };
 }
 
-export function rawTokenToUsdt(data: string, decimals: number): number | null {
+export function hexQuantityToTokenAmount(
+  data: string,
+  decimals: number,
+): number | null {
   if (!HEX_QUANTITY.test(data) || decimals < 0 || decimals > 36) {
     return null;
   }
 
   const raw = data === "0x" ? ZERO : BigInt(data);
-  if (raw <= ZERO) {
+  if (raw < ZERO) {
     return null;
   }
 
   const scale = BigInt(10) ** BigInt(decimals);
   const units = (raw * USDT_SCALE) / scale;
-  if (units <= ZERO || units > BigInt(Number.MAX_SAFE_INTEGER)) {
+  if (units > BigInt(Number.MAX_SAFE_INTEGER)) {
     return null;
   }
 
   return Number(units) / Number(USDT_SCALE);
+}
+
+export function rawTokenToUsdt(data: string, decimals: number): number | null {
+  const amount = hexQuantityToTokenAmount(data, decimals);
+  if (amount === null || amount <= 0) {
+    return null;
+  }
+
+  return amount;
 }
 
 export function parseTransferLog(
