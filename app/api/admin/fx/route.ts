@@ -1,13 +1,11 @@
 import { jsonData, jsonError, readJsonBody, asRecord } from "@/lib/http";
+import { authorizeAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toNumber } from "@/lib/numbers";
 
-function adminSession(request: Request): boolean {
-  return request.headers.get("x-admin-session") === "true";
-}
-
 export async function GET(request: Request) {
-  if (!adminSession(request)) return jsonError("unauthorized", 401);
+  const admin = await authorizeAdmin(request);
+  if (!admin.ok) return jsonError(admin.reason, admin.status);
 
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -30,7 +28,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!adminSession(request)) return jsonError("unauthorized", 401);
+  const admin = await authorizeAdmin(request);
+  if (!admin.ok) return jsonError(admin.reason, admin.status);
 
   const parsed = await readJsonBody(request);
   if (!parsed.ok) return jsonError("invalid request body", 400);

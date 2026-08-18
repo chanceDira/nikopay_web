@@ -1,4 +1,5 @@
 import { jsonData, jsonError } from "@/lib/http";
+import { authorizeAdmin } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPaymentIntent } from "@/lib/intents";
 import type { PaymentIntent } from "@/lib/settlement/types";
@@ -6,9 +7,9 @@ import type { PaymentIntent } from "@/lib/settlement/types";
 const ADMIN_LIMIT = 200;
 
 export async function GET(request: Request) {
-  const session = request.headers.get("x-admin-session");
-  if (session !== "true") {
-    return jsonError("unauthorized", 401);
+  const admin = await authorizeAdmin(request);
+  if (!admin.ok) {
+    return jsonError(admin.reason, admin.status);
   }
 
   const supabase = createAdminClient();

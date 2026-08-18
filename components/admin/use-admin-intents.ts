@@ -14,9 +14,7 @@ export function useAdminIntents() {
 
     const load = async () => {
       try {
-        const res = await fetch("/api/admin/intents", {
-          headers: { "x-admin-session": "true" },
-        });
+        const res = await fetch("/api/admin/intents");
         if (!cancelled && res.ok) {
           const json = (await res.json()) as { data: PaymentIntent[] };
           setIntents(json.data ?? []);

@@ -171,6 +171,34 @@ export async function signTypedData(
   }
 }
 
+export async function signPersonalMessage(
+  provider: EthereumProvider,
+  address: string,
+  message: string,
+): Promise<{ ok: true; signature: string } | { ok: false; reason: string }> {
+  try {
+    const result = await provider.request({
+      method: "personal_sign",
+      params: [toUtf8Hex(message), address],
+    });
+    if (typeof result !== "string" || !/^0x[a-fA-F0-9]{130}$/.test(result)) {
+      return { ok: false, reason: "wallet did not return a signature" };
+    }
+    return { ok: true, signature: result };
+  } catch (err) {
+    return { ok: false, reason: walletErrorMessage(err) };
+  }
+}
+
+function toUtf8Hex(value: string): `0x${string}` {
+  const bytes = new TextEncoder().encode(value);
+  let hex = "0x";
+  for (const byte of bytes) {
+    hex += byte.toString(16).padStart(2, "0");
+  }
+  return hex as `0x${string}`;
+}
+
 export async function sendTokenTransfer(
   provider: EthereumProvider,
   input: {

@@ -1,13 +1,11 @@
 import { jsonData, jsonError } from "@/lib/http";
-import { scanDeposits, parseScanChain } from "@/lib/scan-deposits";
+import { authorizeAdmin } from "@/lib/admin-auth";
+import { parseScanChain, scanDeposits } from "@/lib/scan-deposits";
 import { runPayouts } from "@/lib/payouts";
 
-function adminSession(request: Request): boolean {
-  return request.headers.get("x-admin-session") === "true";
-}
-
 export async function POST(request: Request) {
-  if (!adminSession(request)) return jsonError("unauthorized", 401);
+  const admin = await authorizeAdmin(request);
+  if (!admin.ok) return jsonError(admin.reason, admin.status);
 
   const params = new URL(request.url).searchParams;
   const op = params.get("op");
@@ -21,7 +19,7 @@ export async function POST(request: Request) {
 
   if (op === "payouts") {
     const result = await runPayouts();
-    if (!result.ok) return jsonError(result.reason, 503);
+    if (!result.ok) return jsonError(result.reason, result.status);
     return jsonData({ payouts: result.payouts });
   }
 

@@ -12,7 +12,7 @@ type RateRow = {
 
 type FormState = "idle" | "saving" | "success" | "error";
 
-const HEADERS = { "Content-Type": "application/json", "x-admin-session": "true" };
+const HEADERS = { "Content-Type": "application/json" };
 
 export function AdminFxForm() {
   const [history, setHistory] = useState<RateRow[]>([]);
@@ -23,7 +23,7 @@ export function AdminFxForm() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const loadHistory = async () => {
-    const res = await fetch("/api/admin/fx", { headers: { "x-admin-session": "true" } });
+    const res = await fetch("/api/admin/fx");
     if (!res.ok) return;
     const json = (await res.json()) as { data: RateRow[] };
     const rows = json.data ?? [];

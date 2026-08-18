@@ -14,7 +14,6 @@ const REVIEW_STATUSES: PaymentStatus[] = [
 ];
 
 const PATCH_HEADERS = {
-  "x-admin-session": "true",
   "Content-Type": "application/json",
 };
 

@@ -127,9 +127,13 @@ export function AdminNav() {
             </Link>
 
             <button
+              type="button"
               onClick={() => {
-                localStorage.removeItem("nikopay_admin_session");
-                window.location.href = "/admin/login";
+                void fetch("/api/admin/session", { method: "DELETE" }).finally(
+                  () => {
+                    window.location.href = "/admin/login";
+                  },
+                );
               }}
               className="text-niko-muted font-sans text-xs transition-colors hover:text-niko-teal border border-niko-border hover:border-niko-teal/40 px-2.5 py-1 rounded bg-background/30 cursor-pointer font-bold outline-none"
             >

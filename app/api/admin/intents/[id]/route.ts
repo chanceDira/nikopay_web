@@ -5,6 +5,7 @@ import {
   isUuid,
   readJsonBody,
 } from "@/lib/http";
+import { authorizeAdmin } from "@/lib/admin-auth";
 import { getPaymentIntent, toPaymentIntent } from "@/lib/intents";
 import { isPaymentStatus } from "@/lib/settlement/intent-status";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -19,12 +20,9 @@ type IntentPatch = {
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-function adminSession(request: Request): boolean {
-  return request.headers.get("x-admin-session") === "true";
-}
-
 export async function GET(request: Request, context: RouteContext) {
-  if (!adminSession(request)) return jsonError("unauthorized", 401);
+  const admin = await authorizeAdmin(request);
+  if (!admin.ok) return jsonError(admin.reason, admin.status);
 
   const { id } = await context.params;
   if (!isUuid(id)) return jsonError("not found", 404);
@@ -36,7 +34,8 @@ export async function GET(request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  if (!adminSession(request)) return jsonError("unauthorized", 401);
+  const admin = await authorizeAdmin(request);
+  if (!admin.ok) return jsonError(admin.reason, admin.status);
 
   const { id } = await context.params;
   if (!isUuid(id)) return jsonError("not found", 404);

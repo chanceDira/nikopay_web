@@ -9,7 +9,7 @@ type Props = { params: Promise<{ id: string }> };
 
 type PageState = "loading" | "ready" | "not_found";
 
-const HEADERS = { "x-admin-session": "true" };
+const HEADERS = { "Content-Type": "application/json" };
 
 export default function AdminTransactionDetailPage({ params }: Props) {
   const { id } = use(params);

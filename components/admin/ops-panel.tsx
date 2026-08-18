@@ -9,11 +9,6 @@ type OpState = "idle" | "running" | "done" | "error";
 type ScanResponse = { scans: ChainScanResult[] };
 type PayoutsResponse = { payouts: PayoutRunResult[] };
 
-const HEADERS = {
-  "x-admin-session": "true",
-  "Content-Type": "application/json",
-};
-
 export function AdminOpsPanel() {
   const [scanState, setScanState] = useState<OpState>("idle");
   const [payoutsState, setPayoutsState] = useState<OpState>("idle");
@@ -25,7 +20,6 @@ export function AdminOpsPanel() {
     setScanResult("");
     const res = await fetch("/api/admin/ops?op=scan&chain=base", {
       method: "POST",
-      headers: HEADERS,
     });
     const json = (await res.json()) as { data?: ScanResponse; error?: string };
     if (!res.ok || !json.data) {
@@ -51,7 +45,6 @@ export function AdminOpsPanel() {
     setPayoutsResult("");
     const res = await fetch("/api/admin/ops?op=payouts", {
       method: "POST",
-      headers: HEADERS,
     });
     const json = (await res.json()) as { data?: PayoutsResponse; error?: string };
     if (!res.ok || !json.data) {
