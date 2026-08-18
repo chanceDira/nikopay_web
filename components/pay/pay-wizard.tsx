@@ -3,10 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { createMockIntent } from "@/lib/fixtures";
+import { useLiveQuote } from "@/components/pay/use-live-quote";
+import { normalizeMsisdn } from "@/lib/identity";
+import { createLiveIntent } from "@/lib/pay-api";
 import { isStoredTrue, readLocal } from "@/lib/read-local";
-import type { ChainId } from "@/lib/settlement/types";
+import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
 import { formatRwf, formatUsdt } from "@/lib/rates";
+import {
+  persistSimulatedWallet,
+  readStoredWalletAddress,
+  shortAddress,
+  WALLET_NAME_KEY,
+} from "@/lib/wallet-session";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -43,24 +51,32 @@ export function PayWizard() {
   const [feePercent] = useState(() =>
     parseFloat(readLocal("nikopay_fx_fee", "1.5")),
   );
+  const rwfPayout = parseFloat(amount) || 0;
+  const {
+    quote,
+    fx,
+    status: quoteStatus,
+    error: quoteError,
+  } = useLiveQuote(rwfPayout, chain);
 
   // Web3 Wallet states
   const [walletConnected, setWalletConnected] = useState(() =>
     isStoredTrue("nikopay_wallet_connected"),
   );
   const [walletAddress, setWalletAddress] = useState(() =>
-    isStoredTrue("nikopay_wallet_connected")
-      ? "0x71c7656ec7ab88b098defb751b7401b5f6d8976f"
-      : "",
+    readStoredWalletAddress(),
   );
   const [walletName, setWalletName] = useState(() =>
-    readLocal("nikopay_wallet_name", "MetaMask"),
+    readLocal(WALLET_NAME_KEY, "MetaMask"),
   );
   const [connecting, setConnecting] = useState<boolean>(false);
   const [showWalletModal, setShowWalletModal] = useState<boolean>(false);
   const [modalState, setModalState] = useState<
     "confirm" | "submitting" | "broadcasting"
   >("confirm");
+  const [liveIntent, setLiveIntent] = useState<PaymentIntent | null>(null);
+  const [creatingIntent, setCreatingIntent] = useState(false);
+  const [intentError, setIntentError] = useState("");
 
   // Validation errors
   const [amountError, setAmountError] = useState<string>("");
@@ -153,14 +169,11 @@ export function PayWizard() {
 
       setTimeout(() => {
         // Update local storage
-        localStorage.setItem("nikopay_wallet_connected", "true");
-        localStorage.setItem("nikopay_wallet_name", walletName);
-
-        // Update state
+        const address = persistSimulatedWallet(walletName);
         setIsWalletConnected(true);
         setWalletConnected(true);
         setWalletName(walletName);
-        setWalletAddress("0x71c7656ec7ab88b098defb751b7401b5f6d8976f");
+        setWalletAddress(address);
 
         // Close wallet modal and navigate to step 2
         setShowConnectGateModal(false);
@@ -169,14 +182,19 @@ export function PayWizard() {
     }, 1500);
   };
 
-  // Rates & calculations (RWF-first)
-  const rwfPayout = parseFloat(amount) || 0;
-
-  // Calculate USDT needed to settle the exact RWF payout amount
-  const usdtAmount = rwfPayout / (rate * (1 - feePercent / 100));
-  const grossRwf = usdtAmount * rate;
-  const feeRwf = grossRwf - rwfPayout;
-  const netRwf = rwfPayout;
+  // Rates & calculations (RWF-first). Display prefers the server quote.
+  const displayRate = quote?.rate ?? fx?.rate ?? rate;
+  const displayFeePercent = quote?.feePercent ?? fx?.feePercent ?? feePercent;
+  const estimatedUsdt =
+    rwfPayout / (displayRate * (1 - displayFeePercent / 100));
+  const amountQuoteReady =
+    rwfPayout > 0 && quoteStatus === "ready" && quote != null;
+  const usdtAmount = amountQuoteReady ? quote.usdtAmount : estimatedUsdt;
+  const feeRwf = amountQuoteReady
+    ? quote.feeRwf
+    : estimatedUsdt * displayRate - rwfPayout;
+  const netRwf = amountQuoteReady ? quote.netRwf : rwfPayout;
+  const treasuryAddress = liveIntent?.treasuryAddress ?? "";
 
   // Validate Amount
   const validateAmount = () => {
@@ -224,20 +242,28 @@ export function PayWizard() {
   // Handle Step Navigation
   const handleNextStep = () => {
     if (step === 1) {
-      if (validateAmount()) {
-        // Intercept for progressive gating at Step 1 (Continue to Details)
-        if (authMethod === "wallet" && !emailVerified) {
-          setShowEmailModal(true);
-          return;
-        }
-        if (authMethod === "email" && !isWalletConnected) {
-          setShowConnectGateModal(true);
-          return;
-        }
-        setStep(2);
+      if (!validateAmount()) {
+        return;
       }
+      if (!amountQuoteReady) {
+        setAmountError(quoteError || "Waiting for a live quote");
+        return;
+      }
+      setLiveIntent(null);
+      setIntentError("");
+      if (authMethod === "wallet" && !emailVerified) {
+        setShowEmailModal(true);
+        return;
+      }
+      if (authMethod === "email" && !isWalletConnected) {
+        setShowConnectGateModal(true);
+        return;
+      }
+      setStep(2);
     } else if (step === 2) {
       if (validateMsisdn()) {
+        setLiveIntent(null);
+        setIntentError("");
         setStep(3);
       }
     }
@@ -245,54 +271,94 @@ export function PayWizard() {
 
   const handlePrevStep = () => {
     if (step > 1) {
+      setLiveIntent(null);
+      setIntentError("");
       setStep((prev) => (prev - 1) as Step);
     }
   };
 
-  // Connect Web3 Wallet Simulator
   const handleConnectWallet = () => {
     setConnecting(true);
     setTimeout(() => {
+      const address = persistSimulatedWallet("MetaMask");
       setWalletConnected(true);
-      setWalletAddress("0x71c7656ec7ab88b098defb751b7401b5f6d8976f");
+      setWalletAddress(address);
       setWalletName("MetaMask");
-      localStorage.setItem("nikopay_wallet_name", "MetaMask");
       setConnecting(false);
     }, 1000);
   };
 
-  // Trigger MetaMask Transfer Dialog
-  const handleConfirmTransfer = () => {
+  const intentMatchesQuote = (intent: PaymentIntent) => {
+    const parsedMsisdn = normalizeMsisdn(msisdn);
+    if (!quote || !parsedMsisdn.ok) {
+      return false;
+    }
+    return (
+      intent.usdtAmount === quote.usdtAmount &&
+      intent.chain === chain &&
+      intent.walletAddress === walletAddress.toLowerCase() &&
+      intent.msisdn === parsedMsisdn.msisdn
+    );
+  };
+
+  const handleConfirmTransfer = async () => {
+    if (!walletConnected || creatingIntent) {
+      return;
+    }
+    setIntentError("");
+
+    if (!quote || !amountQuoteReady) {
+      setIntentError(quoteError || "Waiting for a live quote");
+      return;
+    }
+
+    const parsedMsisdn = normalizeMsisdn(msisdn);
+    if (!parsedMsisdn.ok) {
+      setIntentError(parsedMsisdn.reason);
+      return;
+    }
+
+    if (liveIntent && intentMatchesQuote(liveIntent)) {
+      setShowWalletModal(true);
+      setModalState("confirm");
+      return;
+    }
+
+    setCreatingIntent(true);
+    const result = await createLiveIntent({
+      usdtAmount: quote.usdtAmount,
+      chain,
+      msisdn: parsedMsisdn.msisdn,
+      walletAddress,
+    });
+    setCreatingIntent(false);
+
+    if (!result.ok) {
+      setIntentError(result.reason);
+      return;
+    }
+
+    setLiveIntent(result.data);
     setShowWalletModal(true);
     setModalState("confirm");
   };
 
-  // Confirm and route to tracking
   const handleModalConfirm = () => {
+    if (!liveIntent) {
+      setIntentError("Payment intent is missing. Try confirming again.");
+      setShowWalletModal(false);
+      return;
+    }
+
     setModalState("submitting");
-
-    setTimeout(() => {
+    const intentId = liveIntent.id;
+    window.setTimeout(() => {
       setModalState("broadcasting");
-
-      setTimeout(() => {
-        const cleanMsisdn = msisdn.replace(/\s+/g, "");
-        const standardMsisdn = cleanMsisdn.startsWith("0")
-          ? `+250${cleanMsisdn.substring(1)}`
-          : cleanMsisdn.startsWith("+")
-            ? cleanMsisdn
-            : `+250${cleanMsisdn}`;
-
-        const intent = createMockIntent({
-          usdtAmount,
-          chain,
-          msisdn: standardMsisdn,
-          walletAddress: walletAddress || undefined,
-        });
-
+      window.setTimeout(() => {
         setShowWalletModal(false);
-        router.push(`/app/payments/${intent.id}`);
-      }, 1500);
-    }, 1500);
+        router.push(`/app/payments/${intentId}`);
+      }, 800);
+    }, 600);
   };
 
   return (
@@ -430,9 +496,14 @@ export function PayWizard() {
             {amountError && (
               <p className="mt-2 text-xs text-red-400">{amountError}</p>
             )}
+            {quoteError && !amountError && (
+              <p className="mt-2 text-xs text-red-400">{quoteError}</p>
+            )}
             <p className="mt-2 text-xs text-niko-muted flex items-center gap-1.5">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-niko-teal" />
-              1 USDT = {rate.toLocaleString()} RWF (Illustrative Rate)
+              1 USDT = {displayRate.toLocaleString()} RWF
+              {quote ? " (live rate)" : " (loading rate)"}
+              {quoteStatus === "loading" && rwfPayout > 0 ? " · updating" : ""}
             </p>
           </div>
 
@@ -445,7 +516,7 @@ export function PayWizard() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-niko-muted">
-                Service Fee ({feePercent}%)
+                Service Fee ({displayFeePercent}%)
               </span>
               <span className="font-mono text-niko-muted">
                 {rwfPayout > 0 ? `+${formatRwf(feeRwf)}` : "-"}
@@ -465,9 +536,12 @@ export function PayWizard() {
           <button
             type="button"
             onClick={handleNextStep}
-            className="w-full py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all flex justify-center items-center gap-2"
+            disabled={!amountQuoteReady}
+            className="w-full py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Continue to Details
+            {quoteStatus === "loading" && rwfPayout > 0
+              ? "Fetching live quote..."
+              : "Continue to Details"}
             <svg
               className="h-4 w-4"
               fill="none"
@@ -616,8 +690,7 @@ export function PayWizard() {
                 <>
                   <div className="text-niko-muted">Connected Wallet</div>
                   <div className="font-mono font-semibold text-right text-niko-teal-bright">
-                    {walletAddress.substring(0, 6)}...
-                    {walletAddress.substring(walletAddress.length - 4)}
+                    {shortAddress(walletAddress)}
                   </div>
                 </>
               )}
@@ -629,11 +702,11 @@ export function PayWizard() {
 
               <div className="text-niko-muted">Exchange Rate</div>
               <div className="text-right font-mono text-foreground">
-                1 USDT = {rate.toLocaleString()} RWF
+                1 USDT = {displayRate.toLocaleString()} RWF
               </div>
 
               <div className="text-niko-muted">
-                Processing Fee ({feePercent}%)
+                Processing Fee ({displayFeePercent}%)
               </div>
               <div className="text-right font-mono text-niko-muted">
                 +{formatRwf(feeRwf)}
@@ -652,6 +725,18 @@ export function PayWizard() {
               <div className="font-mono font-bold text-right text-foreground">
                 {formattedMsisdn}
               </div>
+
+              {treasuryAddress && (
+                <>
+                  <div className="text-niko-muted">Treasury address</div>
+                  <div
+                    className="font-mono font-semibold text-right text-niko-teal-bright break-all"
+                    title={treasuryAddress}
+                  >
+                    {shortAddress(treasuryAddress)}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -717,6 +802,8 @@ export function PayWizard() {
             </div>
           )}
 
+          {intentError && <p className="text-xs text-red-400">{intentError}</p>}
+
           {/* Unified Action Button Row */}
           <div className="flex gap-4">
             <button
@@ -728,15 +815,15 @@ export function PayWizard() {
             </button>
             <button
               type="button"
-              disabled={!walletConnected}
+              disabled={!walletConnected || creatingIntent || !amountQuoteReady}
               onClick={handleConfirmTransfer}
               className={`w-2/3 py-4 font-bold rounded-md transition-all flex justify-center items-center gap-2 text-sm ${
-                walletConnected
+                walletConnected && !creatingIntent && amountQuoteReady
                   ? "bg-niko-teal hover:bg-niko-teal-bright text-niko-navy cursor-pointer"
                   : "bg-niko-surface border border-niko-border text-niko-muted opacity-50 cursor-not-allowed"
               }`}
             >
-              Confirm & Transfer
+              {creatingIntent ? "Creating payment..." : "Confirm & Transfer"}
               <svg
                 className="h-4 w-4"
                 fill="none"
@@ -800,14 +887,18 @@ export function PayWizard() {
                   <div className="flex justify-between text-xs text-niko-muted">
                     <span>From (Your Wallet)</span>
                     <span className="font-mono text-foreground">
-                      {walletAddress.substring(0, 6)}...
-                      {walletAddress.substring(walletAddress.length - 4)}
+                      {shortAddress(walletAddress)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-niko-muted">
                     <span>To (NikoPay Vault)</span>
-                    <span className="font-mono text-foreground">
-                      {chain === "polygon" ? "0x742d...f44e" : "0x839d...99f"}
+                    <span
+                      className="font-mono text-foreground"
+                      title={treasuryAddress || undefined}
+                    >
+                      {treasuryAddress
+                        ? shortAddress(treasuryAddress)
+                        : "assigned on confirm"}
                     </span>
                   </div>
                   <div className="h-px bg-niko-border/40 my-1" />
