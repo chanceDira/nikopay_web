@@ -55,3 +55,10 @@ docs/
 # supabase local
 supabase/.temp/
 supabase/.branches/
+
+# foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+/cache/
+lib/
