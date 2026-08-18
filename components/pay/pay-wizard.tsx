@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useLiveQuote } from "@/components/pay/use-live-quote";
 import { getPublicChain } from "@/lib/chain-config";
 import { normalizeMsisdn } from "@/lib/identity";
-import { createLiveIntent } from "@/lib/pay-api";
+import { createLiveIntent, reportIntentDepositWhenReady } from "@/lib/pay-api";
 import { isStoredTrue, readLocal } from "@/lib/read-local";
 import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
 import { formatRwf, formatUsdt } from "@/lib/rates";
@@ -393,10 +393,9 @@ export function PayWizard() {
 
     setModalState("broadcasting");
     const intentId = liveIntent.id;
-    window.setTimeout(() => {
-      setShowWalletModal(false);
-      router.push(`/app/payments/${intentId}`);
-    }, 600);
+    await reportIntentDepositWhenReady(intentId, result.txHash);
+    setShowWalletModal(false);
+    router.push(`/app/payments/${intentId}`);
   };
 
   return (

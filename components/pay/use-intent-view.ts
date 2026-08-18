@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { getMockIntent, updateActiveIntentStatuses } from "@/lib/fixtures";
 import { isUuid } from "@/lib/identity";
-import { fetchLiveIntent, isAborted } from "@/lib/pay-api";
+import { fetchLiveIntent, isAborted, syncLiveIntent } from "@/lib/pay-api";
 import { isTerminalStatus } from "@/lib/settlement/intent-status";
 import type { PaymentIntent } from "@/lib/settlement/types";
 
 const POLL_MS = 1500;
+const SYNC_MS = 8000;
 
 type Snapshot = {
   id: string | undefined;
@@ -61,6 +62,7 @@ export function useIntentView(id: string | undefined, poll = false) {
     const controller = new AbortController();
     let cancelled = false;
     let interval: number | undefined;
+    let syncInterval: number | undefined;
 
     const load = async () => {
       const result = await fetchLiveIntent(id, controller.signal);
@@ -79,10 +81,28 @@ export function useIntentView(id: string | undefined, poll = false) {
       return undefined;
     };
 
+    const syncOnce = () => {
+      void syncLiveIntent(id, controller.signal).then((synced) => {
+        if (cancelled || isAborted(synced) || !synced.ok) {
+          return;
+        }
+        setSnapshot({ id, intent: synced.data, ready: true });
+        if (isTerminalStatus(synced.data.status)) {
+          if (interval) {
+            window.clearInterval(interval);
+          }
+          if (syncInterval) {
+            window.clearInterval(syncInterval);
+          }
+        }
+      });
+    };
+
     void load().then((data) => {
       if (cancelled || !poll || (data && isTerminalStatus(data.status))) {
         return;
       }
+      syncOnce();
       interval = window.setInterval(() => {
         void load().then((next) => {
           if (next && isTerminalStatus(next.status) && interval) {
@@ -90,6 +110,7 @@ export function useIntentView(id: string | undefined, poll = false) {
           }
         });
       }, POLL_MS);
+      syncInterval = window.setInterval(syncOnce, SYNC_MS);
     });
 
     return () => {
@@ -97,6 +118,9 @@ export function useIntentView(id: string | undefined, poll = false) {
       controller.abort();
       if (interval) {
         window.clearInterval(interval);
+      }
+      if (syncInterval) {
+        window.clearInterval(syncInterval);
       }
     };
   }, [id, poll]);

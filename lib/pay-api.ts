@@ -187,6 +187,50 @@ export async function fetchLiveIntent(
   );
 }
 
+export async function reportIntentDeposit(
+  id: string,
+  txHash: string,
+): Promise<ApiResult<PaymentIntent>> {
+  return requestJson(`/api/intents/${id}/deposit`, isPaymentIntentPayload, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ txHash }),
+  });
+}
+
+export async function reportIntentDepositWhenReady(
+  id: string,
+  txHash: string,
+): Promise<ApiResult<PaymentIntent>> {
+  let last: ApiResult<PaymentIntent> | null = null;
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    last = await reportIntentDeposit(id, txHash);
+    if (last.ok || (last.status !== 409 && last.status !== 503)) {
+      return last;
+    }
+    await wait(1500);
+  }
+
+  return last ?? { ok: false, reason: GENERIC_ERROR, status: 0 };
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+export async function syncLiveIntent(
+  id: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<PaymentIntent>> {
+  return requestJson(`/api/intents/${id}/sync`, isPaymentIntentPayload, {
+    method: "POST",
+    signal,
+  });
+}
+
 export async function fetchLiveIntentsByWallet(
   walletAddress: string,
   signal?: AbortSignal,
