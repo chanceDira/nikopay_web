@@ -1,7 +1,7 @@
 [profile.default]
 src = "contracts/src"
 out = "contracts/out"
-libs = ["lib"]
+libs = ["contracts/lib"]
 script = "contracts/script"
 test = "contracts/test"
 cache_path = "contracts/cache"

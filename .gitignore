@@ -60,5 +60,6 @@ supabase/.branches/
 contracts/out/
 contracts/cache/
 contracts/broadcast/
+contracts/lib/
 /cache/
-lib/
+lib/forge-std/

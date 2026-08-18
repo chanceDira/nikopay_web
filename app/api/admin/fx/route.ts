@@ -55,7 +55,6 @@ export async function POST(request: Request) {
 
   const supabase = createAdminClient();
 
-  // Close the current active row before inserting the new one
   const now = new Date().toISOString();
   await supabase
     .from("fx_rates")
