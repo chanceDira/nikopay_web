@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import type { WalletKind } from "@/lib/wallet/browser";
+import { connectInjectedWallet } from "@/lib/wallet/offramp";
+import { persistConnectedWallet } from "@/lib/wallet-session";
 
 type ConnectionState = "idle" | "connecting" | "signing" | "success" | "error";
 
@@ -43,29 +46,23 @@ export default function SignInPage() {
   };
 
   // Handle Web3 Wallet Connect Flow
-  const handleWalletConnect = (walletName: string) => {
+  const handleWalletConnect = async (walletName: WalletKind) => {
     setSelectedWallet(walletName);
     setWalletError("");
     setWalletState("connecting");
 
-    // Step 1: Simulate connection
-    setTimeout(() => {
-      setWalletState("signing");
+    const result = await connectInjectedWallet(walletName, "base");
+    if (!result.ok) {
+      setWalletState("idle");
+      setWalletError(result.reason);
+      return;
+    }
 
-      // Step 2: Simulate cryptographic signature request (SIWE)
-      setTimeout(() => {
-        setWalletState("success");
-
-        // Redirect to user portal dashboard
-        setTimeout(() => {
-          localStorage.setItem("nikopay_auth_method", "wallet");
-          localStorage.setItem("nikopay_email_verified", "false");
-          localStorage.setItem("nikopay_wallet_connected", "true");
-          localStorage.setItem("nikopay_wallet_name", walletName);
-          router.push("/app/pay");
-        }, 800);
-      }, 1500);
-    }, 1200);
+    persistConnectedWallet(result.address, result.walletName);
+    localStorage.setItem("nikopay_auth_method", "wallet");
+    localStorage.setItem("nikopay_email_verified", "false");
+    setWalletState("success");
+    router.push("/app/pay");
   };
 
   return (
@@ -117,7 +114,7 @@ export default function SignInPage() {
             {walletState === "idle" && (
               <div className="grid grid-cols-1 gap-3">
                 <button
-                  onClick={() => handleWalletConnect("MetaMask")}
+                  onClick={() => void handleWalletConnect("MetaMask")}
                   className="flex w-full items-center justify-between rounded-md border border-niko-border bg-background px-4 py-3 text-sm font-sans text-foreground hover:border-niko-teal/40 hover:bg-niko-surface transition-all cursor-pointer"
                 >
                   <span className="flex items-center gap-3">
@@ -134,7 +131,7 @@ export default function SignInPage() {
                 </button>
 
                 <button
-                  onClick={() => handleWalletConnect("Coinbase Wallet")}
+                  onClick={() => void handleWalletConnect("Coinbase Wallet")}
                   className="flex w-full items-center justify-between rounded-md border border-niko-border bg-background px-4 py-3 text-sm font-sans text-foreground hover:border-niko-teal/40 hover:bg-niko-surface transition-all cursor-pointer"
                 >
                   <span className="flex items-center gap-3">
@@ -150,7 +147,7 @@ export default function SignInPage() {
                 </button>
 
                 <button
-                  onClick={() => handleWalletConnect("WalletConnect")}
+                  onClick={() => void handleWalletConnect("WalletConnect")}
                   className="flex w-full items-center justify-between rounded-md border border-niko-border bg-background px-4 py-3 text-sm font-sans text-foreground hover:border-niko-teal/40 hover:bg-niko-surface transition-all cursor-pointer"
                 >
                   <span className="flex items-center gap-3">
@@ -177,7 +174,7 @@ export default function SignInPage() {
                     </p>
                     <p className="text-xs text-niko-muted mt-1">
                       Please confirm the connection request in your wallet
-                      extension.
+                    extension. Base Sepolia will be selected!
                     </p>
                   </>
                 )}

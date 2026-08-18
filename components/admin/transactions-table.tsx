@@ -10,7 +10,6 @@ export function AdminTransactionsTable() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  // Filter list
   const filtered = intents.filter((intent) => {
     const matchesSearch =
       intent.id.toLowerCase().includes(search.toLowerCase()) ||

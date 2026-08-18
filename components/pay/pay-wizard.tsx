@@ -4,16 +4,19 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useLiveQuote } from "@/components/pay/use-live-quote";
+import { getPublicChain } from "@/lib/chain-config";
 import { normalizeMsisdn } from "@/lib/identity";
 import { createLiveIntent } from "@/lib/pay-api";
 import { isStoredTrue, readLocal } from "@/lib/read-local";
 import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
 import { formatRwf, formatUsdt } from "@/lib/rates";
+import type { WalletKind } from "@/lib/wallet/browser";
+import { connectInjectedWallet, consentAndTransferUsdt } from "@/lib/wallet/offramp";
 import {
-  persistSimulatedWallet,
+  persistConnectedWallet,
   readStoredWalletAddress,
+  readStoredWalletName,
   shortAddress,
-  WALLET_NAME_KEY,
 } from "@/lib/wallet-session";
 
 type Step = 1 | 2 | 3 | 4;
@@ -35,6 +38,13 @@ const CheckIcon = () => (
     />
   </svg>
 );
+
+function asWalletKind(name: string): WalletKind {
+  if (name === "Coinbase Wallet" || name === "WalletConnect") {
+    return name;
+  }
+  return "MetaMask";
+}
 
 export function PayWizard() {
   const router = useRouter();
@@ -67,7 +77,7 @@ export function PayWizard() {
     readStoredWalletAddress(),
   );
   const [walletName, setWalletName] = useState(() =>
-    readLocal(WALLET_NAME_KEY, "MetaMask"),
+    readStoredWalletName(),
   );
   const [connecting, setConnecting] = useState<boolean>(false);
   const [showWalletModal, setShowWalletModal] = useState<boolean>(false);
@@ -109,9 +119,11 @@ export function PayWizard() {
   const [gateWalletState, setGateWalletState] = useState<
     "idle" | "connecting" | "success"
   >("idle");
-  const [gateSelectedWallet, setGateSelectedWallet] = useState<string | null>(
+  const [gateSelectedWallet, setGateSelectedWallet] = useState<WalletKind | null>(
     null,
   );
+  const [gateError, setGateError] = useState("");
+  const [payError, setPayError] = useState("");
 
   // Handle modal email submit (OTP request)
   const handleModalEmailSubmit = (e: React.FormEvent) => {
@@ -160,26 +172,26 @@ export function PayWizard() {
   };
 
   // Handle wallet gate connection
-  const handleGateWalletConnect = (walletName: string) => {
-    setGateSelectedWallet(walletName);
+  const handleGateWalletConnect = async (kind: WalletKind) => {
+    setGateSelectedWallet(kind);
+    setGateError("");
     setGateWalletState("connecting");
 
-    setTimeout(() => {
-      setGateWalletState("success");
+    const result = await connectInjectedWallet(kind, chain);
+    if (!result.ok) {
+      setGateWalletState("idle");
+      setGateError(result.reason);
+      return;
+    }
 
-      setTimeout(() => {
-        // Update local storage
-        const address = persistSimulatedWallet(walletName);
-        setIsWalletConnected(true);
-        setWalletConnected(true);
-        setWalletName(walletName);
-        setWalletAddress(address);
-
-        // Close wallet modal and navigate to step 2
-        setShowConnectGateModal(false);
-        setStep(2);
-      }, 800);
-    }, 1500);
+    persistConnectedWallet(result.address, result.walletName);
+    setIsWalletConnected(true);
+    setWalletConnected(true);
+    setWalletName(result.walletName);
+    setWalletAddress(result.address);
+    setGateWalletState("success");
+    setShowConnectGateModal(false);
+    setStep(2);
   };
 
   // Rates & calculations (RWF-first). Display prefers the server quote.
@@ -194,6 +206,11 @@ export function PayWizard() {
     ? quote.feeRwf
     : estimatedUsdt * displayRate - rwfPayout;
   const netRwf = amountQuoteReady ? quote.netRwf : rwfPayout;
+  const chainConfig = getPublicChain(chain);
+  const chainPayReady = chainConfig.tokenReady;
+  const continueLabel = chainPayReady
+    ? "Continue to Details"
+    : `${chainConfig.name} deposits not enabled yet`;
   const treasuryAddress = liveIntent?.treasuryAddress ?? "";
 
   // Validate Amount
@@ -277,15 +294,20 @@ export function PayWizard() {
     }
   };
 
-  const handleConnectWallet = () => {
+  const handleConnectWallet = async () => {
     setConnecting(true);
-    setTimeout(() => {
-      const address = persistSimulatedWallet("MetaMask");
-      setWalletConnected(true);
-      setWalletAddress(address);
-      setWalletName("MetaMask");
-      setConnecting(false);
-    }, 1000);
+    setIntentError("");
+    const result = await connectInjectedWallet("MetaMask", chain);
+    setConnecting(false);
+    if (!result.ok) {
+      setIntentError(result.reason);
+      return;
+    }
+
+    persistConnectedWallet(result.address, result.walletName);
+    setWalletConnected(true);
+    setWalletAddress(result.address);
+    setWalletName(result.walletName);
   };
 
   const intentMatchesQuote = (intent: PaymentIntent) => {
@@ -309,6 +331,11 @@ export function PayWizard() {
 
     if (!quote || !amountQuoteReady) {
       setIntentError(quoteError || "Waiting for a live quote");
+      return;
+    }
+
+    if (!chainPayReady) {
+      setIntentError(`${chainConfig.name} test USDT is not configured yet`);
       return;
     }
 
@@ -343,21 +370,32 @@ export function PayWizard() {
     setModalState("confirm");
   };
 
-  const handleModalConfirm = () => {
+  const handleModalConfirm = async () => {
     if (!liveIntent) {
       setIntentError("Payment intent is missing. Try confirming again.");
       setShowWalletModal(false);
       return;
     }
 
+    setPayError("");
     setModalState("submitting");
+
+    const result = await consentAndTransferUsdt({
+      intent: liveIntent,
+      walletName: asWalletKind(walletName),
+    });
+
+    if (!result.ok) {
+      setPayError(result.reason);
+      setModalState("confirm");
+      return;
+    }
+
+    setModalState("broadcasting");
     const intentId = liveIntent.id;
     window.setTimeout(() => {
-      setModalState("broadcasting");
-      window.setTimeout(() => {
-        setShowWalletModal(false);
-        router.push(`/app/payments/${intentId}`);
-      }, 800);
+      setShowWalletModal(false);
+      router.push(`/app/payments/${intentId}`);
     }, 600);
   };
 
@@ -441,6 +479,11 @@ export function PayWizard() {
                   <span className="font-semibold">Polygon</span>
                 </div>
                 <span className="mt-1 text-xs text-niko-muted">USDT (PoS)</span>
+                {!getPublicChain("polygon").tokenReady && (
+                  <span className="mt-1 text-[10px] text-niko-muted">
+                    Test token not live yet
+                  </span>
+                )}
               </button>
 
               <button
@@ -536,12 +579,12 @@ export function PayWizard() {
           <button
             type="button"
             onClick={handleNextStep}
-            disabled={!amountQuoteReady}
+            disabled={!amountQuoteReady || !chainPayReady}
             className="w-full py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {quoteStatus === "loading" && rwfPayout > 0
-              ? "Fetching live quote..."
-              : "Continue to Details"}
+                {quoteStatus === "loading" && rwfPayout > 0
+                  ? "Fetching live quote..."
+                  : continueLabel}
             <svg
               className="h-4 w-4"
               fill="none"
@@ -771,7 +814,7 @@ export function PayWizard() {
 
               <button
                 type="button"
-                onClick={handleConnectWallet}
+                onClick={() => void handleConnectWallet()}
                 disabled={connecting}
                 className="shrink-0 py-2.5 px-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all flex items-center gap-1.5 text-xs disabled:opacity-50"
               >
@@ -875,11 +918,13 @@ export function PayWizard() {
               <div className="space-y-4">
                 <div>
                   <h4 className="text-xs text-niko-muted uppercase tracking-wider">
-                    Signature Request
+                    Two-step wallet approval
                   </h4>
                   <p className="mt-1.5 text-xs text-foreground leading-relaxed">
-                    Confirm you want to authorize the transfer of USDT from your
-                    wallet to the secure NikoPay treasury pool.
+                    First you sign an offramp consent that shows the USDT amount,
+                    treasury, and MoMo recipient. Then your wallet sends USDT to
+                    the NikoPay treasury. RWF is paid after the deposit is
+                    confirmed on {chainConfig.name}.
                   </p>
                 </div>
 
@@ -909,12 +954,24 @@ export function PayWizard() {
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-niko-muted mt-1">
-                    <span>Estimated Gas Fee</span>
+                    <span>Network</span>
                     <span className="font-mono text-foreground">
-                      ~0.005 MATIC
+                      {chainConfig.name}
                     </span>
                   </div>
+                  {liveIntent && (
+                    <div className="flex justify-between text-xs text-niko-muted mt-1">
+                      <span>MoMo recipient</span>
+                      <span className="font-mono text-foreground">
+                        {liveIntent.msisdn}
+                      </span>
+                    </div>
+                  )}
                 </div>
+
+                {payError && (
+                  <p className="text-xs text-red-400">{payError}</p>
+                )}
 
                 <div className="flex gap-3 pt-2">
                   <button
@@ -926,10 +983,11 @@ export function PayWizard() {
                   </button>
                   <button
                     type="button"
-                    onClick={handleModalConfirm}
+                    onClick={() => void handleModalConfirm()}
+                    disabled={modalState !== "confirm"}
                     className="w-1/2 py-2.5 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md text-xs transition-all"
                   >
-                    Confirm Sign
+                    Sign + send USDT
                   </button>
                 </div>
               </div>
@@ -939,12 +997,12 @@ export function PayWizard() {
                 <div className="text-center">
                   <p className="text-sm text-foreground">
                     {modalState === "submitting"
-                      ? `Awaiting ${walletName} Signature...`
-                      : "Broadcasting on-chain..."}
+                      ? `Awaiting ${walletName} consent signature...`
+                      : "Sending USDT to treasury..."}
                   </p>
                   <p className="text-xs text-niko-muted mt-1 max-w-[220px] mx-auto">
-                    Please approve the transaction inside the {walletName}{" "}
-                    browser extension window.
+                    Approve each prompt in {walletName}. The first signature
+                    does not move funds.
                   </p>
                 </div>
               </div>
@@ -1078,10 +1136,17 @@ export function PayWizard() {
               </button>
             </div>
 
+            {gateError && (
+              <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20 text-xs text-red-400">
+                {gateError}
+              </div>
+            )}
+
             {gateWalletState === "idle" && (
               <div className="grid grid-cols-1 gap-3">
                 <button
-                  onClick={() => handleGateWalletConnect("MetaMask")}
+                  type="button"
+                  onClick={() => void handleGateWalletConnect("MetaMask")}
                   className="flex w-full items-center justify-between rounded-md border border-niko-border bg-background px-4 py-3 text-xs font-sans text-foreground hover:border-niko-teal/40 hover:bg-niko-surface transition-all cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
@@ -1098,7 +1163,8 @@ export function PayWizard() {
                 </button>
 
                 <button
-                  onClick={() => handleGateWalletConnect("Coinbase Wallet")}
+                  type="button"
+                  onClick={() => void handleGateWalletConnect("Coinbase Wallet")}
                   className="flex w-full items-center justify-between rounded-md border border-niko-border bg-background px-4 py-3 text-xs font-sans text-foreground hover:border-niko-teal/40 hover:bg-niko-surface transition-all cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
@@ -1114,7 +1180,8 @@ export function PayWizard() {
                 </button>
 
                 <button
-                  onClick={() => handleGateWalletConnect("WalletConnect")}
+                  type="button"
+                  onClick={() => void handleGateWalletConnect("WalletConnect")}
                   className="flex w-full items-center justify-between rounded-md border border-niko-border bg-background px-4 py-3 text-xs font-sans text-foreground hover:border-niko-teal/40 hover:bg-niko-surface transition-all cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
