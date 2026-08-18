@@ -1,32 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getMockIntent } from "@/lib/fixtures";
-import type { PaymentIntent } from "@/lib/settlement/types";
-import { formatRwf, formatUsdt } from "@/lib/rates";
 import Link from "next/link";
+import { useIntentView } from "@/components/pay/use-intent-view";
+import { formatRwf, formatUsdt } from "@/lib/rates";
 
 type PaymentReceiptProps = {
   id?: string;
 };
 
 export function PaymentReceipt({ id }: PaymentReceiptProps) {
-  const [intent, setIntent] = useState<PaymentIntent | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!id) return;
-
-    const loadData = () => {
-      const data = getMockIntent(id);
-      if (data) {
-        setIntent(data);
-      }
-      setLoading(false);
-    };
-
-    loadData();
-  }, [id]);
+  const { intent, loading } = useIntentView(id, false);
 
   const handlePrint = () => {
     window.print();

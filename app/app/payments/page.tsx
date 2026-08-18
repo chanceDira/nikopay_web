@@ -3,33 +3,55 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getMockIntents, updateActiveIntentStatuses } from "@/lib/fixtures";
+import { fetchLiveIntentsByWallet, isAborted } from "@/lib/pay-api";
 import type { PaymentIntent } from "@/lib/settlement/types";
 import { formatRwf, formatUsdt } from "@/lib/rates";
 import { PageHeader } from "@/components/shared/page-header";
+import { readStoredWalletAddress } from "@/lib/wallet-session";
+
+const HISTORY_POLL_MS = 2000;
 
 export default function PaymentsHistoryPage() {
   const [intents, setIntents] = useState<PaymentIntent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadIntents = () => {
-      updateActiveIntentStatuses();
-      setIntents(getMockIntents());
+    const wallet = readStoredWalletAddress();
+
+    if (!wallet) {
+      const loadFixtures = () => {
+        updateActiveIntentStatuses();
+        setIntents(getMockIntents());
+        setLoading(false);
+      };
+
+      loadFixtures();
+      const interval = window.setInterval(loadFixtures, HISTORY_POLL_MS);
+      return () => window.clearInterval(interval);
+    }
+
+    let cancelled = false;
+    const loadLive = async () => {
+      const result = await fetchLiveIntentsByWallet(wallet);
+      if (cancelled || isAborted(result)) {
+        return;
+      }
+      if (result.ok) {
+        setIntents(result.data);
+      }
       setLoading(false);
     };
 
-    loadIntents();
+    void loadLive();
+    const interval = window.setInterval(() => {
+      void loadLive();
+    }, HISTORY_POLL_MS);
 
-    // Poll for status updates in real-time
-    const interval = setInterval(() => {
-      const updated = updateActiveIntentStatuses();
-      if (updated || intents.length === 0) {
-        setIntents(getMockIntents());
-      }
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [intents.length]);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, []);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
