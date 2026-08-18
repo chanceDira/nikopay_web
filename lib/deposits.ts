@@ -1,6 +1,7 @@
 import { asRecord, parseNonNegativeInt, parseUsdtAmount } from "@/lib/http";
 import { normalizeHexAddress, normalizeTxHash } from "@/lib/identity";
 import { toPaymentIntent } from "@/lib/intents";
+import { runPayouts } from "@/lib/payouts";
 import { isChainId, type ChainId } from "@/lib/settlement/types";
 import { transitionStatus } from "@/lib/settlement/intent-status";
 import {
@@ -289,6 +290,9 @@ async function applyFreshMatch(
     if (!credited.claimed) {
       return { ok: true, result: { outcome: "unmatched", intentIds: [] } };
     }
+
+    await runPayouts(match.intentId);
+
     return {
       ok: true,
       result: { outcome: "credited", intentIds: [match.intentId] },

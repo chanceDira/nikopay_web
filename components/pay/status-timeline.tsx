@@ -193,7 +193,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
     if (status === "credited") {
       return {
         title: "USDT Deposit Confirmed",
-        desc: "Your deposit is confirmed. Payout authorization triggers automatically.",
+        desc: "Your deposit is confirmed. We are sending the RWF payout to the MoMo number.",
       };
     }
     if (status === "payout_pending") {
