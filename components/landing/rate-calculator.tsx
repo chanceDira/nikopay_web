@@ -1,14 +1,63 @@
 "use client";
 
-import { useState } from "react";
-import { calculatePayout, formatRwf, formatUsdt, MOCK_RATE } from "@/lib/rates";
+import { useEffect, useState } from "react";
+import { isAborted, requestQuote } from "@/lib/pay-api";
+import { formatRwf, formatUsdt } from "@/lib/rates";
+
+const DEBOUNCE_MS = 400;
+const DEFAULT_AMOUNT = "100";
+
+type Payout = {
+  netRwf: number;
+  feeRwf: number;
+  rate: number;
+  feePercent: number;
+};
+
+type State = { payout: Payout | null; loading: boolean };
 
 export function RateCalculator() {
-  const [amount, setAmount] = useState("100");
+  const [amount, setAmount] = useState(DEFAULT_AMOUNT);
+  const [state, setState] = useState<State>({ payout: null, loading: false });
 
   const parsed = parseFloat(amount) || 0;
-  const isValid = parsed > 0;
-  const payout = isValid ? calculatePayout(parsed) : null;
+
+  useEffect(() => {
+    if (parsed <= 0) {
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const timer = window.setTimeout(async () => {
+      setState((prev) => ({ ...prev, loading: true }));
+      const result = await requestQuote(parsed, "base", controller.signal);
+      if (cancelled || controller.signal.aborted || isAborted(result)) return;
+
+      if (result.ok) {
+        setState({
+          loading: false,
+          payout: {
+            netRwf: result.data.netRwf,
+            feeRwf: result.data.feeRwf,
+            rate: result.data.rate,
+            feePercent: result.data.feePercent,
+          },
+        });
+      } else {
+        setState({ loading: false, payout: null });
+      }
+    }, DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [parsed]);
+
+  const { payout, loading } = state;
 
   return (
     <div className="niko-glow w-full max-w-md rounded-md border border-niko-border bg-niko-surface p-5 sm:p-6">
@@ -18,7 +67,7 @@ export function RateCalculator() {
         </span>
         <span className="flex items-center gap-1.5 text-xs text-niko-teal">
           <span className="h-1.5 w-1.5 animate-pulse-glow rounded-full bg-niko-teal" />
-          Live estimate
+          Live rate
         </span>
       </div>
 
@@ -29,7 +78,7 @@ export function RateCalculator() {
         <input
           id="usdt-amount"
           type="number"
-          min={MOCK_RATE.minUsdt}
+          min={1}
           step="1"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
@@ -62,7 +111,13 @@ export function RateCalculator() {
       <p className="text-sm text-niko-muted">Recipient receives</p>
       <div className="mt-2 rounded-md border border-niko-teal/30 bg-niko-teal/5 px-4 py-4">
         <p className="font-mono text-2xl font-bold text-niko-teal-bright sm:text-3xl">
-          {payout ? formatRwf(payout.netRwf) : "-"}
+          {loading ? (
+            <span className="animate-pulse text-niko-muted">...</span>
+          ) : payout ? (
+            formatRwf(payout.netRwf)
+          ) : (
+            "-"
+          )}
         </p>
         <p className="mt-1 text-xs text-niko-muted">via MTN Mobile Money</p>
       </div>
@@ -91,7 +146,7 @@ export function RateCalculator() {
       )}
 
       <p className="mt-4 text-xs leading-relaxed text-niko-muted">
-        Rates are illustrative. Final rate shown at confirmation.
+        Rates are indicative. Final rate locked at confirmation.
       </p>
     </div>
   );

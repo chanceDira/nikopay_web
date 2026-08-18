@@ -57,6 +57,9 @@ export type PaymentIntent = {
   momoRef?: string;
 };
 
+// Returned by the public list endpoint: msisdn is omitted to avoid leaking PII.
+export type PaymentIntentSummary = Omit<PaymentIntent, "msisdn">;
+
 export type TransitionActor = "system" | "admin";
 
 export type TransitionSuccess = {

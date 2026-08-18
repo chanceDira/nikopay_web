@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getMockIntents, updateActiveIntentStatuses } from "@/lib/fixtures";
 import { fetchLiveIntentsByWallet, isAborted } from "@/lib/pay-api";
-import type { PaymentIntent } from "@/lib/settlement/types";
+import type { PaymentIntentSummary } from "@/lib/settlement/types";
 import { formatRwf, formatUsdt } from "@/lib/rates";
 import { PageHeader } from "@/components/shared/page-header";
 import { readStoredWalletAddress } from "@/lib/wallet-session";
@@ -12,7 +12,7 @@ import { readStoredWalletAddress } from "@/lib/wallet-session";
 const HISTORY_POLL_MS = 2000;
 
 export default function PaymentsHistoryPage() {
-  const [intents, setIntents] = useState<PaymentIntent[]>([]);
+  const [intents, setIntents] = useState<PaymentIntentSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -200,9 +200,6 @@ export default function PaymentsHistoryPage() {
                     <td className="px-4 py-4 sm:px-6 space-y-0.5">
                       <p className="font-mono text-foreground font-bold">
                         {formatRwf(intent.netRwf)}
-                      </p>
-                      <p className="text-[10px] text-niko-muted font-mono">
-                        {intent.msisdn}
                       </p>
                     </td>
                     <td className="px-4 py-4 sm:px-6">

@@ -2,6 +2,7 @@ import { isPaymentStatus } from "@/lib/settlement/intent-status";
 import {
   isChainId,
   type PaymentIntent,
+  type PaymentIntentSummary,
   type Quote,
 } from "@/lib/settlement/types";
 
@@ -83,8 +84,40 @@ export function isPaymentIntentPayload(value: unknown): value is PaymentIntent {
   );
 }
 
-function isPaymentIntentList(value: unknown): value is PaymentIntent[] {
-  return Array.isArray(value) && value.every(isPaymentIntentPayload);
+function isPaymentIntentSummaryPayload(
+  value: unknown,
+): value is PaymentIntentSummary {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const intent = value as Record<string, unknown>;
+  return (
+    typeof intent.id === "string" &&
+    isPaymentStatus(intent.status) &&
+    isChainId(intent.chain) &&
+    typeof intent.walletAddress === "string" &&
+    typeof intent.usdtAmount === "number" &&
+    Number.isFinite(intent.usdtAmount) &&
+    typeof intent.rate === "number" &&
+    Number.isFinite(intent.rate) &&
+    typeof intent.feePercent === "number" &&
+    Number.isFinite(intent.feePercent) &&
+    typeof intent.feeRwf === "number" &&
+    Number.isFinite(intent.feeRwf) &&
+    typeof intent.netRwf === "number" &&
+    Number.isFinite(intent.netRwf) &&
+    typeof intent.treasuryAddress === "string" &&
+    typeof intent.expiresAt === "string" &&
+    typeof intent.createdAt === "string" &&
+    typeof intent.updatedAt === "string"
+  );
+}
+
+function isPaymentIntentSummaryList(
+  value: unknown,
+): value is PaymentIntentSummary[] {
+  return Array.isArray(value) && value.every(isPaymentIntentSummaryPayload);
 }
 
 async function requestJson<T>(
@@ -157,11 +190,11 @@ export async function fetchLiveIntent(
 export async function fetchLiveIntentsByWallet(
   walletAddress: string,
   signal?: AbortSignal,
-): Promise<ApiResult<PaymentIntent[]>> {
+): Promise<ApiResult<PaymentIntentSummary[]>> {
   const params = new URLSearchParams({ wallet: walletAddress });
   return requestJson(
     `/api/intents?${params.toString()}`,
-    isPaymentIntentList,
+    isPaymentIntentSummaryList,
     signal ? { signal } : undefined,
   );
 }

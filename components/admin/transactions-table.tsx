@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { getMockIntents } from "@/lib/fixtures";
-import type { PaymentIntent, PaymentStatus } from "@/lib/settlement/types";
+import { useAdminIntents } from "@/components/admin/use-admin-intents";
+import type { PaymentStatus } from "@/lib/settlement/types";
 
 export function AdminTransactionsTable() {
-  const [intents] = useState<PaymentIntent[]>(() => getMockIntents());
+  const { intents, loading } = useAdminIntents();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -152,7 +152,16 @@ export function AdminTransactionsTable() {
               </tr>
             </thead>
             <tbody className="divide-y divide-niko-border/10 text-sm">
-              {filtered.length === 0 ? (
+              {loading && filtered.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-6 py-12 text-center text-niko-muted font-sans"
+                  >
+                    Loading...
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td
                     colSpan={7}

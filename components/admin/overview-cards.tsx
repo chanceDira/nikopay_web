@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { getMockIntents } from "@/lib/fixtures";
-import type { PaymentIntent } from "@/lib/settlement/types";
+import { useAdminIntents } from "@/components/admin/use-admin-intents";
 
 export function AdminOverviewCards() {
-  const [intents] = useState<PaymentIntent[]>(() => getMockIntents());
+  const { intents, loading } = useAdminIntents();
+
+  if (loading && intents.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-20 text-niko-muted text-sm font-mono">
+        Loading...
+      </div>
+    );
+  }
 
   // Filter completed statuses
   const completedIntents = intents.filter((i) =>

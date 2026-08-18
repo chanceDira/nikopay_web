@@ -45,5 +45,13 @@ export async function GET(request: Request) {
     return jsonError(result.reason, result.status);
   }
 
-  return jsonData(result.intents);
+  // Strip msisdn: this list endpoint is wallet-keyed and public-ish; full MSISDN should
+  // stay server-side only. Callers that need it should fetch the individual intent.
+  const masked = result.intents.map((intent) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { msisdn, ...rest } = intent;
+    return rest;
+  });
+
+  return jsonData(masked);
 }
