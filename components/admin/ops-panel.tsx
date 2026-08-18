@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import type { ChainScanResult } from "@/lib/scan-deposits";
-import type { PayoutRunResult } from "@/lib/payouts";
+import {
+  formatPayoutRunSummary,
+  type PayoutRunSummaryInput,
+} from "@/lib/admin-metrics";
 
 type OpState = "idle" | "running" | "done" | "error";
 
 type ScanResponse = { scans: ChainScanResult[] };
-type PayoutsResponse = { payouts: PayoutRunResult[] };
+type PayoutsResponse = { payouts: PayoutRunSummaryInput[] };
 
 export function AdminOpsPanel() {
   const [scanState, setScanState] = useState<OpState>("idle");
@@ -28,13 +31,21 @@ export function AdminOpsPanel() {
       return;
     }
     const scan = json.data.scans[0];
-    if (!scan) { setScanResult("No scan result."); setScanState("done"); return; }
-    if (!scan.ok) { setScanResult(scan.reason); setScanState("error"); return; }
+    if (!scan) {
+      setScanResult("No scan result.");
+      setScanState("done");
+      return;
+    }
+    if (!scan.ok) {
+      setScanResult(scan.reason);
+      setScanState("error");
+      return;
+    }
     if ("skipped" in scan) {
       setScanResult(`Skipped: ${scan.reason}`);
     } else {
       setScanResult(
-        `Blocks ${scan.fromBlock}–${scan.toBlock}. Found ${scan.found} deposit(s).`,
+        `Blocks ${scan.fromBlock} to ${scan.toBlock}. Found ${scan.found} deposit(s).`,
       );
     }
     setScanState("done");
@@ -46,16 +57,16 @@ export function AdminOpsPanel() {
     const res = await fetch("/api/admin/ops?op=payouts", {
       method: "POST",
     });
-    const json = (await res.json()) as { data?: PayoutsResponse; error?: string };
+    const json = (await res.json()) as {
+      data?: PayoutsResponse;
+      error?: string;
+    };
     if (!res.ok || !json.data) {
       setPayoutsResult(json.error ?? "Payouts failed.");
       setPayoutsState("error");
       return;
     }
-    const count = json.data.payouts.length;
-    setPayoutsResult(
-      count === 0 ? "No payouts to process." : `Processed ${count} payout(s).`,
-    );
+    setPayoutsResult(formatPayoutRunSummary(json.data.payouts));
     setPayoutsState("done");
   };
 
@@ -79,7 +90,9 @@ export function AdminOpsPanel() {
             Run deposit scan (Base)
           </button>
           {scanResult && (
-            <p className={`text-[11px] font-mono px-1 ${scanState === "error" ? "text-red-400" : "text-niko-teal"}`}>
+            <p
+              className={`text-[11px] font-mono px-1 ${scanState === "error" ? "text-red-400" : "text-niko-teal"}`}
+            >
               {scanResult}
             </p>
           )}
@@ -98,7 +111,9 @@ export function AdminOpsPanel() {
             Run payouts
           </button>
           {payoutsResult && (
-            <p className={`text-[11px] font-mono px-1 ${payoutsState === "error" ? "text-red-400" : "text-niko-teal"}`}>
+            <p
+              className={`text-[11px] font-mono px-1 ${payoutsState === "error" ? "text-red-400" : "text-niko-teal"}`}
+            >
               {payoutsResult}
             </p>
           )}
