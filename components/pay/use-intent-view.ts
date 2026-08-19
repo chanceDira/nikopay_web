@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getMockIntent, updateActiveIntentStatuses } from "@/lib/fixtures";
 import { isUuid } from "@/lib/identity";
 import { fetchLiveIntent, isAborted, syncLiveIntent } from "@/lib/pay-api";
 import { isTerminalStatus } from "@/lib/settlement/intent-status";
@@ -17,7 +16,7 @@ type Snapshot = {
 };
 
 export function useIntentView(id: string | undefined, poll = false) {
-  const live = Boolean(id && isUuid(id));
+  const validId = Boolean(id && isUuid(id));
   const [snapshot, setSnapshot] = useState<Snapshot>({
     id: undefined,
     intent: undefined,
@@ -25,38 +24,8 @@ export function useIntentView(id: string | undefined, poll = false) {
   });
 
   useEffect(() => {
-    if (!id) {
+    if (!id || !isUuid(id)) {
       return;
-    }
-
-    if (!isUuid(id)) {
-      let interval: number | undefined;
-      const readFixture = () => {
-        updateActiveIntentStatuses();
-        const data = getMockIntent(id);
-        setSnapshot({ id, intent: data, ready: true });
-        return data;
-      };
-
-      const timer = window.setTimeout(() => {
-        const initial = readFixture();
-        if (!poll || (initial && isTerminalStatus(initial.status))) {
-          return;
-        }
-        interval = window.setInterval(() => {
-          const data = readFixture();
-          if (data && isTerminalStatus(data.status) && interval) {
-            window.clearInterval(interval);
-          }
-        }, POLL_MS);
-      }, 0);
-
-      return () => {
-        window.clearTimeout(timer);
-        if (interval) {
-          window.clearInterval(interval);
-        }
-      };
     }
 
     const controller = new AbortController();
@@ -125,17 +94,16 @@ export function useIntentView(id: string | undefined, poll = false) {
     };
   }, [id, poll]);
 
+  if (!validId) {
+    return {
+      intent: undefined,
+      loading: false,
+    };
+  }
+
   const stale = snapshot.id !== id;
-  const loading = Boolean(id) && (stale || !snapshot.ready);
+  const loading = stale || !snapshot.ready;
   const intent = stale ? undefined : snapshot.intent;
 
-  const setIntent = (next: PaymentIntent | undefined) => {
-    setSnapshot((current) => ({
-      ...current,
-      intent: next,
-      ready: true,
-    }));
-  };
-
-  return { intent, setIntent, loading, live };
+  return { intent, loading };
 }

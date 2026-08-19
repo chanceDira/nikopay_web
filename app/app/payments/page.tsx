@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getMockIntents, updateActiveIntentStatuses } from "@/lib/fixtures";
 import { fetchLiveIntentsByWallet, isAborted } from "@/lib/pay-api";
 import type { PaymentIntentSummary } from "@/lib/settlement/types";
 import { formatRwf, formatUsdt } from "@/lib/rates";
@@ -13,21 +12,14 @@ const HISTORY_POLL_MS = 2000;
 
 export default function PaymentsHistoryPage() {
   const [intents, setIntents] = useState<PaymentIntentSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() =>
+    Boolean(readStoredWalletAddress()),
+  );
 
   useEffect(() => {
     const wallet = readStoredWalletAddress();
-
     if (!wallet) {
-      const loadFixtures = () => {
-        updateActiveIntentStatuses();
-        setIntents(getMockIntents());
-        setLoading(false);
-      };
-
-      loadFixtures();
-      const interval = window.setInterval(loadFixtures, HISTORY_POLL_MS);
-      return () => window.clearInterval(interval);
+      return;
     }
 
     let cancelled = false;

@@ -1,8 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { forceTransition } from "@/lib/fixtures";
-import type { PaymentStatus } from "@/lib/settlement/types";
 import { formatRwf, formatUsdt } from "@/lib/rates";
 import { useIntentView } from "@/components/pay/use-intent-view";
 import Link from "next/link";
@@ -12,16 +9,7 @@ type StatusTimelineProps = {
 };
 
 export function StatusTimeline({ id }: StatusTimelineProps) {
-  const { intent, setIntent, loading, live } = useIntentView(id, true);
-  const [showSimPanel, setShowSimPanel] = useState(false);
-
-  const handleSimulateStatus = (status: PaymentStatus) => {
-    if (!id || live) return;
-    const updated = forceTransition(id, status);
-    if (updated) {
-      setIntent(updated);
-    }
-  };
+  const { intent, loading } = useIntentView(id, true);
 
   if (loading) {
     return (
@@ -179,9 +167,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
     if (status === "awaiting_payment") {
       return {
         title: "Awaiting USDT Deposit",
-        desc: live
-          ? "Send the quoted USDT amount to the treasury address below. We watch the chain for a matching deposit."
-          : "Please initiate the USDT transfer from your wallet to the address on the previous step. We are listening to blockchain events.",
+        desc: "Send the quoted USDT amount to the treasury address below. We watch the chain for a matching deposit.",
       };
     }
     if (status === "detected") {
@@ -493,90 +479,6 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
           </div>
         </div>
       </div>
-
-      {/* Simulator Control Drawer for Graders / Reviewers */}
-      {!live && (
-        <div className="border border-niko-border/50 rounded-md bg-niko-surface/30 p-4">
-          <button
-            type="button"
-            onClick={() => setShowSimPanel(!showSimPanel)}
-            className="flex w-full items-center justify-between text-xs font-medium text-niko-muted hover:text-niko-teal transition-colors"
-          >
-            <span className="flex items-center gap-1.5 uppercase tracking-wider">
-              <span className="inline-block h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-              Developer Simulation Controls
-            </span>
-            <span>{showSimPanel ? "Hide Controls" : "Show Controls"}</span>
-          </button>
-
-          {showSimPanel && (
-            <div className="mt-4 pt-3 border-t border-niko-border/40">
-              <p className="text-xs text-niko-muted mb-3">
-                Use these buttons to instantly trigger different payment states
-                and verify how the UI adapts.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleSimulateStatus("awaiting_payment")}
-                  className="px-2.5 py-1.5 text-xs font-semibold rounded bg-background border border-niko-border hover:border-niko-teal transition-colors text-foreground"
-                >
-                  Awaiting
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSimulateStatus("detected")}
-                  className="px-2.5 py-1.5 text-xs font-semibold rounded bg-background border border-niko-border hover:border-niko-teal transition-colors text-foreground"
-                >
-                  Detected
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSimulateStatus("credited")}
-                  className="px-2.5 py-1.5 text-xs font-semibold rounded bg-background border border-niko-border hover:border-niko-teal transition-colors text-foreground"
-                >
-                  Credited
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSimulateStatus("payout_pending")}
-                  className="px-2.5 py-1.5 text-xs font-semibold rounded bg-background border border-niko-border hover:border-niko-teal transition-colors text-foreground"
-                >
-                  Payout Pending
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSimulateStatus("paid")}
-                  className="px-2.5 py-1.5 text-xs font-semibold rounded bg-niko-teal/20 text-niko-teal border border-niko-teal/40 hover:bg-niko-teal hover:text-niko-navy transition-all"
-                >
-                  Set Paid
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSimulateStatus("failed")}
-                  className="px-2.5 py-1.5 text-xs font-semibold rounded bg-red-950/20 text-red-400 border border-red-500/40 hover:bg-red-500 hover:text-white transition-all"
-                >
-                  Set Failed
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSimulateStatus("expired")}
-                  className="px-2.5 py-1.5 text-xs font-semibold rounded bg-amber-950/20 text-amber-400 border border-amber-500/40 hover:bg-amber-500 hover:text-black transition-all"
-                >
-                  Set Expired
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSimulateStatus("manual_review")}
-                  className="px-2.5 py-1.5 text-xs font-semibold rounded bg-amber-950/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500 hover:text-black transition-all"
-                >
-                  Set Review
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
