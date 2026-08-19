@@ -87,35 +87,10 @@ export function PayWizard() {
   const [liveIntent, setLiveIntent] = useState<PaymentIntent | null>(null);
   const [creatingIntent, setCreatingIntent] = useState(false);
   const [intentError, setIntentError] = useState("");
-
-  // Validation errors
   const [amountError, setAmountError] = useState<string>("");
   const [msisdnError, setMsisdnError] = useState<string>("");
-
-  // Local storage auth states
-  const [authMethod] = useState(() =>
-    readLocal("nikopay_auth_method", "wallet"),
-  );
-  const [emailVerified, setEmailVerified] = useState(() =>
-    isStoredTrue("nikopay_email_verified"),
-  );
-  const [isWalletConnected, setIsWalletConnected] = useState(() =>
-    isStoredTrue("nikopay_wallet_connected"),
-  );
-
-  // Modals for progressive gating
-  const [showEmailModal, setShowEmailModal] = useState<boolean>(false);
   const [showConnectGateModal, setShowConnectGateModal] =
     useState<boolean>(false);
-
-  // Email verification modal internal state
-  const [modalEmail, setModalEmail] = useState<string>("");
-  const [otpSent, setOtpSent] = useState<boolean>(false);
-  const [modalOtp, setModalOtp] = useState<string>("");
-  const [modalEmailLoading, setModalEmailLoading] = useState<boolean>(false);
-  const [modalEmailError, setModalEmailError] = useState<string>("");
-
-  // Wallet gate modal internal state
   const [gateWalletState, setGateWalletState] = useState<
     "idle" | "connecting" | "success"
   >("idle");
@@ -125,53 +100,6 @@ export function PayWizard() {
   const [gateError, setGateError] = useState("");
   const [payError, setPayError] = useState("");
 
-  // Handle modal email submit (OTP request)
-  const handleModalEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setModalEmailError("");
-
-    if (!modalEmail || !modalEmail.includes("@")) {
-      setModalEmailError("Please enter a valid email address.");
-      return;
-    }
-
-    setModalEmailLoading(true);
-
-    setTimeout(() => {
-      setModalEmailLoading(false);
-      setOtpSent(true);
-    }, 1200);
-  };
-
-  // Handle modal OTP submit (Verify Code)
-  const handleModalOtpSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setModalEmailError("");
-
-    if (modalOtp.length !== 6 || isNaN(Number(modalOtp))) {
-      setModalEmailError("Verification code must be exactly 6 digits.");
-      return;
-    }
-
-    setModalEmailLoading(true);
-
-    setTimeout(() => {
-      setModalEmailLoading(false);
-
-      // Update local storage
-      localStorage.setItem("nikopay_email_verified", "true");
-      localStorage.setItem("nikopay_email_address", modalEmail);
-
-      // Update state
-      setEmailVerified(true);
-
-      // Close email modal and navigate to step 2
-      setShowEmailModal(false);
-      setStep(2);
-    }, 1200);
-  };
-
-  // Handle wallet gate connection
   const handleGateWalletConnect = async (kind: WalletKind) => {
     setGateSelectedWallet(kind);
     setGateError("");
@@ -185,7 +113,6 @@ export function PayWizard() {
     }
 
     persistConnectedWallet(result.address, result.walletName);
-    setIsWalletConnected(true);
     setWalletConnected(true);
     setWalletName(result.walletName);
     setWalletAddress(result.address);
@@ -268,11 +195,7 @@ export function PayWizard() {
       }
       setLiveIntent(null);
       setIntentError("");
-      if (authMethod === "wallet" && !emailVerified) {
-        setShowEmailModal(true);
-        return;
-      }
-      if (authMethod === "email" && !isWalletConnected) {
+      if (!walletConnected) {
         setShowConnectGateModal(true);
         return;
       }
@@ -782,7 +705,6 @@ export function PayWizard() {
             </div>
           </div>
 
-          {/* Disclaimer (Shows Connect Wallet inside it when not connected) */}
           {!walletConnected && (
             <div className="p-4 rounded-md border border-niko-teal/20 bg-niko-teal/5 text-xs text-niko-muted leading-relaxed flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
@@ -1010,103 +932,6 @@ export function PayWizard() {
         </div>
       )}
 
-      {/* EMAIL VERIFICATION GATE MODAL */}
-      {showEmailModal && (
-        <div className="fixed inset-0 z-55 flex items-center justify-center bg-black/20 p-4 animate-fade-in">
-          <div className="w-full max-w-sm rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-xl p-6 space-y-4 shadow-2xl relative z-55">
-            <div className="flex items-center justify-between border-b border-niko-border/60 pb-3">
-              <span className="text-base text-foreground">
-                You must first verify email to proceed.
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowEmailModal(false)}
-                className="text-niko-muted hover:text-foreground p-1 transition-colors cursor-pointer outline-none rounded-md"
-              >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {modalEmailError && (
-              <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20 text-xs text-red-400">
-                {modalEmailError}
-              </div>
-            )}
-
-            {!otpSent ? (
-              <form onSubmit={handleModalEmailSubmit} className="space-y-4">
-                <div>
-                  <input
-                    id="modal-email"
-                    type="email"
-                    required
-                    value={modalEmail}
-                    onChange={(e) => setModalEmail(e.target.value)}
-                    className="block w-full rounded-md border border-niko-border bg-background px-4 py-3 text-foreground shadow-sm focus:border-niko-teal/50 outline-none text-sm"
-                    placeholder="Enter email address"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={modalEmailLoading}
-                  className="w-full py-3 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all flex justify-center items-center text-xs cursor-pointer"
-                >
-                  {modalEmailLoading ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-niko-navy border-t-transparent" />
-                  ) : (
-                    "Send Verification Code"
-                  )}
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleModalOtpSubmit} className="space-y-4">
-                <p className="text-xs text-niko-muted text-center">
-                  Code sent to {modalEmail}. (Type any 6 digits to verify).
-                </p>
-                <div>
-                  <input
-                    id="modal-otp"
-                    type="text"
-                    maxLength={6}
-                    required
-                    value={modalOtp}
-                    onChange={(e) =>
-                      setModalOtp(e.target.value.replace(/\D/g, ""))
-                    }
-                    className="block w-full rounded-md border border-niko-border bg-background px-4 py-3 text-center text-lg font-bold tracking-[0.2em] text-foreground focus:border-niko-teal/50 outline-none font-mono"
-                    placeholder="000000"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={modalEmailLoading}
-                  className="w-full py-3 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all flex justify-center items-center text-xs cursor-pointer"
-                >
-                  {modalEmailLoading ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-niko-navy border-t-transparent" />
-                  ) : (
-                    "Verify & Proceed"
-                  )}
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* WALLET CONNECTION GATE MODAL */}
       {showConnectGateModal && (
         <div className="fixed inset-0 z-55 flex items-center justify-center bg-black/20 p-4 animate-fade-in">
           <div className="w-full max-w-sm rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-xl p-6 space-y-4 shadow-2xl relative z-55 animate-fade-in">

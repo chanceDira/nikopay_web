@@ -11,6 +11,10 @@ import {
 } from "@/lib/wallet/browser";
 import { buildOfframpTypedData } from "@/lib/wallet/consent";
 import { encodeErc20Transfer, usdtToTokenUnits } from "@/lib/wallet/encoding";
+import {
+  connectWalletConnect,
+  restoreWalletConnect,
+} from "@/lib/wallet/walletconnect";
 
 export async function connectInjectedWallet(
   kind: WalletKind,
@@ -19,7 +23,7 @@ export async function connectInjectedWallet(
   | { ok: true; address: string; walletName: WalletKind }
   | { ok: false; reason: string }
 > {
-  const found = getInjectedProvider(kind);
+  const found = await resolveWalletProvider(kind, chainId, true);
   if (!found.ok) {
     return found;
   }
@@ -77,7 +81,11 @@ export async function consentAndTransferUsdt(input: {
     };
   }
 
-  const found = getInjectedProvider(input.walletName);
+  const found = await resolveWalletProvider(
+    input.walletName,
+    input.intent.chain,
+    false,
+  );
   if (!found.ok) {
     return found;
   }
@@ -127,4 +135,19 @@ export async function consentAndTransferUsdt(input: {
     token: chain.usdtAddress,
     data: encoded.data,
   });
+}
+
+async function resolveWalletProvider(
+  kind: WalletKind,
+  chainId: PaymentIntent["chain"],
+  connect: boolean,
+): Promise<
+  { ok: true; provider: EthereumProvider } | { ok: false; reason: string }
+> {
+  if (kind !== "WalletConnect") {
+    return getInjectedProvider(kind);
+  }
+  return connect
+    ? connectWalletConnect(chainId)
+    : restoreWalletConnect();
 }
