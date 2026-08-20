@@ -80,7 +80,8 @@ export async function requestTransfer(
     "x-target-environment": config.targetEnvironment,
     "content-type": "application/json",
   };
-  if (config.callbackUrl) {
+  
+  if (config.callbackUrl && config.targetEnvironment !== "sandbox") {
     headers["x-callback-url"] =
       `${config.callbackUrl.replace(/\/$/, "")}/${input.referenceId}`;
   }
@@ -110,9 +111,10 @@ export async function requestTransfer(
   }
 
   if (response.status !== 202) {
+    const detail = await momoErrorDetail(response);
     return {
       ok: false,
-      reason: "momo transfer request failed",
+      reason: detail ?? `momo transfer request failed (${response.status})`,
       conflict: false,
     };
   }
@@ -340,6 +342,33 @@ function asJsonRecord(text: string): Record<string, unknown> | null {
   }
 }
 
+async function momoErrorDetail(response: Response): Promise<string | null> {
+  const text = await response.text();
+  const body = asJsonRecord(text);
+  const fromBody = formatProviderReason(body);
+  if (fromBody) {
+    return fromBody;
+  }
+
+  if (typeof body?.message === "string" && body.message.trim()) {
+    return body.message.trim().slice(0, 200);
+  }
+
+  return null;
+}
+
 export function clearMomoTokenCache(): void {
   tokenCache = null;
+}
+
+export function callbackHostFromUrl(url: string | null | undefined): string | null {
+  if (!url?.trim()) {
+    return null;
+  }
+
+  try {
+    return new URL(url.trim()).hostname || null;
+  } catch {
+    return null;
+  }
 }

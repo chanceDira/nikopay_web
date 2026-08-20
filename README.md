@@ -61,7 +61,7 @@ Copy from `.env.example`. Only `NEXT_PUBLIC_*` may reach the browser.
 | `MOMO_DISBURSEMENT_SUBSCRIPTION_KEY` | Primary key from [MoMo developer profile](https://momodeveloper.mtn.com/) → Disbursements subscription. Do not regenerate just to reset balance |
 | `MOMO_API_USER` | Sandbox API user UUID |
 | `MOMO_API_KEY` | Sandbox API key for that user |
-| `MOMO_CALLBACK_URL` | Optional. Base URL for MTN callbacks, e.g. `https://your-host/api/momo/callback` |
+| `MOMO_CALLBACK_URL` | Optional production callback base, e.g. `https://your-host/api/momo/callback`. **Leave unset in sandbox.** Sandbox rejects the header when the URL host does not match the host used at API-user provision (common cause of `request_not_accepted` / `INVALID_CALLBACK_URL_HOST`). We poll status instead. |
 | `MOMO_SANDBOX_PAYEE_MSISDN` | Use `46733123450` for successful sandbox disbursements |
 
 ### Email (optional)
@@ -120,6 +120,12 @@ You do **not** create a second developer portal account to get test funds.
 3. Set `MOMO_API_USER` and `MOMO_API_KEY`.
 4. Set `MOMO_SANDBOX_PAYEE_MSISDN=46733123450`.
 5. Restart / redeploy. Check **Admin → Treasury**. MTN disbursement balance should be non-zero (EUR).
+
+### Callback URL (common failure)
+
+If `MOMO_CALLBACK_URL` points at Vercel (e.g. `https://nikopay-mvp.vercel.app/...`) but the sandbox API user was created with another host (e.g. `nikopay.local`), MTN rejects the transfer. Status shows MoMo **Failed** with `request_not_accepted` (or `INVALID_CALLBACK_URL_HOST`).
+
+**Fix for sandbox:** remove `MOMO_CALLBACK_URL` from env (local + Vercel), redeploy. The app skips the callback header in sandbox and polls transfer status.
 
 ### When treasury shows 0 EUR
 

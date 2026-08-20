@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { formatProviderReason } from "@/lib/momo/client";
+import {
+  callbackHostFromUrl,
+  formatProviderReason,
+} from "@/lib/momo/client";
 
 describe("formatProviderReason", () => {
   it("prefers reason code and optional message", () => {
@@ -24,5 +27,18 @@ describe("formatProviderReason", () => {
   it("returns null when empty", () => {
     expect(formatProviderReason({})).toBeNull();
     expect(formatProviderReason(null)).toBeNull();
+  });
+});
+
+describe("callbackHostFromUrl", () => {
+  it("extracts hostname", () => {
+    expect(
+      callbackHostFromUrl("https://nikopay-mvp.vercel.app/api/momo/callback"),
+    ).toBe("nikopay-mvp.vercel.app");
+  });
+
+  it("returns null for empty or invalid", () => {
+    expect(callbackHostFromUrl("")).toBeNull();
+    expect(callbackHostFromUrl("not-a-url")).toBeNull();
   });
 });

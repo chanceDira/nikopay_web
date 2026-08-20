@@ -1,6 +1,9 @@
 import { jsonData, jsonError } from "@/lib/http";
 import { authorizeIngest } from "@/lib/ingest-auth";
-import { provisionSandboxApiUser } from "@/lib/momo/client";
+import {
+  callbackHostFromUrl,
+  provisionSandboxApiUser,
+} from "@/lib/momo/client";
 
 export async function POST(request: Request) {
   const auth = authorizeIngest(request);
@@ -14,12 +17,17 @@ export async function POST(request: Request) {
     return jsonError("provision is sandbox only", 409);
   }
 
+  const callbackHost =
+    callbackHostFromUrl(process.env.MOMO_CALLBACK_URL) ||
+    callbackHostFromUrl(process.env.NEXT_PUBLIC_SITE_URL) ||
+    "nikopay.local";
+
   const result = await provisionSandboxApiUser({
-    callbackHost: "nikopay.local",
+    callbackHost,
   });
   if (!result.ok) {
     return jsonError(result.reason, 503);
   }
 
-  return jsonData(result);
+  return jsonData({ ...result, callbackHost });
 }

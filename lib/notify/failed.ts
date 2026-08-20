@@ -4,11 +4,6 @@ import { toNumber } from "@/lib/numbers";
 import { isChainId } from "@/lib/settlement/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/**
- * Email only when MTN confirmed FAILED/TIMEOUT via status/callback settle.
- * Does not send for local request failures (uncertain whether MTN accepted).
- * Does not log the email address.
- */
 export async function notifyIntentFailed(intentId: string): Promise<void> {
   const supabase = createAdminClient();
   const loaded = await supabase
@@ -48,8 +43,7 @@ export async function notifyIntentFailed(intentId: string): Promise<void> {
     return;
   }
 
-  // Local submit failures store this marker and must not email.
-  if (transfer.data.provider_reason === "request_not_accepted") {
+  if (isUnconfirmedSubmitFailure(transfer.data.provider_reason)) {
     return;
   }
 
@@ -89,4 +83,16 @@ export async function notifyIntentFailed(intentId: string): Promise<void> {
     .eq("id", intentId)
     .eq("status", "manual_review")
     .is("failed_notified_at", null);
+}
+
+function isUnconfirmedSubmitFailure(reason: string | null): boolean {
+  if (!reason) {
+    return false;
+  }
+  return (
+    reason === "request_not_accepted" ||
+    reason.startsWith("momo transfer request failed") ||
+    reason.startsWith("momo token request failed") ||
+    reason.includes("INVALID_CALLBACK_URL_HOST")
+  );
 }

@@ -176,7 +176,7 @@ async function payoutOne(
       );
     }
   } else {
-    await markTransferFailed(transfer.row.reference_id);
+    await markTransferFailed(transfer.row.reference_id, retried.reason);
     await moveIntentToManualReview(intentId);
   }
 
@@ -279,7 +279,7 @@ async function startPayout(
   });
 
   if (!requested.ok && !requested.conflict) {
-    await markTransferFailed(referenceId);
+    await markTransferFailed(referenceId, requested.reason);
     await moveIntentToManualReview(intent.id);
     return { ok: true };
   }
@@ -408,7 +408,10 @@ function nextIntentStatus(
   return null;
 }
 
-async function markTransferFailed(referenceId: string): Promise<void> {
+async function markTransferFailed(
+  referenceId: string,
+  reason = "request_not_accepted",
+): Promise<void> {
   const supabase = createAdminClient();
   await supabase
     .from("momo_transfers")
@@ -416,7 +419,7 @@ async function markTransferFailed(referenceId: string): Promise<void> {
       status: "failed",
       // Local submit failure only. Do not email: MTN may have accepted
       // the transfer even if our HTTP response was lost.
-      provider_reason: "request_not_accepted",
+      provider_reason: reason.slice(0, 240),
     })
     .eq("reference_id", referenceId)
     .eq("status", "pending");
