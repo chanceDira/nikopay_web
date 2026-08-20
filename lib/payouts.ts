@@ -165,6 +165,9 @@ async function payoutOne(
         again.lookup.financialTransactionId,
       );
     }
+  } else {
+    await markTransferFailed(transfer.row.reference_id);
+    await moveIntentToManualReview(intentId);
   }
 
   const current = await getPaymentIntent(intentId);
@@ -266,6 +269,8 @@ async function startPayout(
   });
 
   if (!requested.ok && !requested.conflict) {
+    await markTransferFailed(referenceId);
+    await moveIntentToManualReview(intent.id);
     return { ok: true };
   }
 
@@ -371,6 +376,29 @@ function nextIntentStatus(
     return "manual_review";
   }
   return null;
+}
+
+async function markTransferFailed(referenceId: string): Promise<void> {
+  const supabase = createAdminClient();
+  await supabase
+    .from("momo_transfers")
+    .update({ status: "failed" })
+    .eq("reference_id", referenceId)
+    .eq("status", "pending");
+}
+
+async function moveIntentToManualReview(intentId: string): Promise<void> {
+  const allowed = transitionStatus("payout_pending", "manual_review");
+  if (!allowed.ok) {
+    return;
+  }
+
+  const supabase = createAdminClient();
+  await supabase
+    .from("payment_intents")
+    .update({ status: "manual_review" })
+    .eq("id", intentId)
+    .eq("status", "payout_pending");
 }
 
 export function parsePayoutIntentId(

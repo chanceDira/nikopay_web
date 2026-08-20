@@ -8,6 +8,7 @@ import type { PaymentIntent } from "@/lib/settlement/types";
 
 const POLL_MS = 1500;
 const SYNC_MS = 8000;
+const SYNC_MS_PAYOUT = 3000;
 
 type Snapshot = {
   id: string | undefined;
@@ -33,6 +34,17 @@ export function useIntentView(id: string | undefined, poll = false) {
     let interval: number | undefined;
     let syncInterval: number | undefined;
 
+    const clearTimers = () => {
+      if (interval) {
+        window.clearInterval(interval);
+        interval = undefined;
+      }
+      if (syncInterval) {
+        window.clearInterval(syncInterval);
+        syncInterval = undefined;
+      }
+    };
+
     const load = async () => {
       const result = await fetchLiveIntent(id, controller.signal);
       if (cancelled || isAborted(result)) {
@@ -50,6 +62,18 @@ export function useIntentView(id: string | undefined, poll = false) {
       return undefined;
     };
 
+    const syncMsFor = (status: PaymentIntent["status"] | undefined) =>
+      status === "credited" || status === "payout_pending"
+        ? SYNC_MS_PAYOUT
+        : SYNC_MS;
+
+    const armSync = (status: PaymentIntent["status"] | undefined) => {
+      if (syncInterval) {
+        window.clearInterval(syncInterval);
+      }
+      syncInterval = window.setInterval(syncOnce, syncMsFor(status));
+    };
+
     const syncOnce = () => {
       void syncLiveIntent(id, controller.signal).then((synced) => {
         if (cancelled || isAborted(synced) || !synced.ok) {
@@ -57,13 +81,10 @@ export function useIntentView(id: string | undefined, poll = false) {
         }
         setSnapshot({ id, intent: synced.data, ready: true });
         if (isTerminalStatus(synced.data.status)) {
-          if (interval) {
-            window.clearInterval(interval);
-          }
-          if (syncInterval) {
-            window.clearInterval(syncInterval);
-          }
+          clearTimers();
+          return;
         }
+        armSync(synced.data.status);
       });
     };
 
@@ -74,23 +95,18 @@ export function useIntentView(id: string | undefined, poll = false) {
       syncOnce();
       interval = window.setInterval(() => {
         void load().then((next) => {
-          if (next && isTerminalStatus(next.status) && interval) {
-            window.clearInterval(interval);
+          if (next && isTerminalStatus(next.status)) {
+            clearTimers();
           }
         });
       }, POLL_MS);
-      syncInterval = window.setInterval(syncOnce, SYNC_MS);
+      armSync(data?.status);
     });
 
     return () => {
       cancelled = true;
       controller.abort();
-      if (interval) {
-        window.clearInterval(interval);
-      }
-      if (syncInterval) {
-        window.clearInterval(syncInterval);
-      }
+      clearTimers();
     };
   }, [id, poll]);
 

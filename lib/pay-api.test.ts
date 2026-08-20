@@ -81,6 +81,19 @@ describe("payload guards", () => {
     delete copy.treasuryAddress;
     expect(isPaymentIntentPayload(copy)).toBe(false);
   });
+
+  it("accepts a payment intent with momo payout status", () => {
+    expect(
+      isPaymentIntentPayload({
+        ...intent,
+        payout: {
+          status: "pending",
+          referenceId: "11111111-1111-4111-8111-111111111111",
+          updatedAt: "2026-08-18T11:46:00.000Z",
+        },
+      }),
+    ).toBe(true);
+  });
 });
 
 describe("isAborted", () => {

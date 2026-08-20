@@ -61,7 +61,7 @@ export function isPaymentIntentPayload(value: unknown): value is PaymentIntent {
   }
 
   const intent = value as Record<string, unknown>;
-  return (
+  const baseOk =
     typeof intent.id === "string" &&
     isPaymentStatus(intent.status) &&
     isChainId(intent.chain) &&
@@ -80,7 +80,34 @@ export function isPaymentIntentPayload(value: unknown): value is PaymentIntent {
     typeof intent.treasuryAddress === "string" &&
     typeof intent.expiresAt === "string" &&
     typeof intent.createdAt === "string" &&
-    typeof intent.updatedAt === "string"
+    typeof intent.updatedAt === "string";
+
+  if (!baseOk) {
+    return false;
+  }
+
+  if (intent.payout === undefined) {
+    return true;
+  }
+
+  return isIntentPayoutPayload(intent.payout);
+}
+
+function isIntentPayoutPayload(value: unknown): boolean {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const payout = value as Record<string, unknown>;
+  const statusOk =
+    payout.status === "pending" ||
+    payout.status === "successful" ||
+    payout.status === "failed" ||
+    payout.status === "timeout";
+  return (
+    statusOk &&
+    typeof payout.referenceId === "string" &&
+    typeof payout.updatedAt === "string" &&
+    (payout.providerRef === undefined || typeof payout.providerRef === "string")
   );
 }
 

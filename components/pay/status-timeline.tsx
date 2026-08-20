@@ -2,6 +2,7 @@
 
 import { formatRwf, formatUsdt } from "@/lib/rates";
 import { useIntentView } from "@/components/pay/use-intent-view";
+import type { IntentPayout } from "@/lib/settlement/types";
 import Link from "next/link";
 
 type StatusTimelineProps = {
@@ -193,13 +194,17 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
     if (status === "payout_pending") {
       return {
         title: "Processing MoMo Payout",
-        desc: "The RWF payout has been submitted to the MTN Mobile Money network. Payout should complete momentarily.",
+        desc: intent.payout
+          ? `MTN status: ${momoStatusLabel(intent.payout.status)}. Sandbox does not send SMS; watch this page until it shows completed.`
+          : "The RWF payout has been submitted to MTN Mobile Money. Sandbox does not send SMS; this page updates when MTN confirms.",
       };
     }
     if (status === "paid") {
       return {
         title: "Payout Completed Successfully",
-        desc: `RWF transfer has settled. The recipient received funds on their MTN Mobile Money account.`,
+        desc: intent.payout?.providerRef
+          ? `MTN confirmed the payout (ref ${intent.payout.providerRef}). Funds reached the Mobile Money wallet.`
+          : "RWF transfer has settled. The recipient received funds on their MTN Mobile Money account.",
       };
     }
     if (status === "failed") {
@@ -401,6 +406,40 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
         </div>
       </div>
 
+      {intent.payout && (
+        <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">
+              MoMo payout status
+            </h3>
+            <span
+              className={`rounded-md px-2.5 py-1 text-xs font-bold ${momoStatusStyles(intent.payout.status)}`}
+            >
+              {momoStatusLabel(intent.payout.status)}
+            </span>
+          </div>
+          <p className="text-xs text-niko-muted leading-relaxed">
+            {momoStatusHint(intent.payout.status)}
+          </p>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+            <div>
+              <dt className="text-niko-muted mb-1 font-sans">MoMo reference</dt>
+              <dd className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+                {intent.payout.referenceId}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-niko-muted mb-1 font-sans">
+                Provider financial id
+              </dt>
+              <dd className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+                {intent.payout.providerRef ?? "Waiting for MTN confirmation"}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-4">
           <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">
@@ -502,4 +541,48 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
       </div>
     </div>
   );
+}
+
+function momoStatusLabel(status: IntentPayout["status"]) {
+  switch (status) {
+    case "successful":
+      return "Reached user";
+    case "pending":
+      return "Pending at MTN";
+    case "failed":
+      return "Failed";
+    case "timeout":
+      return "Timed out";
+    default:
+      return status;
+  }
+}
+
+function momoStatusStyles(status: IntentPayout["status"]) {
+  switch (status) {
+    case "successful":
+      return "bg-niko-teal/15 text-niko-teal border border-niko-teal/30";
+    case "pending":
+      return "bg-niko-surface text-foreground border border-niko-border";
+    case "failed":
+    case "timeout":
+      return "bg-red-500/10 text-red-400 border border-red-500/30";
+    default:
+      return "bg-niko-surface text-foreground border border-niko-border";
+  }
+}
+
+function momoStatusHint(status: IntentPayout["status"]) {
+  switch (status) {
+    case "successful":
+      return "MTN confirmed the disbursement. This is the signal that funds were sent to the payee wallet.";
+    case "pending":
+      return "Submitted to MTN. In sandbox there is no SMS. We poll until MTN returns successful or failed.";
+    case "failed":
+      return "MTN rejected or could not complete the disbursement. Ops can retry from admin review.";
+    case "timeout":
+      return "MTN did not confirm in time. Ops can retry from admin review.";
+    default:
+      return "";
+  }
 }

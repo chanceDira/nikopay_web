@@ -1,15 +1,23 @@
 import { normalizeMsisdn, normalizeWalletAddress } from "@/lib/identity";
+import { isMomoPayoutStatus } from "@/lib/admin-payouts";
 import { toNumber } from "@/lib/numbers";
 import { createServerQuote } from "@/lib/quotes";
 import { isPaymentStatus } from "@/lib/settlement/intent-status";
-import { isChainId, type PaymentIntent } from "@/lib/settlement/types";
+import {
+  isChainId,
+  type IntentPayout,
+  type PaymentIntent,
+} from "@/lib/settlement/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { PaymentIntentRow } from "@/lib/supabase/types";
 import { loadActiveTreasury } from "@/lib/treasury";
 
 const LIST_LIMIT = 50;
 
-export function toPaymentIntent(row: PaymentIntentRow): PaymentIntent | null {
+export function toPaymentIntent(
+  row: PaymentIntentRow,
+  payout?: IntentPayout,
+): PaymentIntent | null {
   if (!isChainId(row.chain_id) || !isPaymentStatus(row.status)) {
     return null;
   }
@@ -31,6 +39,7 @@ export function toPaymentIntent(row: PaymentIntentRow): PaymentIntent | null {
     updatedAt: row.updated_at,
     depositTx: row.deposit_tx ?? undefined,
     momoRef: row.momo_ref ?? undefined,
+    payout,
   };
 }
 
@@ -128,7 +137,30 @@ export async function getPaymentIntent(
     return { ok: false, reason: "unable to load payment intent", status: 503 };
   }
 
-  return { ok: true, intent };
+  const payout = await loadIntentPayout(id);
+  return { ok: true, intent: { ...intent, payout } };
+}
+
+async function loadIntentPayout(intentId: string): Promise<IntentPayout | undefined> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("momo_transfers")
+    .select("status, reference_id, provider_ref, updated_at")
+    .eq("intent_id", intentId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data || !isMomoPayoutStatus(data.status)) {
+    return undefined;
+  }
+
+  return {
+    status: data.status,
+    referenceId: data.reference_id,
+    providerRef: data.provider_ref ?? undefined,
+    updatedAt: data.updated_at,
+  };
 }
 
 export async function listPaymentIntents(
