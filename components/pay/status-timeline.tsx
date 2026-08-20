@@ -512,6 +512,17 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
               </p>
             </div>
 
+            {intent.notifyEmail && (
+              <div>
+                <p className="text-niko-muted mb-1 font-sans">
+                  Payout confirmation email
+                </p>
+                <p className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+                  {intent.notifyEmail}
+                </p>
+              </div>
+            )}
+
             {intent.depositTx && (
               <div>
                 <p className="text-niko-muted mb-1 font-sans">

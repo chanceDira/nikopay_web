@@ -22,7 +22,7 @@ export function clearConnectedWallet(): void {
 }
 
 export function readStoredWalletAddress(): string {
-  return readLocal(WALLET_ADDRESS_KEY, "");
+  return readLocal(WALLET_ADDRESS_KEY, "").toLowerCase();
 }
 
 export function readStoredWalletName(): string {
@@ -31,6 +31,16 @@ export function readStoredWalletName(): string {
 
 export function isWalletConnected(): boolean {
   return isStoredTrue(WALLET_CONNECTED_KEY) && Boolean(readStoredWalletAddress());
+}
+
+export function sameWalletAddress(
+  left: string | null | undefined,
+  right: string | null | undefined,
+): boolean {
+  if (!left || !right) {
+    return false;
+  }
+  return left.trim().toLowerCase() === right.trim().toLowerCase();
 }
 
 export function shortAddress(address: string): string {

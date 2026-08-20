@@ -2,6 +2,7 @@ const ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
 const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
 const MSISDN_DIGITS = /^[0-9]{10,15}$/;
 const RWANDA_MSISDN = /^250[7-9][0-9]{8}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -78,4 +79,28 @@ export function normalizeMsisdn(
     ok: false,
     reason: "msisdn must be a valid mobile number (10-15 digits)",
   };
+}
+
+/** Optional email for notifications. Empty/undefined → null (skip notify). */
+export function normalizeOptionalEmail(
+  value: unknown,
+): { ok: true; email: string | null } | { ok: false; reason: string } {
+  if (value === undefined || value === null || value === "") {
+    return { ok: true, email: null };
+  }
+
+  if (typeof value !== "string") {
+    return { ok: false, reason: "please provide a valid email address" };
+  }
+
+  const email = value.trim().toLowerCase();
+  if (!email) {
+    return { ok: true, email: null };
+  }
+
+  if (!EMAIL_REGEX.test(email) || email.length > 254) {
+    return { ok: false, reason: "please provide a valid email address" };
+  }
+
+  return { ok: true, email };
 }

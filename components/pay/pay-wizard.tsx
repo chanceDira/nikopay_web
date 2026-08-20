@@ -1,23 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useLiveQuote } from "@/components/pay/use-live-quote";
+import { useWalletSession } from "@/components/pay/use-wallet-session";
 import { getPublicChain } from "@/lib/chain-config";
-import { normalizeMsisdn } from "@/lib/identity";
+import { normalizeMsisdn, normalizeOptionalEmail } from "@/lib/identity";
 import { createLiveIntent, reportIntentDepositWhenReady } from "@/lib/pay-api";
-import { isStoredTrue, readLocal } from "@/lib/read-local";
+import { readLocal } from "@/lib/read-local";
 import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
 import { formatRwf, formatUsdt } from "@/lib/rates";
 import type { WalletKind } from "@/lib/wallet/browser";
 import { connectInjectedWallet, consentAndTransferUsdt } from "@/lib/wallet/offramp";
-import {
-  persistConnectedWallet,
-  readStoredWalletAddress,
-  readStoredWalletName,
-  shortAddress,
-} from "@/lib/wallet-session";
+import { sameWalletAddress, shortAddress } from "@/lib/wallet-session";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -46,12 +42,23 @@ function asWalletKind(name: string): WalletKind {
 
 export function PayWizard() {
   const router = useRouter();
+  const {
+    walletConnected,
+    walletAddress,
+    walletName,
+    accountEpoch,
+    connect,
+    disconnect,
+    syncFromProvider,
+  } = useWalletSession();
 
   const [step, setStep] = useState<Step>(1);
   const [chain, setChain] = useState<ChainId>("base");
   const [amount, setAmount] = useState<string>("");
   const [msisdn, setMsisdn] = useState<string>("");
   const [formattedMsisdn, setFormattedMsisdn] = useState<string>("");
+  const [notifyEmail, setNotifyEmail] = useState<string>("");
+  const [emailError, setEmailError] = useState<string>("");
   const [rate] = useState(() =>
     parseFloat(readLocal("nikopay_fx_rate", "1350")),
   );
@@ -66,15 +73,6 @@ export function PayWizard() {
     error: quoteError,
   } = useLiveQuote(rwfPayout, chain);
 
-  const [walletConnected, setWalletConnected] = useState(() =>
-    isStoredTrue("nikopay_wallet_connected"),
-  );
-  const [walletAddress, setWalletAddress] = useState(() =>
-    readStoredWalletAddress(),
-  );
-  const [walletName, setWalletName] = useState(() =>
-    readStoredWalletName(),
-  );
   const [connecting, setConnecting] = useState<boolean>(false);
   const [showWalletModal, setShowWalletModal] = useState<boolean>(false);
   const [modalState, setModalState] = useState<
@@ -96,6 +94,18 @@ export function PayWizard() {
   const [gateError, setGateError] = useState("");
   const [payError, setPayError] = useState("");
 
+  useEffect(() => {
+    if (accountEpoch === 0) {
+      return;
+    }
+    setLiveIntent(null);
+    setShowWalletModal(false);
+    setPayError("");
+    setIntentError(
+      "Wallet account changed. Confirm again to create a payment for this wallet.",
+    );
+  }, [accountEpoch]);
+
   const handleGateWalletConnect = async (kind: WalletKind) => {
     setGateSelectedWallet(kind);
     setGateError("");
@@ -108,10 +118,8 @@ export function PayWizard() {
       return;
     }
 
-    persistConnectedWallet(result.address, result.walletName);
-    setWalletConnected(true);
-    setWalletName(result.walletName);
-    setWalletAddress(result.address);
+    connect(result.address, result.walletName);
+    setLiveIntent(null);
     setGateWalletState("success");
     setShowConnectGateModal(false);
     setStep(2);
@@ -158,6 +166,16 @@ export function PayWizard() {
     return true;
   };
 
+  const validateEmail = () => {
+    const parsed = normalizeOptionalEmail(notifyEmail);
+    if (!parsed.ok) {
+      setEmailError(parsed.reason);
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
+
   const handleMsisdnChange = (value: string) => {
     setMsisdn(value);
     const parsed = normalizeMsisdn(value);
@@ -192,7 +210,7 @@ export function PayWizard() {
       }
       setStep(2);
     } else if (step === 2) {
-      if (validateMsisdn()) {
+      if (validateMsisdn() && validateEmail()) {
         setLiveIntent(null);
         setIntentError("");
         setStep(3);
@@ -218,22 +236,31 @@ export function PayWizard() {
       return;
     }
 
-    persistConnectedWallet(result.address, result.walletName);
-    setWalletConnected(true);
-    setWalletAddress(result.address);
-    setWalletName(result.walletName);
+    connect(result.address, result.walletName);
+    setLiveIntent(null);
   };
 
-  const intentMatchesQuote = (intent: PaymentIntent) => {
+  const handleDisconnectWallet = () => {
+    disconnect();
+    setLiveIntent(null);
+    setShowWalletModal(false);
+    setIntentError("");
+    setPayError("");
+  };
+
+  const intentMatchesQuote = (intent: PaymentIntent, active: string) => {
     const parsedMsisdn = normalizeMsisdn(msisdn);
-    if (!quote || !parsedMsisdn.ok) {
+    const parsedEmail = normalizeOptionalEmail(notifyEmail);
+    if (!quote || !parsedMsisdn.ok || !parsedEmail.ok) {
       return false;
     }
+    const intentEmail = intent.notifyEmail ?? null;
     return (
       intent.usdtAmount === quote.usdtAmount &&
       intent.chain === chain &&
-      intent.walletAddress === walletAddress.toLowerCase() &&
-      intent.msisdn === parsedMsisdn.msisdn
+      sameWalletAddress(intent.walletAddress, active) &&
+      intent.msisdn === parsedMsisdn.msisdn &&
+      intentEmail === parsedEmail.email
     );
   };
 
@@ -259,7 +286,19 @@ export function PayWizard() {
       return;
     }
 
-    if (liveIntent && intentMatchesQuote(liveIntent)) {
+    const parsedEmail = normalizeOptionalEmail(notifyEmail);
+    if (!parsedEmail.ok) {
+      setIntentError(parsedEmail.reason);
+      return;
+    }
+
+    const activeAddress = await syncFromProvider();
+    if (!activeAddress) {
+      setIntentError("Wallet disconnected. Connect again to continue.");
+      return;
+    }
+
+    if (liveIntent && intentMatchesQuote(liveIntent, activeAddress)) {
       setShowWalletModal(true);
       setModalState("confirm");
       return;
@@ -270,7 +309,8 @@ export function PayWizard() {
       usdtAmount: quote.usdtAmount,
       chain,
       msisdn: parsedMsisdn.msisdn,
-      walletAddress,
+      walletAddress: activeAddress,
+      notifyEmail: parsedEmail.email ?? undefined,
     });
     setCreatingIntent(false);
 
@@ -294,12 +334,28 @@ export function PayWizard() {
     setPayError("");
     setModalState("submitting");
 
+    const activeAddress = await syncFromProvider();
+    if (!sameWalletAddress(activeAddress, liveIntent.walletAddress)) {
+      setLiveIntent(null);
+      setPayError(
+        "Active wallet account changed. Confirm again to create a payment for this wallet.",
+      );
+      setModalState("confirm");
+      setShowWalletModal(false);
+      return;
+    }
+
     const result = await consentAndTransferUsdt({
       intent: liveIntent,
       walletName: asWalletKind(walletName),
     });
 
     if (!result.ok) {
+      if (result.reason.includes("account changed")) {
+        setLiveIntent(null);
+        setShowWalletModal(false);
+        setIntentError(result.reason);
+      }
       setPayError(result.reason);
       setModalState("confirm");
       return;
@@ -564,6 +620,38 @@ export function PayWizard() {
             )}
           </div>
 
+          <div>
+            <label
+              htmlFor="notify-email-input"
+              className="text-sm font-medium text-foreground"
+            >
+              Email for payout confirmation{" "}
+              <span className="text-niko-muted font-normal">(optional)</span>
+            </label>
+            <p className="text-xs text-niko-muted mt-1">
+              We email you immediately when MTN confirms the MoMo payout. No
+              account required.
+            </p>
+            <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
+              <input
+                id="notify-email-input"
+                type="email"
+                autoComplete="email"
+                value={notifyEmail}
+                onChange={(e) => {
+                  setNotifyEmail(e.target.value);
+                  if (emailError) setEmailError("");
+                }}
+                onBlur={validateEmail}
+                className="w-full bg-transparent text-base font-medium text-foreground outline-none placeholder:text-niko-muted/40"
+                placeholder="you@example.com"
+              />
+            </div>
+            {emailError && (
+              <p className="mt-2 text-xs text-red-400">{emailError}</p>
+            )}
+          </div>
+
           <div className="p-4 rounded-md border border-[var(--niko-warning-border)] bg-[var(--niko-warning-bg)] text-xs text-[var(--niko-warning-text)] leading-relaxed flex gap-3">
             <svg
               className="h-5 w-5 shrink-0 text-[var(--niko-warning-text)]"
@@ -625,13 +713,26 @@ export function PayWizard() {
               <h3 className="text-sm font-semibold text-niko-teal uppercase tracking-wider">
                 Transaction Details
               </h3>
-              <div className="flex items-center gap-1.5">
-                <div
-                  className={`h-2 w-2 rounded-full ${walletConnected ? "bg-niko-teal animate-pulse-glow" : "bg-red-500 animate-pulse"}`}
-                />
-                <span className="text-xs text-niko-muted font-medium">
-                  {walletConnected ? "Wallet Connected" : "Wallet Disconnected"}
-                </span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className={`h-2 w-2 rounded-full ${walletConnected ? "bg-niko-teal animate-pulse-glow" : "bg-red-500 animate-pulse"}`}
+                  />
+                  <span className="text-xs text-niko-muted font-medium">
+                    {walletConnected
+                      ? "Wallet Connected"
+                      : "Wallet Disconnected"}
+                  </span>
+                </div>
+                {walletConnected && (
+                  <button
+                    type="button"
+                    onClick={handleDisconnectWallet}
+                    className="text-xs font-semibold text-niko-muted hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    Disconnect
+                  </button>
+                )}
               </div>
             </div>
 
@@ -678,6 +779,15 @@ export function PayWizard() {
               <div className="font-mono font-bold text-right text-foreground">
                 {formattedMsisdn}
               </div>
+
+              {notifyEmail.trim() && (
+                <>
+                  <div className="text-niko-muted">Payout email</div>
+                  <div className="font-semibold text-right text-foreground break-all">
+                    {notifyEmail.trim()}
+                  </div>
+                </>
+              )}
 
               {treasuryAddress && (
                 <>

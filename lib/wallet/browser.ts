@@ -11,6 +11,11 @@ export type EthereumProvider = {
     method: string;
     params?: unknown;
   }) => Promise<unknown>;
+  on?: (event: string, handler: (...args: unknown[]) => void) => void;
+  removeListener?: (
+    event: string,
+    handler: (...args: unknown[]) => void,
+  ) => void;
 };
 
 export type WalletKind = "MetaMask" | "Coinbase Wallet" | "WalletConnect";
@@ -102,6 +107,24 @@ export async function requestAccounts(
     const result = await provider.request({ method: "eth_requestAccounts" });
     if (!Array.isArray(result) || typeof result[0] !== "string") {
       return { ok: false, reason: "wallet did not return an address" };
+    }
+    return { ok: true, address: result[0].toLowerCase() };
+  } catch (err) {
+    return { ok: false, reason: walletErrorMessage(err) };
+  }
+}
+
+/** Silent account read (no permission popup). Empty when locked/disconnected. */
+export async function getAccounts(
+  provider: EthereumProvider,
+): Promise<{ ok: true; address: string | null } | { ok: false; reason: string }> {
+  try {
+    const result = await provider.request({ method: "eth_accounts" });
+    if (!Array.isArray(result)) {
+      return { ok: false, reason: "wallet did not return accounts" };
+    }
+    if (typeof result[0] !== "string" || !result[0]) {
+      return { ok: true, address: null };
     }
     return { ok: true, address: result[0].toLowerCase() };
   } catch (err) {

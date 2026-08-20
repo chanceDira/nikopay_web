@@ -1,4 +1,8 @@
-import { normalizeMsisdn, normalizeWalletAddress } from "@/lib/identity";
+import {
+  normalizeMsisdn,
+  normalizeOptionalEmail,
+  normalizeWalletAddress,
+} from "@/lib/identity";
 import { isMomoPayoutStatus } from "@/lib/admin-payouts";
 import { toNumber } from "@/lib/numbers";
 import { createServerQuote } from "@/lib/quotes";
@@ -39,6 +43,7 @@ export function toPaymentIntent(
     updatedAt: row.updated_at,
     depositTx: row.deposit_tx ?? undefined,
     momoRef: row.momo_ref ?? undefined,
+    notifyEmail: row.notify_email ?? undefined,
     payout,
   };
 }
@@ -48,6 +53,7 @@ export async function createPaymentIntent(input: {
   chain: unknown;
   msisdn: unknown;
   walletAddress: unknown;
+  notifyEmail?: unknown;
 }): Promise<
   | { ok: true; intent: PaymentIntent }
   | { ok: false; reason: string; status: number }
@@ -60,6 +66,11 @@ export async function createPaymentIntent(input: {
   const msisdn = normalizeMsisdn(input.msisdn);
   if (!msisdn.ok) {
     return { ok: false, reason: msisdn.reason, status: 400 };
+  }
+
+  const notifyEmail = normalizeOptionalEmail(input.notifyEmail);
+  if (!notifyEmail.ok) {
+    return { ok: false, reason: notifyEmail.reason, status: 400 };
   }
 
   const quoted = await createServerQuote(input.usdtAmount, input.chain);
@@ -87,6 +98,7 @@ export async function createPaymentIntent(input: {
       net_rwf: quoted.quote.netRwf,
       treasury_address: treasury.address,
       expires_at: quoted.quote.expiresAt,
+      notify_email: notifyEmail.email,
     })
     .select()
     .single();

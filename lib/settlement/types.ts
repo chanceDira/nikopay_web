@@ -62,12 +62,13 @@ export type PaymentIntent = {
   updatedAt: string;
   depositTx?: string;
   momoRef?: string;
+  notifyEmail?: string;
   payout?: IntentPayout;
 };
 
-// Returned by the public list endpoint: 
-// msisdn is omitted to avoid leaking PII
-export type PaymentIntentSummary = Omit<PaymentIntent, "msisdn">;
+// Returned by the public list endpoint:
+// msisdn and notifyEmail omitted to avoid leaking PII
+export type PaymentIntentSummary = Omit<PaymentIntent, "msisdn" | "notifyEmail">;
 
 export type TransitionActor = "system" | "admin";
 

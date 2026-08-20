@@ -181,6 +181,8 @@ export type Database = {
           expires_at: string;
           deposit_tx: string | null;
           momo_ref: string | null;
+          notify_email: string | null;
+          paid_notified_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -208,6 +210,8 @@ export type Database = {
           expires_at: string;
           deposit_tx?: string | null;
           momo_ref?: string | null;
+          notify_email?: string | null;
+          paid_notified_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -235,6 +239,8 @@ export type Database = {
           expires_at?: string;
           deposit_tx?: string | null;
           momo_ref?: string | null;
+          notify_email?: string | null;
+          paid_notified_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

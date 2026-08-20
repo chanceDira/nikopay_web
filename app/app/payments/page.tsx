@@ -6,25 +6,28 @@ import { fetchLiveIntentsByWallet, isAborted } from "@/lib/pay-api";
 import type { PaymentIntentSummary } from "@/lib/settlement/types";
 import { formatRwf, formatUsdt } from "@/lib/rates";
 import { PageHeader } from "@/components/shared/page-header";
-import { readStoredWalletAddress } from "@/lib/wallet-session";
+import { useWalletSession } from "@/components/pay/use-wallet-session";
 
 const HISTORY_POLL_MS = 2000;
 
 export default function PaymentsHistoryPage() {
+  const { walletAddress, hydrated } = useWalletSession();
   const [intents, setIntents] = useState<PaymentIntentSummary[]>([]);
-  const [loading, setLoading] = useState(() =>
-    Boolean(readStoredWalletAddress()),
-  );
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const wallet = readStoredWalletAddress();
-    if (!wallet) {
+    if (!hydrated) {
+      return;
+    }
+    if (!walletAddress) {
+      setIntents([]);
+      setLoading(false);
       return;
     }
 
     let cancelled = false;
     const loadLive = async () => {
-      const result = await fetchLiveIntentsByWallet(wallet);
+      const result = await fetchLiveIntentsByWallet(walletAddress);
       if (cancelled || isAborted(result)) {
         return;
       }
@@ -43,7 +46,7 @@ export default function PaymentsHistoryPage() {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, []);
+  }, [hydrated, walletAddress]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {

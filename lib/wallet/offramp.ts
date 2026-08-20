@@ -1,5 +1,6 @@
 import { getPublicChain } from "@/lib/chain-config";
 import type { PaymentIntent } from "@/lib/settlement/types";
+import { sameWalletAddress } from "@/lib/wallet-session";
 import {
   getInjectedProvider,
   requestAccounts,
@@ -99,10 +100,11 @@ export async function consentAndTransferUsdt(input: {
   if (!account.ok) {
     return account;
   }
-  if (account.address !== input.intent.walletAddress) {
+  if (!sameWalletAddress(account.address, input.intent.walletAddress)) {
     return {
       ok: false,
-      reason: "connected wallet does not match this payment",
+      reason:
+        "active wallet account changed. reconnect, then confirm again so the payment matches this wallet",
     };
   }
 

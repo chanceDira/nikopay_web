@@ -86,6 +86,13 @@ export function isPaymentIntentPayload(value: unknown): value is PaymentIntent {
     return false;
   }
 
+  if (
+    intent.notifyEmail !== undefined &&
+    typeof intent.notifyEmail !== "string"
+  ) {
+    return false;
+  }
+
   if (intent.payout === undefined) {
     return true;
   }
@@ -195,6 +202,7 @@ export async function createLiveIntent(input: {
   chain: Quote["chain"];
   msisdn: string;
   walletAddress: string;
+  notifyEmail?: string;
 }): Promise<ApiResult<PaymentIntent>> {
   return requestJson("/api/intents", isPaymentIntentPayload, {
     method: "POST",

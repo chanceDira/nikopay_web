@@ -9,6 +9,7 @@ import {
   payeeMsisdnForPayout,
   transferAmountForMomo,
 } from "@/lib/momo/status";
+import { notifyIntentPaid } from "@/lib/notify/paid";
 import { transitionStatus } from "@/lib/settlement/intent-status";
 import type { PaymentIntent } from "@/lib/settlement/types";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -347,6 +348,10 @@ async function settleReference(
         })
         .eq("id", data.intent_id)
         .eq("status", "payout_pending");
+
+      if (intentUpdate === "paid") {
+        await notifyIntentPaid(data.intent_id);
+      }
     }
   }
 

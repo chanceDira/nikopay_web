@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     chain: body.chain,
     msisdn: body.msisdn,
     walletAddress: body.walletAddress,
+    notifyEmail: body.notifyEmail,
   });
 
   if (!result.ok) {
@@ -47,7 +48,7 @@ export async function GET(request: Request) {
 
   const masked = result.intents.map((intent) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { msisdn, ...rest } = intent;
+    const { msisdn, notifyEmail, ...rest } = intent;
     return rest;
   });
 

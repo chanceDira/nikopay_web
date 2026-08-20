@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isUuid,
   normalizeMsisdn,
+  normalizeOptionalEmail,
   normalizeTxHash,
   normalizeWalletAddress,
 } from "@/lib/identity";
@@ -68,6 +69,27 @@ describe("normalizeMsisdn", () => {
 
   it("rejects too-short numbers", () => {
     expect(normalizeMsisdn("12345").ok).toBe(false);
+  });
+});
+
+describe("normalizeOptionalEmail", () => {
+  it("accepts empty as null", () => {
+    expect(normalizeOptionalEmail("")).toEqual({ ok: true, email: null });
+    expect(normalizeOptionalEmail(undefined)).toEqual({
+      ok: true,
+      email: null,
+    });
+  });
+
+  it("normalizes email", () => {
+    expect(normalizeOptionalEmail("  Ada@Niko.Pay ")).toEqual({
+      ok: true,
+      email: "ada@niko.pay",
+    });
+  });
+
+  it("rejects invalid email", () => {
+    expect(normalizeOptionalEmail("not-an-email").ok).toBe(false);
   });
 });
 
