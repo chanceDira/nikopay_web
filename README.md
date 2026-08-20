@@ -76,6 +76,7 @@ Payout emails use Google SMTP (app password, not account password).
 | `SMTP_USER` | Gmail address |
 | `SMTP_PASS` | App password |
 | `EMAIL_FROM` | e.g. `NikoPay <you@gmail.com>` |
+| `EMAIL_SITE_URL` | Optional. Public https origin used in email links. If unset, uses a non-localhost `NEXT_PUBLIC_SITE_URL`, then Vercel URL, then `https://nikopay-mvp.vercel.app` |
 
 If SMTP is unset, payouts still run. Emails are skipped.
 
