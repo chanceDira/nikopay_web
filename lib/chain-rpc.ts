@@ -47,7 +47,35 @@ export function rpcClientReason(input: {
     return "chain rpc rejected the log range";
   }
 
+  if (input.httpStatus && input.httpStatus > 0) {
+    return `chain rpc is unavailable (http ${input.httpStatus})`;
+  }
+
+  const detail = sanitizeRpcDetail(input.rpcMessage);
+  if (detail) {
+    return `chain rpc is unavailable (${detail})`;
+  }
+
   return "chain rpc is unavailable";
+}
+
+/** Keep operator-facing RPC text short and free of credentials. */
+function sanitizeRpcDetail(message: string | undefined): string | null {
+  if (!message?.trim()) {
+    return null;
+  }
+
+  const cleaned = message
+    .replace(/https?:\/\/[^\s]+/gi, "[url]")
+    .replace(/\b[0-9a-f]{8,}(?:-[0-9a-f]{4,})+\b/gi, "[id]")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!cleaned) {
+    return null;
+  }
+
+  return cleaned.length > 96 ? `${cleaned.slice(0, 93)}...` : cleaned;
 }
 
 export async function rpcCall<T>(
@@ -86,9 +114,22 @@ async function rpcCallOnce<T>(
   }
 
   if (!response.ok) {
+    let rpcMessage: string | undefined;
+    try {
+      const body = (await response.json()) as RpcResponse<unknown>;
+      rpcMessage =
+        typeof body.error?.message === "string"
+          ? body.error.message
+          : undefined;
+    } catch {
+      rpcMessage = undefined;
+    }
     return {
       ok: false,
-      reason: rpcClientReason({ httpStatus: response.status }),
+      reason: rpcClientReason({
+        httpStatus: response.status,
+        rpcMessage,
+      }),
     };
   }
 

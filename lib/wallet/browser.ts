@@ -79,6 +79,24 @@ export function getInjectedProvider(
   return { ok: false, reason: "metamask is not installed" };
 }
 
+/** All injected EIP-1193 providers (MetaMask, Coinbase, etc.). */
+export function listInjectedProviders(): EthereumProvider[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const injected = asProvider(window.ethereum);
+  if (!injected) {
+    return [];
+  }
+
+  if (Array.isArray(injected.providers) && injected.providers.length > 0) {
+    return injected.providers.filter((item) => asProvider(item) !== null);
+  }
+
+  return [injected];
+}
+
 export function walletErrorMessage(err: unknown): string {
   const rpc = asRpcError(err);
   if (rpc?.code === 4001) {

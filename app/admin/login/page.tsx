@@ -1,133 +1,16 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
-import type { WalletKind } from "@/lib/wallet/browser";
-import { proveTreasuryAdmin } from "@/lib/wallet/admin";
-
-type ConnectionState = "idle" | "connecting" | "success";
+import { Suspense } from "react";
+import { AdminLoginForm } from "@/components/admin/admin-login-form";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
-  const [walletState, setWalletState] = useState<ConnectionState>("idle");
-  const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
-  const [error, setError] = useState("");
-
-  const handleConnect = async (walletName: WalletKind) => {
-    setSelectedWallet(walletName);
-    setError("");
-    setWalletState("connecting");
-
-    const result = await proveTreasuryAdmin(walletName);
-    if (!result.ok) {
-      setWalletState("idle");
-      setError(result.reason);
-      return;
-    }
-
-    setWalletState("success");
-    router.push("/admin");
-  };
-
   return (
-    <main className="flex min-h-screen flex-col justify-center bg-background px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-15"
-        aria-hidden
-      >
-        <div className="absolute left-1/3 top-1/3 h-96 w-96 rounded-full bg-niko-blue/20 blur-3xl" />
-        <div className="absolute right-1/3 bottom-1/3 h-96 w-96 rounded-full bg-niko-teal/15 blur-3xl" />
-      </div>
-
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="flex justify-center mb-6">
-          <Link href="/">
-            <Image
-              src="/nikopay-logo.png"
-              alt="NikoPay Logo"
-              width={160}
-              height={45}
-              className="h-10 w-auto"
-              priority
-            />
-          </Link>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-niko-teal border-t-transparent" />
         </div>
-
-        <div className="mb-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-niko-teal/20 bg-niko-teal/5 px-3 py-1 text-center text-xs font-semibold text-niko-teal max-w-max mx-auto">
-          Restricted administration
-        </div>
-
-        <h2 className="text-center text-2xl font-bold tracking-tight text-foreground mt-2">
-          Ops console
-        </h2>
-        <p className="mt-2 text-center text-sm text-niko-muted">
-          Connect an active treasury wallet.
-        </p>
-      </div>
-
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="bg-niko-surface/60 border border-niko-border py-8 px-6 shadow-2xl rounded-2xl sm:px-10 backdrop-blur-sm">
-          {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">
-              {error}
-            </div>
-          )}
-
-          {walletState === "idle" && (
-            <div className="grid grid-cols-1 gap-3">
-              <button
-                type="button"
-                onClick={() => void handleConnect("MetaMask")}
-                className="flex w-full items-center justify-between rounded-md border border-niko-border bg-background px-4 py-3 text-sm font-sans text-foreground hover:border-niko-teal/40 hover:bg-niko-surface transition-all cursor-pointer"
-              >
-                <span className="flex items-center gap-3">
-                  <Image
-                    src="/logos/metamask-logo.png"
-                    alt="MetaMask"
-                    width={24}
-                    height={24}
-                    className="h-6 w-6 object-contain"
-                  />
-                  MetaMask
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => void handleConnect("Coinbase Wallet")}
-                className="flex w-full items-center justify-between rounded-md border border-niko-border bg-background px-4 py-3 text-sm font-sans text-foreground hover:border-niko-teal/40 hover:bg-niko-surface transition-all cursor-pointer"
-              >
-                <span className="flex items-center gap-3">
-                  <Image
-                    src="/logos/coinbase-logo.webp"
-                    alt="Coinbase"
-                    width={24}
-                    height={24}
-                    className="h-6 w-6 object-contain rounded-md"
-                  />
-                  Coinbase Wallet
-                </span>
-              </button>
-            </div>
-          )}
-
-          {walletState !== "idle" && (
-            <div className="flex flex-col items-center justify-center py-6 px-4 bg-background/50 rounded-md border border-niko-border/60">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-niko-teal border-t-transparent mb-3" />
-              <p className="text-sm text-foreground">
-                {walletState === "success"
-                  ? "Opening ops..."
-                  : `Confirm in ${selectedWallet}`}
-              </p>
-              <p className="text-xs text-niko-muted mt-1 text-center">
-                Approve the connection in your wallet.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </main>
+      }
+    >
+      <AdminLoginForm />
+    </Suspense>
   );
 }

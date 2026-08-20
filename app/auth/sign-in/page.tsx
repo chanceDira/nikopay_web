@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { WalletPicker } from "@/components/shared/wallet-picker";
 import type { WalletKind } from "@/lib/wallet/browser";
 import { connectInjectedWallet } from "@/lib/wallet/offramp";
 import { persistConnectedWallet } from "@/lib/wallet-session";
@@ -76,59 +77,9 @@ export default function SignInPage() {
             )}
 
             {walletState === "idle" && (
-              <div className="grid grid-cols-1 gap-3">
-                <button
-                  type="button"
-                  onClick={() => void handleWalletConnect("MetaMask")}
-                  className="flex w-full items-center justify-between rounded-md border border-niko-border bg-background px-4 py-3 text-sm font-sans text-foreground hover:border-niko-teal/40 hover:bg-niko-surface transition-all cursor-pointer"
-                >
-                  <span className="flex items-center gap-3">
-                    <Image
-                      src="/logos/metamask-logo.png"
-                      alt="MetaMask"
-                      width={24}
-                      height={24}
-                      className="h-6 w-6 object-contain"
-                    />
-                    MetaMask
-                  </span>
-                  <span className="text-xs text-niko-teal">Popular</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => void handleWalletConnect("Coinbase Wallet")}
-                  className="flex w-full items-center justify-between rounded-md border border-niko-border bg-background px-4 py-3 text-sm font-sans text-foreground hover:border-niko-teal/40 hover:bg-niko-surface transition-all cursor-pointer"
-                >
-                  <span className="flex items-center gap-3">
-                    <Image
-                      src="/logos/coinbase-logo.webp"
-                      alt="Coinbase"
-                      width={24}
-                      height={24}
-                      className="h-6 w-6 object-contain rounded-md"
-                    />
-                    Coinbase Wallet
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => void handleWalletConnect("WalletConnect")}
-                  className="flex w-full items-center justify-between rounded-md border border-niko-border bg-background px-4 py-3 text-sm font-sans text-foreground hover:border-niko-teal/40 hover:bg-niko-surface transition-all cursor-pointer"
-                >
-                  <span className="flex items-center gap-3">
-                    <Image
-                      src="/logos/walletconnect-logo.png"
-                      alt="WalletConnect"
-                      width={24}
-                      height={24}
-                      className="h-6 w-6 object-contain"
-                    />
-                    WalletConnect
-                  </span>
-                </button>
-              </div>
+              <WalletPicker
+                onSelect={(kind) => void handleWalletConnect(kind)}
+              />
             )}
 
             {walletState !== "idle" && (

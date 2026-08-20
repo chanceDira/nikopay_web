@@ -3,7 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { adminLoginPath, revokeAdminSession } from "@/lib/admin-access";
+import { clearAdminWalletKind } from "@/lib/admin-wallet-kind";
 import { readLocal } from "@/lib/read-local";
+import { disconnectWalletConnect } from "@/lib/wallet/walletconnect";
 
 const links = [
   { href: "/admin", label: "Overview" },
@@ -47,8 +50,34 @@ const MoonIcon = () => (
   </svg>
 );
 
+const SwitchWalletIcon = () => (
+  <svg
+    className="h-4.5 w-4.5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    aria-hidden
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-9L21 12m0 0L16.5 16.5M21 12H7.5"
+    />
+  </svg>
+);
+
 export function AdminNav() {
   const [theme, setTheme] = useState(() => readLocal("nikopay_theme", "dark"));
+
+  const endSession = (reason: "session_ended" | "wallet_changed") => {
+    clearAdminWalletKind();
+    void Promise.all([revokeAdminSession(), disconnectWalletConnect()]).finally(
+      () => {
+        window.location.href = adminLoginPath(reason);
+      },
+    );
+  };
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -135,19 +164,22 @@ export function AdminNav() {
 
             <button
               type="button"
-              onClick={() => {
-                void fetch("/api/admin/session", { method: "DELETE" }).finally(
-                  () => {
-                    window.location.href = "/admin/login";
-                  },
-                );
-              }}
+              onClick={() => endSession("wallet_changed")}
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-niko-border bg-background/50 text-niko-muted hover:border-niko-teal/40 hover:bg-niko-surface hover:text-niko-teal transition-all cursor-pointer outline-none"
+              title="Switch wallet"
+              aria-label="Switch wallet"
+            >
+              <SwitchWalletIcon />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => endSession("session_ended")}
               className="text-niko-muted font-sans text-xs transition-colors hover:text-niko-teal border border-niko-border hover:border-niko-teal/40 px-2.5 py-1 rounded bg-background/30 cursor-pointer font-bold outline-none"
             >
               Logout
             </button>
 
-            {/* Theme Toggle Button */}
             <button
               type="button"
               onClick={toggleTheme}

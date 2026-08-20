@@ -1,8 +1,8 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { AdminNav } from "@/components/shared/admin-nav";
+import { useAdminWalletGuard } from "@/components/admin/use-admin-wallet-guard";
+import { usePathname } from "next/navigation";
 
 export function AdminShell({
   children,
@@ -10,42 +10,8 @@ export function AdminShell({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const router = useRouter();
   const isLoginPage = pathname === "/admin/login";
-  const [ready, setReady] = useState(isLoginPage);
-  const [authed, setAuthed] = useState(false);
-
-  useEffect(() => {
-    if (isLoginPage) {
-      setReady(true);
-      setAuthed(false);
-      return;
-    }
-
-    let cancelled = false;
-    setReady(false);
-    setAuthed(false);
-
-    void fetch("/api/admin/session", { credentials: "same-origin" }).then(
-      async (res) => {
-        if (cancelled) {
-          return;
-        }
-        if (res.ok) {
-          setAuthed(true);
-          setReady(true);
-          return;
-        }
-        setAuthed(false);
-        setReady(true);
-        router.replace("/admin/login");
-      },
-    );
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoginPage, pathname, router]);
+  const { ready, authed } = useAdminWalletGuard(!isLoginPage);
 
   if (isLoginPage) {
     return <>{children}</>;

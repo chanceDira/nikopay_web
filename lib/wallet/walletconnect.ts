@@ -8,7 +8,12 @@ import {
 type WalletConnectClient = EthereumProvider & {
   session?: unknown;
   connect: (input?: { chains?: number[] }) => Promise<unknown>;
-  on: (event: string, listener: () => void) => void;
+  disconnect?: () => Promise<void>;
+  on: (event: string, listener: (...args: unknown[]) => void) => void;
+  removeListener?: (
+    event: string,
+    listener: (...args: unknown[]) => void,
+  ) => void;
 };
 
 let client: WalletConnectClient | null = null;
@@ -54,6 +59,21 @@ export async function restoreWalletConnect(): Promise<
     return { ok: false, reason: "walletconnect session expired. reconnect" };
   }
   return { ok: true, provider: ready.client };
+}
+
+export async function disconnectWalletConnect(): Promise<void> {
+  if (!client) {
+    return;
+  }
+
+  try {
+    if (typeof client.disconnect === "function") {
+      await client.disconnect();
+    }
+  } catch {
+    // Best-effort; clear local client either way.
+  }
+  client = null;
 }
 
 async function initWalletConnect(): Promise<

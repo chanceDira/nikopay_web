@@ -10,6 +10,17 @@ describe("rpcClientReason", () => {
     expect(rpcClientReason({ rpcMessage: "query exceeds max results" })).toBe(
       "chain rpc rejected the log range",
     );
+  });
+
+  it("includes http status and sanitized rpc detail", () => {
+    expect(rpcClientReason({ httpStatus: 503 })).toBe(
+      "chain rpc is unavailable (http 503)",
+    );
+    expect(
+      rpcClientReason({
+        rpcMessage: "upstream failed https://secret.example/key",
+      }),
+    ).toBe("chain rpc is unavailable (upstream failed [url])");
     expect(rpcClientReason({})).toBe("chain rpc is unavailable");
   });
 });

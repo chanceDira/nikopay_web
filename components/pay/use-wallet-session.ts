@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   clearConnectedWallet,
   persistConnectedWallet,
-  readStoredWalletAddress,
   readStoredWalletName,
 } from "@/lib/wallet-session";
 import {
@@ -12,6 +11,10 @@ import {
   getInjectedProvider,
   type WalletKind,
 } from "@/lib/wallet/browser";
+import {
+  disconnectWalletConnect,
+  restoreWalletConnect,
+} from "@/lib/wallet/walletconnect";
 
 function asWalletKind(name: string): WalletKind {
   if (name === "Coinbase Wallet" || name === "WalletConnect") {
@@ -34,25 +37,36 @@ export function useWalletSession() {
   }, []);
 
   const applyDisconnected = useCallback(() => {
+    const kind = asWalletKind(readStoredWalletName());
     clearConnectedWallet();
     setWalletConnected(false);
     setWalletAddress("");
+    if (kind === "WalletConnect") {
+      void disconnectWalletConnect();
+    }
   }, []);
 
   const syncFromProvider = useCallback(async (): Promise<string | null> => {
     const kind = asWalletKind(readStoredWalletName());
+
     if (kind === "WalletConnect") {
-      const stored = readStoredWalletAddress();
-      if (stored) {
-        setWalletConnected(true);
-        setWalletAddress(stored);
-        setWalletName(kind);
+      const restored = await restoreWalletConnect();
+      if (!restored.ok) {
+        applyDisconnected();
         setHydrated(true);
-        return stored;
+        return null;
       }
-      applyDisconnected();
+
+      const accounts = await getAccounts(restored.provider);
+      if (!accounts.ok || !accounts.address) {
+        applyDisconnected();
+        setHydrated(true);
+        return null;
+      }
+
+      applyConnected(accounts.address, kind);
       setHydrated(true);
-      return null;
+      return accounts.address;
     }
 
     const found = getInjectedProvider(kind);
@@ -93,40 +107,58 @@ export function useWalletSession() {
     }
 
     const kind = asWalletKind(walletName);
-    if (kind === "WalletConnect") {
-      return;
-    }
+    let cancelled = false;
+    const cleanups: Array<() => void> = [];
 
-    const found = getInjectedProvider(kind);
-    if (!found.ok || !found.provider.on || !found.provider.removeListener) {
-      return;
-    }
+    const attach = async () => {
+      const providerResult =
+        kind === "WalletConnect"
+          ? await restoreWalletConnect()
+          : getInjectedProvider(kind);
 
-    const onAccountsChanged = (...args: unknown[]) => {
-      const accounts = args[0];
-      if (!Array.isArray(accounts) || typeof accounts[0] !== "string") {
-        applyDisconnected();
+      if (cancelled || !providerResult.ok) {
         return;
       }
-      applyConnected(String(accounts[0]).toLowerCase(), kind);
+
+      const provider = providerResult.provider;
+      if (!provider.on || !provider.removeListener) {
+        return;
+      }
+
+      const onAccountsChanged = (...args: unknown[]) => {
+        const accounts = args[0];
+        if (!Array.isArray(accounts) || typeof accounts[0] !== "string") {
+          applyDisconnected();
+          return;
+        }
+        applyConnected(String(accounts[0]).toLowerCase(), kind);
+      };
+
+      const onDisconnect = () => {
+        applyDisconnected();
+      };
+
+      const onChainChanged = () => {
+        void syncFromProvider();
+      };
+
+      provider.on("accountsChanged", onAccountsChanged);
+      provider.on("disconnect", onDisconnect);
+      provider.on("chainChanged", onChainChanged);
+      cleanups.push(() => {
+        provider.removeListener?.("accountsChanged", onAccountsChanged);
+        provider.removeListener?.("disconnect", onDisconnect);
+        provider.removeListener?.("chainChanged", onChainChanged);
+      });
     };
 
-    const onDisconnect = () => {
-      applyDisconnected();
-    };
-
-    const onChainChanged = () => {
-      void syncFromProvider();
-    };
-
-    found.provider.on("accountsChanged", onAccountsChanged);
-    found.provider.on("disconnect", onDisconnect);
-    found.provider.on("chainChanged", onChainChanged);
+    void attach();
 
     return () => {
-      found.provider.removeListener?.("accountsChanged", onAccountsChanged);
-      found.provider.removeListener?.("disconnect", onDisconnect);
-      found.provider.removeListener?.("chainChanged", onChainChanged);
+      cancelled = true;
+      for (const cleanup of cleanups) {
+        cleanup();
+      }
     };
   }, [
     applyConnected,

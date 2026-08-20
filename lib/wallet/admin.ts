@@ -2,8 +2,10 @@ import {
   getInjectedProvider,
   requestAccounts,
   signPersonalMessage,
+  type EthereumProvider,
   type WalletKind,
 } from "@/lib/wallet/browser";
+import { connectWalletConnect } from "@/lib/wallet/walletconnect";
 
 export async function proveTreasuryAdmin(
   kind: WalletKind,
@@ -20,12 +22,12 @@ export async function proveTreasuryAdmin(
     };
   }
 
-  const found = getInjectedProvider(kind);
-  if (!found.ok) {
-    return found;
+  const providerResult = await resolveAdminProvider(kind);
+  if (!providerResult.ok) {
+    return providerResult;
   }
 
-  const account = await requestAccounts(found.provider);
+  const account = await requestAccounts(providerResult.provider);
   if (!account.ok) {
     return account;
   }
@@ -38,7 +40,7 @@ export async function proveTreasuryAdmin(
   }
 
   const signed = await signPersonalMessage(
-    found.provider,
+    providerResult.provider,
     account.address,
     challengeBody.data.message,
   );
@@ -66,4 +68,15 @@ export async function proveTreasuryAdmin(
   }
 
   return { ok: true, address: sessionBody.data.address };
+}
+
+async function resolveAdminProvider(
+  kind: WalletKind,
+): Promise<
+  { ok: true; provider: EthereumProvider } | { ok: false; reason: string }
+> {
+  if (kind === "WalletConnect") {
+    return connectWalletConnect("base");
+  }
+  return getInjectedProvider(kind);
 }
