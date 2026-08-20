@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useLiveQuote } from "@/components/pay/use-live-quote";
+import { useLiveQuote, type AmountEntry } from "@/components/pay/use-live-quote";
 import { useWalletSession } from "@/components/pay/use-wallet-session";
 import { getPublicChain } from "@/lib/chain-config";
 import { normalizeMsisdn, normalizeOptionalEmail } from "@/lib/identity";
 import { createLiveIntent, reportIntentDepositWhenReady } from "@/lib/pay-api";
 import { readLocal } from "@/lib/read-local";
 import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
+import { netRwfForUsdt, usdtForTargetRwf } from "@/lib/settlement/quote";
 import { formatRwf, formatUsdt } from "@/lib/rates";
 import type { WalletKind } from "@/lib/wallet/browser";
 import { connectInjectedWallet, consentAndTransferUsdt } from "@/lib/wallet/offramp";
@@ -40,13 +41,17 @@ function asWalletKind(name: string): WalletKind {
   return "MetaMask";
 }
 
+function formatUsdtInput(value: number): string {
+  const fixed = value.toFixed(6);
+  return fixed.replace(/\.?0+$/, "");
+}
+
 export function PayWizard() {
   const router = useRouter();
   const {
     walletConnected,
     walletAddress,
     walletName,
-    accountEpoch,
     connect,
     disconnect,
     syncFromProvider,
@@ -54,7 +59,9 @@ export function PayWizard() {
 
   const [step, setStep] = useState<Step>(1);
   const [chain, setChain] = useState<ChainId>("base");
-  const [amount, setAmount] = useState<string>("");
+  const [amountEntry, setAmountEntry] = useState<AmountEntry>("rwf");
+  const [amountRwf, setAmountRwf] = useState<string>("");
+  const [amountUsdt, setAmountUsdt] = useState<string>("");
   const [msisdn, setMsisdn] = useState<string>("");
   const [formattedMsisdn, setFormattedMsisdn] = useState<string>("");
   const [notifyEmail, setNotifyEmail] = useState<string>("");
@@ -65,13 +72,19 @@ export function PayWizard() {
   const [feePercent] = useState(() =>
     parseFloat(readLocal("nikopay_fx_fee", "1.5")),
   );
-  const rwfPayout = parseFloat(amount) || 0;
+  const rwfPayout = parseFloat(amountRwf) || 0;
+  const usdtSell = parseFloat(amountUsdt) || 0;
   const {
     quote,
     fx,
     status: quoteStatus,
     error: quoteError,
-  } = useLiveQuote(rwfPayout, chain);
+  } = useLiveQuote({
+    chain,
+    entry: amountEntry,
+    rwfPayout,
+    usdtSell,
+  });
 
   const [connecting, setConnecting] = useState<boolean>(false);
   const [showWalletModal, setShowWalletModal] = useState<boolean>(false);
@@ -94,17 +107,10 @@ export function PayWizard() {
   const [gateError, setGateError] = useState("");
   const [payError, setPayError] = useState("");
 
-  useEffect(() => {
-    if (accountEpoch === 0) {
-      return;
-    }
-    setLiveIntent(null);
-    setShowWalletModal(false);
-    setPayError("");
-    setIntentError(
-      "Wallet account changed. Confirm again to create a payment for this wallet.",
-    );
-  }, [accountEpoch]);
+  const walletDrifted =
+    Boolean(liveIntent) &&
+    Boolean(walletAddress) &&
+    !sameWalletAddress(liveIntent?.walletAddress, walletAddress);
 
   const handleGateWalletConnect = async (kind: WalletKind) => {
     setGateSelectedWallet(kind);
@@ -127,13 +133,22 @@ export function PayWizard() {
 
   const displayRate = quote?.rate ?? fx?.rate ?? rate;
   const displayFeePercent = quote?.feePercent ?? fx?.feePercent ?? feePercent;
-  const estimatedUsdt = rwfPayout / (displayRate * (1 - displayFeePercent / 100));
-  const amountQuoteReady = rwfPayout > 0 && quoteStatus === "ready" && quote != null;
+  const hasAmount = amountEntry === "rwf" ? rwfPayout > 0 : usdtSell > 0;
+  const estimatedUsdt =
+    amountEntry === "usdt"
+      ? usdtSell
+      : rwfPayout / (displayRate * (1 - displayFeePercent / 100));
+  const estimatedNetRwf =
+    amountEntry === "rwf"
+      ? rwfPayout
+      : usdtSell * displayRate * (1 - displayFeePercent / 100);
+  const amountQuoteReady =
+    hasAmount && quoteStatus === "ready" && quote != null;
   const usdtAmount = amountQuoteReady ? quote.usdtAmount : estimatedUsdt;
   const feeRwf = amountQuoteReady
     ? quote.feeRwf
-    : estimatedUsdt * displayRate - rwfPayout;
-  const netRwf = amountQuoteReady ? quote.netRwf : rwfPayout;
+    : estimatedUsdt * displayRate - estimatedNetRwf;
+  const netRwf = amountQuoteReady ? quote.netRwf : estimatedNetRwf;
   const chainConfig = getPublicChain(chain);
   const chainPayReady = chainConfig.tokenReady;
   const continueLabel = chainPayReady
@@ -141,9 +156,51 @@ export function PayWizard() {
     : `${chainConfig.name} deposits not enabled yet`;
   const treasuryAddress = liveIntent?.treasuryAddress ?? "";
 
+  const previewRate = fx?.rate ?? displayRate;
+  const previewFee = fx?.feePercent ?? displayFeePercent;
+
+  const handleRwfChange = (value: string) => {
+    if (!/^\d*$/.test(value)) {
+      return;
+    }
+    setAmountEntry("rwf");
+    setAmountRwf(value);
+    if (amountError) setAmountError("");
+
+    const parsed = parseFloat(value);
+    if (!value || !Number.isFinite(parsed) || parsed <= 0) {
+      setAmountUsdt("");
+      return;
+    }
+    const usdt = usdtForTargetRwf(parsed, previewRate, previewFee);
+    setAmountUsdt(usdt != null ? formatUsdtInput(usdt) : "");
+  };
+
+  const handleUsdtChange = (value: string) => {
+    if (!/^\d*\.?\d{0,6}$/.test(value)) {
+      return;
+    }
+    setAmountEntry("usdt");
+    setAmountUsdt(value);
+    if (amountError) setAmountError("");
+
+    const parsed = parseFloat(value);
+    if (!value || !Number.isFinite(parsed) || parsed <= 0) {
+      setAmountRwf("");
+      return;
+    }
+    const rwf = netRwfForUsdt(parsed, previewRate, previewFee);
+    setAmountRwf(rwf != null ? String(Math.round(rwf)) : "");
+  };
+
   const validateAmount = () => {
-    if (!amount || isNaN(rwfPayout) || rwfPayout <= 0) {
-      setAmountError("Please enter a valid payout amount");
+    if (amountEntry === "rwf") {
+      if (!amountRwf || isNaN(rwfPayout) || rwfPayout <= 0) {
+        setAmountError("Enter a valid RWF payout amount");
+        return false;
+      }
+    } else if (!amountUsdt || isNaN(usdtSell) || usdtSell <= 0) {
+      setAmountError("Enter a valid USDT amount to sell");
       return false;
     }
     setAmountError("");
@@ -476,45 +533,84 @@ export function PayWizard() {
             </div>
           </div>
 
-          <div>
-            <label
-              htmlFor="rwf-input"
-              className="text-sm font-medium text-foreground"
-            >
-              Payout Amount (Recipient Receives)
-            </label>
-            <div className="relative mt-2 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
-              <input
-                id="rwf-input"
-                type="text"
-                inputMode="numeric"
-                value={amount}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (/^\d*$/.test(val)) {
-                    setAmount(val);
-                    if (amountError) setAmountError("");
-                  }
-                }}
-                onBlur={validateAmount}
-                className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40"
-                placeholder="0"
-              />
-              <span className="ml-3 font-semibold text-niko-teal text-sm">
-                RWF
-              </span>
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor="rwf-input"
+                className="text-sm font-medium text-foreground"
+              >
+                Recipient receives (RWF)
+              </label>
+              <div
+                className={`relative mt-2 flex items-center rounded-md border bg-background px-4 py-3.5 transition-colors ${
+                  amountEntry === "rwf"
+                    ? "border-niko-teal/50"
+                    : "border-niko-border focus-within:border-niko-teal/50"
+                }`}
+              >
+                <input
+                  id="rwf-input"
+                  type="text"
+                  inputMode="numeric"
+                  value={amountRwf}
+                  onChange={(e) => handleRwfChange(e.target.value)}
+                  onBlur={validateAmount}
+                  className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40"
+                  placeholder="0"
+                />
+                <span className="ml-3 font-semibold text-niko-teal text-sm">
+                  RWF
+                </span>
+              </div>
             </div>
+
+            <div className="flex items-center gap-3 text-xs text-niko-muted">
+              <div className="h-px flex-1 bg-niko-border/60" />
+              <span>or enter USDT to sell</span>
+              <div className="h-px flex-1 bg-niko-border/60" />
+            </div>
+
+            <div>
+              <label
+                htmlFor="usdt-input"
+                className="text-sm font-medium text-foreground"
+              >
+                You send (USDT)
+              </label>
+              <div
+                className={`relative mt-2 flex items-center rounded-md border bg-background px-4 py-3.5 transition-colors ${
+                  amountEntry === "usdt"
+                    ? "border-niko-teal/50"
+                    : "border-niko-border focus-within:border-niko-teal/50"
+                }`}
+              >
+                <input
+                  id="usdt-input"
+                  type="text"
+                  inputMode="decimal"
+                  value={amountUsdt}
+                  onChange={(e) => handleUsdtChange(e.target.value)}
+                  onBlur={validateAmount}
+                  className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40"
+                  placeholder="0.00"
+                />
+                <span className="ml-3 font-semibold text-niko-teal text-sm">
+                  USDT
+                </span>
+              </div>
+            </div>
+
             {amountError && (
-              <p className="mt-2 text-xs text-red-400">{amountError}</p>
+              <p className="text-xs text-red-400">{amountError}</p>
             )}
             {quoteError && !amountError && (
-              <p className="mt-2 text-xs text-red-400">{quoteError}</p>
+              <p className="text-xs text-red-400">{quoteError}</p>
             )}
-            <p className="mt-2 text-xs text-niko-muted flex items-center gap-1.5">
+            <p className="text-xs text-niko-muted flex items-center gap-1.5">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-niko-teal" />
               1 USDT = {displayRate.toLocaleString()} RWF
               {quote ? " (live rate)" : " (loading rate)"}
-              {quoteStatus === "loading" && rwfPayout > 0 ? " · updating" : ""}
+              {quoteStatus === "loading" && hasAmount ? " · updating" : ""}
             </p>
           </div>
 
@@ -522,7 +618,7 @@ export function PayWizard() {
             <div className="flex justify-between text-sm">
               <span className="text-niko-muted">Recipient Receives</span>
               <span className="font-mono text-foreground font-semibold">
-                {rwfPayout > 0 ? formatRwf(netRwf) : "-"}
+                {hasAmount ? formatRwf(netRwf) : "-"}
               </span>
             </div>
             <div className="flex justify-between text-sm">
@@ -530,7 +626,7 @@ export function PayWizard() {
                 Service Fee ({displayFeePercent}%)
               </span>
               <span className="font-mono text-niko-muted">
-                {rwfPayout > 0 ? `+${formatRwf(feeRwf)}` : "-"}
+                {hasAmount ? `+${formatRwf(feeRwf)}` : "-"}
               </span>
             </div>
             <div className="h-px bg-niko-border/40 my-1" />
@@ -539,7 +635,7 @@ export function PayWizard() {
                 Total USDT You Send (from wallet)
               </span>
               <span className="text-lg font-bold text-niko-teal-bright font-mono">
-                {rwfPayout > 0 ? formatUsdt(usdtAmount) : "-"}
+                {hasAmount ? formatUsdt(usdtAmount) : "-"}
               </span>
             </div>
           </div>
@@ -550,7 +646,7 @@ export function PayWizard() {
             disabled={!amountQuoteReady || !chainPayReady}
             className="w-full py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-                {quoteStatus === "loading" && rwfPayout > 0
+                {quoteStatus === "loading" && hasAmount
                   ? "Fetching live quote..."
                   : continueLabel}
             <svg
@@ -864,7 +960,13 @@ export function PayWizard() {
             </div>
           )}
 
-          {intentError && <p className="text-xs text-red-400">{intentError}</p>}
+          {(intentError || walletDrifted) && (
+            <p className="text-xs text-red-400">
+              {walletDrifted
+                ? "Active wallet account changed. Confirm again to create a payment for this wallet."
+                : intentError}
+            </p>
+          )}
 
           <div className="flex gap-4">
             <button

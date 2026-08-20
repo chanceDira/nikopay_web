@@ -8,6 +8,8 @@ import type { ChainId, Quote } from "@/lib/settlement/types";
 export const QUOTE_PROBE_USDT = 10;
 export const QUOTE_DEBOUNCE_MS = 300;
 
+export type AmountEntry = "rwf" | "usdt";
+
 type QuoteStatus = "idle" | "loading" | "ready" | "error";
 
 type LiveFx = {
@@ -24,8 +26,16 @@ type Snapshot = {
   error: string;
 };
 
-export function useLiveQuote(rwfPayout: number, chain: ChainId) {
-  const requestKey = `${chain}:${rwfPayout > 0 ? rwfPayout : 0}`;
+export function useLiveQuote(input: {
+  chain: ChainId;
+  entry: AmountEntry;
+  rwfPayout: number;
+  usdtSell: number;
+}) {
+  const { chain, entry, rwfPayout, usdtSell } = input;
+  const activeAmount =
+    entry === "rwf" ? (rwfPayout > 0 ? rwfPayout : 0) : usdtSell > 0 ? usdtSell : 0;
+  const requestKey = `${chain}:${entry}:${activeAmount}`;
   const [snapshot, setSnapshot] = useState<Snapshot>({
     key: "",
     chain,
@@ -37,7 +47,7 @@ export function useLiveQuote(rwfPayout: number, chain: ChainId) {
 
   useEffect(() => {
     const controller = new AbortController();
-    const delay = rwfPayout > 0 ? QUOTE_DEBOUNCE_MS : 0;
+    const delay = activeAmount > 0 ? QUOTE_DEBOUNCE_MS : 0;
 
     const timer = window.setTimeout(async () => {
       const probe = await requestQuote(
@@ -65,7 +75,7 @@ export function useLiveQuote(rwfPayout: number, chain: ChainId) {
         feePercent: probe.data.feePercent,
       };
 
-      if (rwfPayout <= 0) {
+      if (activeAmount <= 0) {
         setSnapshot({
           key: requestKey,
           chain,
@@ -77,9 +87,17 @@ export function useLiveQuote(rwfPayout: number, chain: ChainId) {
         return;
       }
 
-      const usdt = usdtForTargetRwf(rwfPayout, liveFx.rate, liveFx.feePercent);
-      if (usdt == null) {
-        return;
+      let usdt = usdtSell;
+      if (entry === "rwf") {
+        const derived = usdtForTargetRwf(
+          rwfPayout,
+          liveFx.rate,
+          liveFx.feePercent,
+        );
+        if (derived == null) {
+          return;
+        }
+        usdt = derived;
       }
 
       const quoted = await requestQuote(usdt, chain, controller.signal);
@@ -115,7 +133,7 @@ export function useLiveQuote(rwfPayout: number, chain: ChainId) {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [requestKey, chain, rwfPayout]);
+  }, [requestKey, chain, entry, rwfPayout, usdtSell, activeAmount]);
 
   const stale = snapshot.key !== requestKey;
   const fx = snapshot.chain === chain ? snapshot.fx : null;

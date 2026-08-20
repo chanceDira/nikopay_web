@@ -6,7 +6,6 @@ import {
   persistConnectedWallet,
   readStoredWalletAddress,
   readStoredWalletName,
-  sameWalletAddress,
 } from "@/lib/wallet-session";
 import {
   getAccounts,
@@ -26,7 +25,6 @@ export function useWalletSession() {
   const [walletAddress, setWalletAddress] = useState("");
   const [walletName, setWalletName] = useState("MetaMask");
   const [hydrated, setHydrated] = useState(false);
-  const [accountEpoch, setAccountEpoch] = useState(0);
 
   const applyConnected = useCallback((address: string, name: WalletKind) => {
     const normalized = persistConnectedWallet(address, name);
@@ -71,17 +69,22 @@ export function useWalletSession() {
       return null;
     }
 
-    const previous = readStoredWalletAddress();
     applyConnected(accounts.address, kind);
-    if (previous && !sameWalletAddress(previous, accounts.address)) {
-      setAccountEpoch((value) => value + 1);
-    }
     setHydrated(true);
     return accounts.address;
   }, [applyConnected, applyDisconnected]);
 
   useEffect(() => {
-    void syncFromProvider();
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
+      void syncFromProvider();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [syncFromProvider]);
 
   useEffect(() => {
@@ -103,21 +106,13 @@ export function useWalletSession() {
       const accounts = args[0];
       if (!Array.isArray(accounts) || typeof accounts[0] !== "string") {
         applyDisconnected();
-        setAccountEpoch((value) => value + 1);
         return;
       }
-
-      const next = String(accounts[0]).toLowerCase();
-      const previous = walletAddress;
-      applyConnected(next, kind);
-      if (!sameWalletAddress(previous, next)) {
-        setAccountEpoch((value) => value + 1);
-      }
+      applyConnected(String(accounts[0]).toLowerCase(), kind);
     };
 
     const onDisconnect = () => {
       applyDisconnected();
-      setAccountEpoch((value) => value + 1);
     };
 
     const onChainChanged = () => {
@@ -138,7 +133,6 @@ export function useWalletSession() {
     applyDisconnected,
     hydrated,
     syncFromProvider,
-    walletAddress,
     walletName,
   ]);
 
@@ -151,7 +145,6 @@ export function useWalletSession() {
 
   const disconnect = useCallback(() => {
     applyDisconnected();
-    setAccountEpoch((value) => value + 1);
   }, [applyDisconnected]);
 
   return {
@@ -159,7 +152,6 @@ export function useWalletSession() {
     walletAddress,
     walletName,
     hydrated,
-    accountEpoch,
     connect,
     disconnect,
     syncFromProvider,

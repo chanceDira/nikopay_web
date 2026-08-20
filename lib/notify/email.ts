@@ -1,3 +1,5 @@
+import nodemailer from "nodemailer";
+
 import { CONTACT } from "@/lib/contact";
 import { formatRwf, formatUsdt } from "@/lib/rates";
 
@@ -10,21 +12,48 @@ export type PaidEmailInput = {
   momoRef?: string;
 };
 
+export type SmtpEmailConfig = {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  pass: string;
+  from: string;
+  siteUrl: string;
+};
+
 export function getEmailConfig():
-  | { ok: true; apiKey: string; from: string; siteUrl: string }
+  | { ok: true; config: SmtpEmailConfig }
   | { ok: false; reason: string } {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) {
+  const host = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
+  const user = process.env.SMTP_USER?.trim();
+  const pass = process.env.SMTP_PASS?.trim();
+  const from = process.env.EMAIL_FROM?.trim() || (user ? `NikoPay <${user}>` : "");
+
+  if (!user || !pass || !from) {
     return { ok: false, reason: "email is not configured" };
   }
 
-  const from =
-    process.env.EMAIL_FROM?.trim() || "NikoPay <onboarding@resend.dev>";
+  const portRaw = process.env.SMTP_PORT?.trim();
+  const port = portRaw ? Number(portRaw) : 465;
+  if (!Number.isInteger(port) || port <= 0) {
+    return { ok: false, reason: "email is not configured" };
+  }
+
+  const secureEnv = process.env.SMTP_SECURE?.trim().toLowerCase();
+  const secure =
+    secureEnv === undefined || secureEnv === ""
+      ? port === 465
+      : secureEnv === "true" || secureEnv === "1";
+
   const siteUrl = (
     process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://nikopay-mvp.vercel.app"
   ).replace(/\/$/, "");
 
-  return { ok: true, apiKey, from, siteUrl };
+  return {
+    ok: true,
+    config: { host, port, secure, user, pass, from, siteUrl },
+  };
 }
 
 export function buildPaidEmailContent(
@@ -70,33 +99,32 @@ export function buildPaidEmailContent(
 export async function sendPaidEmail(
   input: PaidEmailInput,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
-  const config = getEmailConfig();
-  if (!config.ok) {
-    return config;
+  const loaded = getEmailConfig();
+  if (!loaded.ok) {
+    return loaded;
   }
 
+  const { config } = loaded;
   const content = buildPaidEmailContent(input, config.siteUrl);
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${config.apiKey}`,
-        "content-type": "application/json",
+    const transporter = nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: {
+        user: config.user,
+        pass: config.pass,
       },
-      body: JSON.stringify({
-        from: config.from,
-        to: [input.to],
-        subject: content.subject,
-        text: content.text,
-        html: content.html,
-      }),
-      signal: AbortSignal.timeout(12_000),
     });
 
-    if (!response.ok) {
-      return { ok: false, reason: "email send failed" };
-    }
+    await transporter.sendMail({
+      from: config.from,
+      to: input.to,
+      subject: content.subject,
+      text: content.text,
+      html: content.html,
+    });
 
     return { ok: true };
   } catch {
