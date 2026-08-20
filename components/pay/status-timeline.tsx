@@ -57,17 +57,25 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
     );
   }
 
-  // Determine current timeline progress step indices:
-  // Step 1: Deposit detected (awaiting_payment or detected)
-  // Step 2: Confirmation (credited)
-  // Step 3: Payout (payout_pending)
-  // Step 4: Complete (paid)
+  const depositReceived = Boolean(intent.depositTx);
+
   const getStepState = (step: 1 | 2 | 3 | 4) => {
     const status = intent.status;
 
-    if (status === "failed") return "error";
-    if (status === "expired") return "expired";
-    if (status === "manual_review") return "warning";
+    if (status === "expired") {
+      if (step === 1) return depositReceived ? "completed" : "error";
+      return "expired";
+    }
+
+    // Deposit succeeded but payout needs ops / failed MoMo
+    if (status === "failed" || status === "manual_review") {
+      if (depositReceived) {
+        if (step === 1 || step === 2) return "completed";
+        if (step === 3) return status === "failed" ? "error" : "warning";
+        return "upcoming";
+      }
+      return status === "failed" ? "error" : "warning";
+    }
 
     switch (step) {
       case 1:
@@ -195,9 +203,15 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
       };
     }
     if (status === "failed") {
+      if (depositReceived) {
+        return {
+          title: "Payout Failed",
+          desc: "Your USDT deposit was received. The Mobile Money payout did not complete. Support can retry the payout.",
+        };
+      }
       return {
         title: "Payment Failed",
-        desc: "Something went wrong during processing or blockchain confirmation. Please reach out to support.",
+        desc: "Something went wrong before we could confirm your deposit. Please reach out to support.",
       };
     }
     if (status === "expired") {
@@ -207,6 +221,12 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
       };
     }
     if (status === "manual_review") {
+      if (depositReceived) {
+        return {
+          title: "Payout Needs Review",
+          desc: "Your USDT deposit is confirmed. The Mobile Money payout needs a manual retry from operations.",
+        };
+      }
       return {
         title: "Manual Operations Review",
         desc: "Our automated systems flagged an inconsistency (e.g. deposit mismatch). An administrator is reviewing this payout manually.",
@@ -220,8 +240,14 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
     const status = intent.status;
     if (status === "paid") return 3;
     if (["credited", "payout_pending"].includes(status)) return 2;
+    if (
+      (status === "failed" || status === "manual_review") &&
+      depositReceived
+    ) {
+      return 2;
+    }
     if (status === "detected") return 1;
-    return 0; // awaiting_payment, failed, expired, manual_review
+    return 0; 
   };
   const lineProgress = getLineProgress();
 
@@ -301,7 +327,6 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
             />
           </div>
 
-          {/* Mobile Vertical Connecting Line */}
           <div className="absolute left-[20px] top-[20px] bottom-[20px] md:hidden w-0.5 bg-niko-border/60 -z-10">
             <div
               className="w-full bg-niko-teal transition-all duration-500 shadow-[0_0_8px_rgba(0,212,200,0.4)]"
@@ -309,7 +334,6 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
             />
           </div>
 
-          {/* Step 1 */}
           <div className="flex md:flex-col items-start gap-4 md:text-center md:items-center">
             <div
               className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 font-bold transition-all ${getStepStyles(
@@ -326,7 +350,6 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
             </div>
           </div>
 
-          {/* Step 2 */}
           <div className="flex md:flex-col items-start gap-4 md:text-center md:items-center">
             <div
               className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 font-bold transition-all ${getStepStyles(
@@ -343,7 +366,6 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
             </div>
           </div>
 
-          {/* Step 3 */}
           <div className="flex md:flex-col items-start gap-4 md:text-center md:items-center">
             <div
               className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 font-bold transition-all ${getStepStyles(
@@ -379,7 +401,6 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
         </div>
       </div>
 
-      {/* Payment Metadata Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-4">
           <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">

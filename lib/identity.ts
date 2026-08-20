@@ -57,13 +57,25 @@ export function normalizeMsisdn(
   }
 
   const stripped = value.trim().replace(/[+\s-]/g, "");
+  // Local Rwanda 07… → E.164 2507…
   const local = /^0[7-9][0-9]{8}$/.test(stripped)
     ? `250${stripped.slice(1)}`
     : stripped;
 
-  if (!MSISDN_DIGITS.test(local) || !RWANDA_MSISDN.test(local)) {
-    return { ok: false, reason: "msisdn must be a Rwanda mobile number" };
+  if (!MSISDN_DIGITS.test(local)) {
+    return {
+      ok: false,
+      reason: "msisdn must be a valid mobile number (10-15 digits)",
+    };
   }
 
-  return { ok: true, msisdn: local };
+  // Rwanda MTN/Airtel shape, or any other E.164 (sandbox test MSISDNs, East Africa later)
+  if (RWANDA_MSISDN.test(local) || /^[1-9][0-9]{9,14}$/.test(local)) {
+    return { ok: true, msisdn: local };
+  }
+
+  return {
+    ok: false,
+    reason: "msisdn must be a valid mobile number (10-15 digits)",
+  };
 }

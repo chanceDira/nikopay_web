@@ -21,8 +21,6 @@ import {
 
 type Step = 1 | 2 | 3 | 4;
 
-const RWANDA_MSISDN_REGEX = /^(?:\+250|0)?7[8932]\d{7}$/;
-
 const CheckIcon = () => (
   <svg
     className="h-4 w-4 text-niko-navy"
@@ -49,10 +47,9 @@ function asWalletKind(name: string): WalletKind {
 export function PayWizard() {
   const router = useRouter();
 
-  // Wizard state (3-step pay flow)
   const [step, setStep] = useState<Step>(1);
   const [chain, setChain] = useState<ChainId>("base");
-  const [amount, setAmount] = useState<string>(""); // Starts empty, uses placeholder
+  const [amount, setAmount] = useState<string>("");
   const [msisdn, setMsisdn] = useState<string>("");
   const [formattedMsisdn, setFormattedMsisdn] = useState<string>("");
   const [rate] = useState(() =>
@@ -69,7 +66,6 @@ export function PayWizard() {
     error: quoteError,
   } = useLiveQuote(rwfPayout, chain);
 
-  // Web3 Wallet states
   const [walletConnected, setWalletConnected] = useState(() =>
     isStoredTrue("nikopay_wallet_connected"),
   );
@@ -121,13 +117,10 @@ export function PayWizard() {
     setStep(2);
   };
 
-  // Rates & calculations (RWF-first). Display prefers the server quote.
   const displayRate = quote?.rate ?? fx?.rate ?? rate;
   const displayFeePercent = quote?.feePercent ?? fx?.feePercent ?? feePercent;
-  const estimatedUsdt =
-    rwfPayout / (displayRate * (1 - displayFeePercent / 100));
-  const amountQuoteReady =
-    rwfPayout > 0 && quoteStatus === "ready" && quote != null;
+  const estimatedUsdt = rwfPayout / (displayRate * (1 - displayFeePercent / 100));
+  const amountQuoteReady = rwfPayout > 0 && quoteStatus === "ready" && quote != null;
   const usdtAmount = amountQuoteReady ? quote.usdtAmount : estimatedUsdt;
   const feeRwf = amountQuoteReady
     ? quote.feeRwf
@@ -140,7 +133,6 @@ export function PayWizard() {
     : `${chainConfig.name} deposits not enabled yet`;
   const treasuryAddress = liveIntent?.treasuryAddress ?? "";
 
-  // Validate Amount
   const validateAmount = () => {
     if (!amount || isNaN(rwfPayout) || rwfPayout <= 0) {
       setAmountError("Please enter a valid payout amount");
@@ -150,15 +142,15 @@ export function PayWizard() {
     return true;
   };
 
-  // Validate MSISDN
   const validateMsisdn = () => {
-    if (!msisdn) {
+    if (!msisdn.trim()) {
       setMsisdnError("Mobile Money number is required");
       return false;
     }
-    if (!RWANDA_MSISDN_REGEX.test(msisdn.replace(/\s+/g, ""))) {
+    const parsed = normalizeMsisdn(msisdn);
+    if (!parsed.ok) {
       setMsisdnError(
-        "Please enter a valid Rwandan Mobile Money number (e.g. 078XXXXXXX)",
+        "Enter a valid mobile number (e.g. 078XXXXXXX or +46733123450)",
       );
       return false;
     }
@@ -166,24 +158,23 @@ export function PayWizard() {
     return true;
   };
 
-  // Format and save MSISDN
   const handleMsisdnChange = (value: string) => {
     setMsisdn(value);
-    const clean = value.replace(/\s+/g, "");
-    if (clean.startsWith("0")) {
-      setFormattedMsisdn(
-        `+250 ${clean.substring(1, 4)} ${clean.substring(4, 7)} ${clean.substring(7)}`,
-      );
-    } else if (clean.startsWith("+250")) {
-      setFormattedMsisdn(
-        `+250 ${clean.substring(4, 7)} ${clean.substring(7, 10)} ${clean.substring(10)}`,
-      );
-    } else {
-      setFormattedMsisdn(value);
+    const parsed = normalizeMsisdn(value);
+    if (parsed.ok) {
+      const digits = parsed.msisdn;
+      if (digits.startsWith("250") && digits.length === 12) {
+        setFormattedMsisdn(
+          `+250 ${digits.slice(3, 6)} ${digits.slice(6, 9)} ${digits.slice(9)}`,
+        );
+      } else {
+        setFormattedMsisdn(`+${digits}`);
+      }
+      return;
     }
+    setFormattedMsisdn(value.trim());
   };
 
-  // Handle Step Navigation
   const handleNextStep = () => {
     if (step === 1) {
       if (!validateAmount()) {
@@ -377,7 +368,6 @@ export function PayWizard() {
         </div>
       </div>
 
-      {/* Step 1: Amount & Chain */}
       {step === 1 && (
         <div className="space-y-6">
           <div>
@@ -524,7 +514,6 @@ export function PayWizard() {
         </div>
       )}
 
-      {/* Step 2: Recipient Details */}
       {step === 2 && (
         <div className="space-y-6">
           <div>
@@ -535,8 +524,8 @@ export function PayWizard() {
               Recipient Mobile Money Number
             </label>
             <p className="text-xs text-niko-muted mt-1">
-              Provide the MTN Rwanda number where the RWF payout should be
-              deposited.
+              Rwanda MTN numbers (078…) or international E.164 for sandbox
+              testing (e.g. +46733123450).
             </p>
             <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
               <input
@@ -546,14 +535,14 @@ export function PayWizard() {
                 value={msisdn}
                 onChange={(e) => {
                   const val = e.target.value;
-                  if (/^\+?\d*$/.test(val)) {
+                  if (/^[+\d\s-]*$/.test(val)) {
                     handleMsisdnChange(val);
                     if (msisdnError) setMsisdnError("");
                   }
                 }}
                 onBlur={validateMsisdn}
                 className="w-full bg-transparent font-mono text-lg font-semibold text-foreground outline-none placeholder:text-niko-muted/40"
-                placeholder="e.g. 0787259588"
+                placeholder="e.g. 0787259588 or +46733123450"
               />
               <span className="ml-3 font-semibold text-niko-teal text-xs tracking-wider uppercase">
                 MTN MoMo
@@ -629,7 +618,6 @@ export function PayWizard() {
         </div>
       )}
 
-      {/* Step 3: Review & Confirmation */}
       {step === 3 && (
         <div className="space-y-6">
           <div className="rounded-md border border-niko-border bg-background p-6 space-y-5">
@@ -768,7 +756,6 @@ export function PayWizard() {
 
           {intentError && <p className="text-xs text-red-400">{intentError}</p>}
 
-          {/* Unified Action Button Row */}
           <div className="flex gap-4">
             <button
               type="button"
@@ -806,11 +793,9 @@ export function PayWizard() {
         </div>
       )}
 
-      {/* MetaMask Interactive Modal Overlay */}
       {showWalletModal && (
         <div className="fixed inset-0 z-55 flex items-center justify-center bg-black/20 p-4 animate-fade-in">
           <div className="w-full max-w-sm rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-xl p-6 space-y-6 shadow-2xl relative z-55 animate-fade-in">
-            {/* Header */}
             <div className="flex items-center justify-between border-b border-niko-border/60 pb-3">
               <div className="flex items-center gap-2">
                 <Image
@@ -834,7 +819,6 @@ export function PayWizard() {
               </span>
             </div>
 
-            {/* Modal Body */}
             {modalState === "confirm" ? (
               <div className="space-y-4">
                 <div>

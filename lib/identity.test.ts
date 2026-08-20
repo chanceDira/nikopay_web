@@ -55,8 +55,19 @@ describe("normalizeMsisdn", () => {
     });
   });
 
-  it("rejects non-Rwanda numbers", () => {
-    expect(normalizeMsisdn("254700000000").ok).toBe(false);
+  it("accepts international E.164 numbers for sandbox and multi-country", () => {
+    expect(normalizeMsisdn("46733123450")).toEqual({
+      ok: true,
+      msisdn: "46733123450",
+    });
+    expect(normalizeMsisdn("+254 700 000 000")).toEqual({
+      ok: true,
+      msisdn: "254700000000",
+    });
+  });
+
+  it("rejects too-short numbers", () => {
+    expect(normalizeMsisdn("12345").ok).toBe(false);
   });
 });
 

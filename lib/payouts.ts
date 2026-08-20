@@ -5,9 +5,9 @@ import { getPaymentIntent } from "@/lib/intents";
 import { getTransferStatus, requestTransfer } from "@/lib/momo/client";
 import { getMomoConfig } from "@/lib/momo/config";
 import {
-  formatMomoAmount,
   mapMomoProviderStatus,
   payeeMsisdnForPayout,
+  transferAmountForMomo,
 } from "@/lib/momo/status";
 import { transitionStatus } from "@/lib/settlement/intent-status";
 import type { PaymentIntent } from "@/lib/settlement/types";
@@ -124,20 +124,32 @@ async function payoutOne(
     );
   }
 
-  const amount = formatMomoAmount(loaded.intent.netRwf);
+  const amount = transferAmountForMomo({
+    netRwf: loaded.intent.netRwf,
+    targetEnvironment: config.config.targetEnvironment,
+  });
   if (!amount) {
     return { ok: false, reason: "payout amount is invalid", status: 409 };
+  }
+
+  const payee = payeeMsisdnForPayout({
+    intentMsisdn: loaded.intent.msisdn,
+    targetEnvironment: config.config.targetEnvironment,
+    sandboxPayeeMsisdn: config.config.sandboxPayeeMsisdn,
+  });
+  if (!payee) {
+    return {
+      ok: false,
+      reason: "momo sandbox payee is not configured",
+      status: 503,
+    };
   }
 
   const retried = await requestTransfer(config.config, {
     referenceId: transfer.row.reference_id,
     amount,
     currency: config.config.currency,
-    msisdn: payeeMsisdnForPayout({
-      intentMsisdn: loaded.intent.msisdn,
-      targetEnvironment: config.config.targetEnvironment,
-      sandboxPayeeMsisdn: config.config.sandboxPayeeMsisdn,
-    }),
+    msisdn: payee,
     externalId: loaded.intent.id,
   });
 
@@ -180,9 +192,25 @@ async function startPayout(
     return { ok: false, reason: config.reason, status: 503 };
   }
 
-  const amount = formatMomoAmount(intent.netRwf);
+  const amount = transferAmountForMomo({
+    netRwf: intent.netRwf,
+    targetEnvironment: config.config.targetEnvironment,
+  });
   if (!amount) {
     return { ok: false, reason: "payout amount is invalid", status: 409 };
+  }
+
+  const payee = payeeMsisdnForPayout({
+    intentMsisdn: intent.msisdn,
+    targetEnvironment: config.config.targetEnvironment,
+    sandboxPayeeMsisdn: config.config.sandboxPayeeMsisdn,
+  });
+  if (!payee) {
+    return {
+      ok: false,
+      reason: "momo sandbox payee is not configured",
+      status: 503,
+    };
   }
 
   const supabase = createAdminClient();
@@ -199,11 +227,6 @@ async function startPayout(
   }
 
   const referenceId = existing.data?.reference_id ?? randomUUID();
-  const payee = payeeMsisdnForPayout({
-    intentMsisdn: intent.msisdn,
-    targetEnvironment: config.config.targetEnvironment,
-    sandboxPayeeMsisdn: config.config.sandboxPayeeMsisdn,
-  });
 
   const claimed = await supabase
     .from("payment_intents")
@@ -225,7 +248,7 @@ async function startPayout(
       intent_id: intent.id,
       reference_id: referenceId,
       amount_rwf: intent.netRwf,
-      msisdn: intent.msisdn,
+      msisdn: payee,
       status: "pending",
     });
 
@@ -340,12 +363,12 @@ async function settleReference(
 
 function nextIntentStatus(
   momoStatus: MomoTransferRow["status"],
-) : "paid" | "failed" | null {
+): "paid" | "manual_review" | null {
   if (momoStatus === "successful") {
     return "paid";
   }
   if (momoStatus === "failed" || momoStatus === "timeout") {
-    return "failed";
+    return "manual_review";
   }
   return null;
 }

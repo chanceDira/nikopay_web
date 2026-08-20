@@ -34,12 +34,26 @@ export function formatMomoAmount(amount: number): string | null {
   return amount.toFixed(2);
 }
 
+/** Sandbox only accepts EUR and small test amounts, never RWF net. */
+export const SANDBOX_DISBURSEMENT_AMOUNT = "1";
+
+export function transferAmountForMomo(input: {
+  netRwf: number;
+  targetEnvironment: string;
+}): string | null {
+  if (input.targetEnvironment === "sandbox") {
+    return SANDBOX_DISBURSEMENT_AMOUNT;
+  }
+
+  return formatMomoAmount(input.netRwf);
+}
+
 export function payeeMsisdnForPayout(input: {
   intentMsisdn: string;
   targetEnvironment: string;
   sandboxPayeeMsisdn: string | null;
-}): string {
-  if (input.targetEnvironment === "sandbox" && input.sandboxPayeeMsisdn) {
+}): string | null {
+  if (input.targetEnvironment === "sandbox") {
     return input.sandboxPayeeMsisdn;
   }
 

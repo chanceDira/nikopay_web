@@ -3,6 +3,7 @@ import {
   formatMomoAmount,
   mapMomoProviderStatus,
   payeeMsisdnForPayout,
+  transferAmountForMomo,
 } from "@/lib/momo/status";
 
 describe("mapMomoProviderStatus", () => {
@@ -25,14 +26,22 @@ describe("formatMomoAmount", () => {
 });
 
 describe("payeeMsisdnForPayout", () => {
-  it("uses the sandbox override when set", () => {
+  it("requires the sandbox override in sandbox", () => {
     expect(
       payeeMsisdnForPayout({
         intentMsisdn: "250788123456",
         targetEnvironment: "sandbox",
-        sandboxPayeeMsisdn: "46733123453",
+        sandboxPayeeMsisdn: "46733123450",
       }),
-    ).toBe("46733123453");
+    ).toBe("46733123450");
+
+    expect(
+      payeeMsisdnForPayout({
+        intentMsisdn: "250788123456",
+        targetEnvironment: "sandbox",
+        sandboxPayeeMsisdn: null,
+      }),
+    ).toBeNull();
   });
 
   it("keeps the intent number in production", () => {
@@ -40,8 +49,25 @@ describe("payeeMsisdnForPayout", () => {
       payeeMsisdnForPayout({
         intentMsisdn: "250788123456",
         targetEnvironment: "mtnrwanda",
-        sandboxPayeeMsisdn: "46733123453",
+        sandboxPayeeMsisdn: "46733123450",
       }),
     ).toBe("250788123456");
+  });
+});
+
+describe("transferAmountForMomo", () => {
+  it("uses a fixed eur amount in sandbox", () => {
+    expect(
+      transferAmountForMomo({ netRwf: 10000, targetEnvironment: "sandbox" }),
+    ).toBe("1");
+  });
+
+  it("uses net rwf outside sandbox", () => {
+    expect(
+      transferAmountForMomo({
+        netRwf: 10000,
+        targetEnvironment: "mtnrwanda",
+      }),
+    ).toBe("10000");
   });
 });
