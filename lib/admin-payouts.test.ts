@@ -11,6 +11,7 @@ function row(overrides: Partial<MomoTransferRow> = {}): MomoTransferRow {
     msisdn: "250795107436",
     status: "successful",
     provider_ref: "FIN-99",
+    provider_reason: null,
     created_at: "2026-08-18T16:00:00.000Z",
     updated_at: "2026-08-18T16:01:00.000Z",
     ...overrides,
@@ -27,9 +28,22 @@ describe("toAdminPayout", () => {
       msisdn: "250795107436",
       status: "successful",
       providerRef: "FIN-99",
+      providerReason: null,
       createdAt: "2026-08-18T16:00:00.000Z",
       updatedAt: "2026-08-18T16:01:00.000Z",
     });
+  });
+
+  it("maps provider failure reason", () => {
+    expect(
+      toAdminPayout(
+        row({
+          status: "failed",
+          provider_ref: null,
+          provider_reason: "PAYEE_NOT_FOUND",
+        }),
+      )?.providerReason,
+    ).toBe("PAYEE_NOT_FOUND");
   });
 
   it("rejects a non-numeric amount", () => {

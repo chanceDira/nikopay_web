@@ -16,6 +16,7 @@ let tokenCache: TokenCache | null = null;
 export type MomoTransferLookup = {
   status: MomoTransferStatus;
   financialTransactionId: string | null;
+  providerReason: string | null;
 };
 
 export async function createAccessToken(
@@ -159,8 +160,41 @@ export async function getTransferStatus(
 
   return {
     ok: true,
-    lookup: { status, financialTransactionId },
+    lookup: {
+      status,
+      financialTransactionId,
+      providerReason: formatProviderReason(body),
+    },
   };
+}
+
+/** MTN returns `reason` (code) and sometimes `reasonCode` / message text. */
+export function formatProviderReason(
+  body: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!body) {
+    return null;
+  }
+
+  let code = "";
+  if (typeof body.reason === "string" && body.reason.trim()) {
+    code = body.reason.trim();
+  } else if (typeof body.reasonCode === "string" && body.reasonCode.trim()) {
+    code = body.reasonCode.trim();
+  }
+
+  const message =
+    typeof body.message === "string" && body.message.trim()
+      ? body.message.trim()
+      : "";
+
+  if (!code && !message) {
+    return null;
+  }
+  if (code && message && message !== code) {
+    return `${code}: ${message}`;
+  }
+  return code || message;
 }
 
 export async function getAccountBalance(

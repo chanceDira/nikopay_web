@@ -436,6 +436,16 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
                 {intent.payout.providerRef ?? "Waiting for MTN confirmation"}
               </dd>
             </div>
+            {intent.payout.providerReason ? (
+              <div className="sm:col-span-2">
+                <dt className="text-niko-muted mb-1 font-sans">
+                  Provider reason
+                </dt>
+                <dd className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+                  {intent.payout.providerReason}
+                </dd>
+              </div>
+            ) : null}
           </dl>
         </div>
       )}

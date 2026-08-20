@@ -49,3 +49,14 @@ export const PUBLIC_CHAINS: Record<ChainId, PublicChainConfig> = {
 export function getPublicChain(chain: ChainId): PublicChainConfig {
   return PUBLIC_CHAINS[chain];
 }
+
+export function txExplorerUrl(
+  chain: ChainId,
+  txHash: string,
+): string | null {
+  const base = PUBLIC_CHAINS[chain].blockExplorerUrls[0];
+  if (!base || !txHash) {
+    return null;
+  }
+  return `${base.replace(/\/$/, "")}/tx/${txHash}`;
+}

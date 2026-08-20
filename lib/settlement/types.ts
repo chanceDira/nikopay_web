@@ -42,6 +42,7 @@ export type IntentPayout = {
   status: "pending" | "successful" | "failed" | "timeout";
   referenceId: string;
   providerRef?: string;
+  providerReason?: string;
   updatedAt: string;
 };
 

@@ -9,6 +9,7 @@ import {
   payeeMsisdnForPayout,
   transferAmountForMomo,
 } from "@/lib/momo/status";
+import { notifyIntentFailed } from "@/lib/notify/failed";
 import { notifyIntentPaid } from "@/lib/notify/paid";
 import { transitionStatus } from "@/lib/settlement/intent-status";
 import type { PaymentIntent } from "@/lib/settlement/types";
@@ -73,6 +74,7 @@ export async function applyMomoCallback(
   referenceId: string,
   providerStatus: unknown,
   financialTransactionId: string | null,
+  providerReason: string | null = null,
 ) : Promise<
   | { ok: true; result: PayoutRunResult }
   | { ok: false; reason: string; status: number }
@@ -82,7 +84,12 @@ export async function applyMomoCallback(
     return { ok: false, reason: "invalid momo status", status: 400 };
   }
 
-  return settleReference(referenceId, status, financialTransactionId);
+  return settleReference(
+    referenceId,
+    status,
+    financialTransactionId,
+    providerReason,
+  );
 }
 
 async function payoutOne(
@@ -122,6 +129,7 @@ async function payoutOne(
       transfer.row.reference_id,
       lookup.lookup.status,
       lookup.lookup.financialTransactionId,
+      lookup.lookup.providerReason,
     );
   }
 
@@ -164,6 +172,7 @@ async function payoutOne(
         transfer.row.reference_id,
         again.lookup.status,
         again.lookup.financialTransactionId,
+        again.lookup.providerReason,
       );
     }
   } else {
@@ -307,6 +316,7 @@ async function settleReference(
   referenceId: string,
   momoStatus: MomoTransferRow["status"],
   financialTransactionId: string | null,
+  providerReason: string | null = null,
 ) : Promise<
   | { ok: true; result: PayoutRunResult }
   | { ok: false; reason: string; status: number }
@@ -322,12 +332,25 @@ async function settleReference(
     return { ok: false, reason: "payout not found", status: 404 };
   }
 
+  const transferPatch: {
+    status: MomoTransferRow["status"];
+    provider_ref: string | null;
+    provider_reason?: string | null;
+  } = {
+    status: momoStatus,
+    provider_ref: financialTransactionId,
+  };
+  if (
+    momoStatus === "failed" ||
+    momoStatus === "timeout" ||
+    providerReason
+  ) {
+    transferPatch.provider_reason = providerReason;
+  }
+
   const updated = await supabase
     .from("momo_transfers")
-    .update({
-      status: momoStatus,
-      provider_ref: financialTransactionId,
-    })
+    .update(transferPatch)
     .eq("id", data.id)
     .select()
     .maybeSingle();
@@ -351,6 +374,8 @@ async function settleReference(
 
       if (intentUpdate === "paid") {
         await notifyIntentPaid(data.intent_id);
+      } else if (intentUpdate === "manual_review") {
+        await notifyIntentFailed(data.intent_id);
       }
     }
   }
@@ -387,7 +412,12 @@ async function markTransferFailed(referenceId: string): Promise<void> {
   const supabase = createAdminClient();
   await supabase
     .from("momo_transfers")
-    .update({ status: "failed" })
+    .update({
+      status: "failed",
+      // Local submit failure only. Do not email: MTN may have accepted
+      // the transfer even if our HTTP response was lost.
+      provider_reason: "request_not_accepted",
+    })
     .eq("reference_id", referenceId)
     .eq("status", "pending");
 }

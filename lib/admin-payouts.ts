@@ -21,6 +21,7 @@ export type AdminPayout = {
   msisdn: string;
   status: MomoPayoutStatus;
   providerRef: string | null;
+  providerReason: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -48,6 +49,7 @@ export function toAdminPayout(row: MomoTransferRow): AdminPayout | null {
     msisdn: row.msisdn,
     status: row.status,
     providerRef: row.provider_ref,
+    providerReason: row.provider_reason,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

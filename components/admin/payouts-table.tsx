@@ -100,6 +100,7 @@ export function AdminPayoutsTable() {
                 <th className="px-6 py-4">Amount</th>
                 <th className="px-6 py-4">MoMo status</th>
                 <th className="px-6 py-4">Provider ref</th>
+                <th className="px-6 py-4">Reason</th>
                 <th className="px-6 py-4 text-right">Intent</th>
               </tr>
             </thead>
@@ -107,7 +108,7 @@ export function AdminPayoutsTable() {
               {loading && filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-6 py-12 text-center text-niko-muted"
                   >
                     Loading...
@@ -116,7 +117,7 @@ export function AdminPayoutsTable() {
               ) : filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-6 py-12 text-center text-niko-muted"
                   >
                     No MoMo transfers yet. Run payouts after a deposit is
@@ -138,6 +139,9 @@ export function AdminPayoutsTable() {
                     <td className="px-6 py-4">{statusBadge(row.status)}</td>
                     <td className="px-6 py-4 font-mono text-xs text-foreground">
                       {row.providerRef ?? "—"}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-xs text-niko-muted max-w-[14rem] truncate" title={row.providerReason ?? undefined}>
+                      {row.providerReason ?? "—"}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link

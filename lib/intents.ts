@@ -157,7 +157,7 @@ async function loadIntentPayout(intentId: string): Promise<IntentPayout | undefi
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("momo_transfers")
-    .select("status, reference_id, provider_ref, updated_at")
+    .select("status, reference_id, provider_ref, provider_reason, updated_at")
     .eq("intent_id", intentId)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -171,6 +171,7 @@ async function loadIntentPayout(intentId: string): Promise<IntentPayout | undefi
     status: data.status,
     referenceId: data.reference_id,
     providerRef: data.provider_ref ?? undefined,
+    providerReason: data.provider_reason ?? undefined,
     updatedAt: data.updated_at,
   };
 }

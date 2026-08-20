@@ -1,19 +1,20 @@
 import { txExplorerUrl } from "@/lib/chain-config";
-import { sendPaidEmail } from "@/lib/notify/email";
+import { sendFailedEmail } from "@/lib/notify/email";
 import { toNumber } from "@/lib/numbers";
 import { isChainId } from "@/lib/settlement/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Send MoMo success email once per intent. Safe to call on every settle.
+ * Email only when MTN confirmed FAILED/TIMEOUT via status/callback settle.
+ * Does not send for local request failures (uncertain whether MTN accepted).
  * Does not log the email address.
  */
-export async function notifyIntentPaid(intentId: string): Promise<void> {
+export async function notifyIntentFailed(intentId: string): Promise<void> {
   const supabase = createAdminClient();
   const loaded = await supabase
     .from("payment_intents")
     .select(
-      "id, status, notify_email, paid_notified_at, net_rwf, usdt_amount, fee_rwf, rate, msisdn, momo_ref, deposit_tx, chain_id, wallet_address",
+      "id, status, notify_email, failed_notified_at, net_rwf, usdt_amount, fee_rwf, rate, msisdn, deposit_tx, chain_id, wallet_address",
     )
     .eq("id", intentId)
     .maybeSingle();
@@ -23,7 +24,11 @@ export async function notifyIntentPaid(intentId: string): Promise<void> {
   }
 
   const row = loaded.data;
-  if (row.status !== "paid" || !row.notify_email || row.paid_notified_at) {
+  if (
+    row.status !== "manual_review" ||
+    !row.notify_email ||
+    row.failed_notified_at
+  ) {
     return;
   }
   if (!isChainId(row.chain_id)) {
@@ -32,18 +37,30 @@ export async function notifyIntentPaid(intentId: string): Promise<void> {
 
   const transfer = await supabase
     .from("momo_transfers")
-    .select("reference_id, provider_ref")
+    .select("reference_id, status, provider_reason")
     .eq("intent_id", intentId)
-    .eq("status", "successful")
+    .in("status", ["failed", "timeout"])
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  const depositTx = row.deposit_tx ?? undefined;
-  const momoFinancial =
-    transfer.data?.provider_ref ?? row.momo_ref ?? undefined;
+  if (transfer.error || !transfer.data) {
+    return;
+  }
 
-  const sent = await sendPaidEmail({
+  // Local submit failures store this marker and must not email.
+  if (transfer.data.provider_reason === "request_not_accepted") {
+    return;
+  }
+
+  const momoStatus = transfer.data.status;
+  if (momoStatus !== "failed" && momoStatus !== "timeout") {
+    return;
+  }
+
+  const depositTx = row.deposit_tx ?? undefined;
+
+  const sent = await sendFailedEmail({
     to: row.notify_email,
     intentId: row.id,
     netRwf: toNumber(row.net_rwf),
@@ -57,9 +74,9 @@ export async function notifyIntentPaid(intentId: string): Promise<void> {
     depositExplorerUrl: depositTx
       ? (txExplorerUrl(row.chain_id, depositTx) ?? undefined)
       : undefined,
-    momoRef: momoFinancial,
-    momoFinancialId: momoFinancial,
-    momoReferenceId: transfer.data?.reference_id ?? undefined,
+    momoStatus,
+    momoReferenceId: transfer.data.reference_id,
+    providerReason: transfer.data.provider_reason ?? undefined,
   });
 
   if (!sent.ok) {
@@ -68,8 +85,8 @@ export async function notifyIntentPaid(intentId: string): Promise<void> {
 
   await supabase
     .from("payment_intents")
-    .update({ paid_notified_at: new Date().toISOString() })
+    .update({ failed_notified_at: new Date().toISOString() })
     .eq("id", intentId)
-    .eq("status", "paid")
-    .is("paid_notified_at", null);
+    .eq("status", "manual_review")
+    .is("failed_notified_at", null);
 }
