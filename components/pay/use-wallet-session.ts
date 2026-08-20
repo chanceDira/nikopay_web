@@ -9,19 +9,13 @@ import {
 import {
   getAccounts,
   getInjectedProvider,
+  asWalletKind,
   type WalletKind,
 } from "@/lib/wallet/browser";
 import {
   disconnectWalletConnect,
   restoreWalletConnect,
 } from "@/lib/wallet/walletconnect";
-
-function asWalletKind(name: string): WalletKind {
-  if (name === "Coinbase Wallet" || name === "WalletConnect") {
-    return name;
-  }
-  return "MetaMask";
-}
 
 export function useWalletSession() {
   const [walletConnected, setWalletConnected] = useState(false);

@@ -20,6 +20,13 @@ export type EthereumProvider = {
 
 export type WalletKind = "MetaMask" | "Coinbase Wallet" | "WalletConnect";
 
+export function asWalletKind(name: string): WalletKind {
+  if (name === "Coinbase Wallet" || name === "WalletConnect") {
+    return name;
+  }
+  return "MetaMask";
+}
+
 function asProvider(value: unknown): EthereumProvider | null {
   if (
     typeof value !== "object" ||
@@ -37,7 +44,7 @@ export function getInjectedProvider(
   if (kind === "WalletConnect") {
     return {
       ok: false,
-      reason: "walletconnect is not enabled yet. use metamask or coinbase wallet",
+      reason: "walletconnect is not an injected provider",
     };
   }
 

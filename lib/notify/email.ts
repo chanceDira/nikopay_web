@@ -6,8 +6,6 @@ import { formatRwf, formatUsdt } from "@/lib/rates";
 import type { ChainId } from "@/lib/settlement/types";
 import { resolvePublicSiteUrl } from "@/lib/site-url";
 
-export { resolvePublicSiteUrl } from "@/lib/site-url";
-
 export type PayoutEmailProofs = {
   chain: ChainId;
   depositTx?: string;

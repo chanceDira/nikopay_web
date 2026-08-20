@@ -5,8 +5,8 @@ import { isAborted, requestQuote } from "@/lib/pay-api";
 import { usdtForTargetRwf } from "@/lib/settlement/quote";
 import type { ChainId, Quote } from "@/lib/settlement/types";
 
-export const QUOTE_PROBE_USDT = 10;
-export const QUOTE_DEBOUNCE_MS = 300;
+const QUOTE_PROBE_USDT = 10;
+const QUOTE_DEBOUNCE_MS = 300;
 
 export type AmountEntry = "rwf" | "usdt";
 

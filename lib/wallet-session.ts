@@ -1,8 +1,8 @@
-import { isStoredTrue, readLocal } from "@/lib/read-local";
+import { readLocal } from "@/lib/read-local";
 
-export const WALLET_ADDRESS_KEY = "nikopay_wallet_address";
-export const WALLET_CONNECTED_KEY = "nikopay_wallet_connected";
-export const WALLET_NAME_KEY = "nikopay_wallet_name";
+const WALLET_ADDRESS_KEY = "nikopay_wallet_address";
+const WALLET_CONNECTED_KEY = "nikopay_wallet_connected";
+const WALLET_NAME_KEY = "nikopay_wallet_name";
 
 export function persistConnectedWallet(
   address: string,
@@ -21,16 +21,8 @@ export function clearConnectedWallet(): void {
   localStorage.removeItem(WALLET_ADDRESS_KEY);
 }
 
-export function readStoredWalletAddress(): string {
-  return readLocal(WALLET_ADDRESS_KEY, "").toLowerCase();
-}
-
 export function readStoredWalletName(): string {
   return readLocal(WALLET_NAME_KEY, "MetaMask");
-}
-
-export function isWalletConnected(): boolean {
-  return isStoredTrue(WALLET_CONNECTED_KEY) && Boolean(readStoredWalletAddress());
 }
 
 export function sameWalletAddress(

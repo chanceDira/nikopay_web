@@ -13,7 +13,7 @@ import { readLocal } from "@/lib/read-local";
 import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
 import { netRwfForUsdt, usdtForTargetRwf } from "@/lib/settlement/quote";
 import { formatRwf, formatUsdt } from "@/lib/rates";
-import type { WalletKind } from "@/lib/wallet/browser";
+import { asWalletKind, type WalletKind } from "@/lib/wallet/browser";
 import { connectInjectedWallet, consentAndTransferUsdt } from "@/lib/wallet/offramp";
 import { sameWalletAddress, shortAddress } from "@/lib/wallet-session";
 
@@ -34,13 +34,6 @@ const CheckIcon = () => (
     />
   </svg>
 );
-
-function asWalletKind(name: string): WalletKind {
-  if (name === "Coinbase Wallet" || name === "WalletConnect") {
-    return name;
-  }
-  return "MetaMask";
-}
 
 function formatUsdtInput(value: number): string {
   const fixed = value.toFixed(6);

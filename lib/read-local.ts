@@ -5,7 +5,3 @@ export function readLocal(key: string, fallback: string): string {
 
   return localStorage.getItem(key) ?? fallback;
 }
-
-export function isStoredTrue(key: string): boolean {
-  return readLocal(key, "") === "true";
-}

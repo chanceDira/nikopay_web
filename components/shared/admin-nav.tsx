@@ -15,7 +15,6 @@ const links = [
   { href: "/admin/payouts", label: "Payouts" },
   { href: "/admin/fx", label: "FX" },
   { href: "/admin/treasury", label: "Treasury" },
-  { href: "/admin/users", label: "Users" },
 ] as const;
 
 const SunIcon = () => (
