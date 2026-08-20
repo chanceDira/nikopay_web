@@ -62,7 +62,7 @@ Copy from `.env.example`. Only `NEXT_PUBLIC_*` may reach the browser.
 | `MOMO_API_USER` | Sandbox API user UUID |
 | `MOMO_API_KEY` | Sandbox API key for that user |
 | `MOMO_CALLBACK_URL` | Optional production callback base, e.g. `https://your-host/api/momo/callback`. **Leave unset in sandbox.** Sandbox rejects the header when the URL host does not match the host used at API-user provision (common cause of `request_not_accepted` / `INVALID_CALLBACK_URL_HOST`). We poll status instead. |
-| `MOMO_SANDBOX_PAYEE_MSISDN` | Use `46733123450` for successful sandbox disbursements |
+| `MOMO_SANDBOX_PAYEE_MSISDN` | Sandbox payee override. Use `56733123453` for **success**. `46733123450` always fails (that is what caused `INTERNAL_PROCESSING_ERROR` on recent tests) |
 
 ### Email (optional)
 
@@ -118,7 +118,22 @@ You do **not** create a second developer portal account to get test funds.
 1. Subscribe to Disbursements. Copy the **primary** key into `MOMO_DISBURSEMENT_SUBSCRIPTION_KEY`.
 2. Provision a sandbox user (portal Sandbox User Provisioning, or the app job below).
 3. Set `MOMO_API_USER` and `MOMO_API_KEY`.
-4. Set `MOMO_SANDBOX_PAYEE_MSISDN=46733123450`.
+4. Set `MOMO_SANDBOX_PAYEE_MSISDN=56733123453` (success test number).
+
+### Sandbox test MSISDNs
+
+MTN maps these numbers to fixed outcomes in sandbox:
+
+| MSISDN | Outcome |
+| --- | --- |
+| `56733123453` | Success |
+| `46733123450` | Failed |
+| `46733123451` | Rejected |
+| `46733123452` | Timeout |
+| `46733123454` | Pending |
+
+Do not use `46733123450` when you want a successful payout. It will fail with a reason like `INTERNAL_PROCESSING_ERROR` even when the disbursement balance is fine.
+
 5. Restart / redeploy. Check **Admin → Treasury**. MTN disbursement balance should be non-zero (EUR).
 
 ### Callback URL (common failure)
@@ -177,7 +192,7 @@ curl -X POST "http://localhost:3000/api/jobs/payouts/run" \
 
 1. **Treasury:** Admin → Treasury. MTN balance > 0 EUR. Base USDT vault has liquidity (or you fund test USDT yourself).
 2. **Pay:** `/app` → connect wallet (Base Sepolia) → enter amount → MoMo number → optional email → confirm transfer.
-3. **Sandbox payee:** app may override payee to `MOMO_SANDBOX_PAYEE_MSISDN` (`46733123450`). Real Rwanda MSISDNs are for production later.
+3. **Sandbox payee:** app overrides payee to `MOMO_SANDBOX_PAYEE_MSISDN`. Use `56733123453` for success. Real Rwanda MSISDNs are for production later.
 4. **Status:** `/app/payments/<id>`. Deposit should credit, then MoMo should move to successful.
 5. **Admin:** Transactions, Payouts, Review. Failed MoMo shows `provider_reason` when MTN returns one.
 6. **Email:** if the payer left an email and SMTP is set:

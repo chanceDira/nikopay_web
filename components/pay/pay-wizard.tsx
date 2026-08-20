@@ -677,7 +677,8 @@ export function PayWizard() {
             </label>
             <p className="text-xs text-niko-muted mt-1">
               Rwanda MTN numbers (078…) or international E.164 for sandbox
-              testing (e.g. +46733123450).
+              testing. Sandbox success payee is set by the server
+              (56733123453).
             </p>
             <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
               <input
@@ -694,7 +695,7 @@ export function PayWizard() {
                 }}
                 onBlur={validateMsisdn}
                 className="w-full bg-transparent font-mono text-lg font-semibold text-foreground outline-none placeholder:text-niko-muted/40"
-                placeholder="e.g. 0787259588 or +46733123450"
+                placeholder="e.g. 0787259588 or +56733123453"
               />
               <span className="ml-3 font-semibold text-niko-teal text-xs tracking-wider uppercase">
                 MTN MoMo
