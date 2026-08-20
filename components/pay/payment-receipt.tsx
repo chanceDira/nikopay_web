@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { useIntentView } from "@/components/pay/use-intent-view";
 import { formatRwf, formatUsdt } from "@/lib/rates";
@@ -8,10 +9,29 @@ type PaymentReceiptProps = {
   id?: string;
 };
 
+function receiptDocumentTitle(paymentId: string): string {
+  return `NikoPay-receipt-${paymentId}`;
+}
+
 export function PaymentReceipt({ id }: PaymentReceiptProps) {
   const { intent, loading } = useIntentView(id, false);
 
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    const previous = document.title;
+    document.title = receiptDocumentTitle(id);
+    return () => {
+      document.title = previous;
+    };
+  }, [id]);
+
   const handlePrint = () => {
+    if (id) {
+      document.title = receiptDocumentTitle(id);
+    }
     window.print();
   };
 

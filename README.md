@@ -44,7 +44,7 @@ Copy from `.env.example`. Only `NEXT_PUBLIC_*` may reach the browser.
 | `NEXT_PUBLIC_SUPABASE_URL` | Client + server | Project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + server | Publishable / anon key |
 | `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY` | Server only | Service role. Never in the client |
-| `NEXT_PUBLIC_SITE_URL` | Client + server | `http://localhost:3000` locally; production URL on Vercel |
+| `NEXT_PUBLIC_SITE_URL` | Client + server | Local: `http://localhost:3000`. **Production (Vercel): `https://nikopay-mvp.vercel.app`.** Used for OG/canonical; emails/sitemap skip localhost automatically |
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | Client | Reown / WalletConnect Cloud project id |
 | `SETTLEMENT_INGEST_SECRET` | Server | Bearer token for deposit ingest and job routes |
 | `ADMIN_SESSION_SECRET` | Server | Optional. Falls back to Supabase secret if unset |
@@ -233,6 +233,17 @@ Sandbox does not send real MoMo SMS. Watch the status page and admin payouts.
 | `npm run fmt` / `npm run fmt:check` | Format |
 | `npm run lint` / `npm run lint:fix` | ESLint |
 | `npm run db:start` / `db:stop` / `db:reset` / `db:status` | Local Supabase |
+
+## SEO
+
+Public discovery files:
+
+| URL | Source |
+| --- | --- |
+| `/robots.txt` | `app/robots.ts` |
+| `/sitemap.xml` | `app/sitemap.ts` (home, privacy, terms only) |
+
+`/admin`, `/app`, `/auth`, and `/api` are disallowed in robots and marked `noindex`. After deploy, set `NEXT_PUBLIC_SITE_URL` to the production origin and submit the sitemap in Google Search Console.
 
 ## Layout
 

@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
+
+export const metadata: Metadata = {
+  title: "Terms of use",
+  description: "Terms for using NikoPay.",
+  alternates: { canonical: "/terms" },
+};
 
 export default function TermsPage() {
   return (

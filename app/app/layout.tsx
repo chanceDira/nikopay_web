@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
 import { AppNav } from "@/components/shared/app-nav";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
+};
 
 export default function AppLayout({
   children,
