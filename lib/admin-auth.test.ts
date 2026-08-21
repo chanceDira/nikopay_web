@@ -25,9 +25,9 @@ describe("admin challenge", () => {
 
   it("rejects an expired stamp", () => {
     const message = buildAdminChallenge(SECRET, NOW);
-    expect(
-      parseAdminChallenge(message, SECRET, NOW + 6 * 60 * 1000).ok,
-    ).toBe(false);
+    expect(parseAdminChallenge(message, SECRET, NOW + 6 * 60 * 1000).ok).toBe(
+      false,
+    );
   });
 });
 

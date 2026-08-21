@@ -36,7 +36,9 @@ export function AdminFxForm() {
   };
 
   useEffect(() => {
-    const timer = window.setTimeout(() => { void loadHistory(); }, 0);
+    const timer = window.setTimeout(() => {
+      void loadHistory();
+    }, 0);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -181,13 +183,19 @@ export function AdminFxForm() {
             <tbody className="divide-y divide-niko-border/10 font-mono text-foreground">
               {history.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-niko-muted font-sans text-xs">
+                  <td
+                    colSpan={4}
+                    className="px-4 py-6 text-center text-niko-muted font-sans text-xs"
+                  >
                     No rates configured yet.
                   </td>
                 </tr>
               ) : (
                 history.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-niko-surface/10 transition-colors">
+                  <tr
+                    key={idx}
+                    className="hover:bg-niko-surface/10 transition-colors"
+                  >
                     <td className="px-4 py-3 text-foreground/80 font-sans">
                       {formatDate(row.effectiveFrom)}
                     </td>

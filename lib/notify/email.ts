@@ -47,12 +47,12 @@ export type SmtpEmailConfig = {
 };
 
 export function getEmailConfig():
-  | { ok: true; config: SmtpEmailConfig }
-  | { ok: false; reason: string } {
+  { ok: true; config: SmtpEmailConfig } | { ok: false; reason: string } {
   const host = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
   const user = process.env.SMTP_USER?.trim();
   const pass = process.env.SMTP_PASS?.trim();
-  const from = process.env.EMAIL_FROM?.trim() || (user ? `NikoPay <${user}>` : "");
+  const from =
+    process.env.EMAIL_FROM?.trim() || (user ? `NikoPay <${user}>` : "");
 
   if (!user || !pass || !from) {
     return { ok: false, reason: "email is not configured" };
@@ -93,8 +93,7 @@ export function buildPaidEmailContent(
   const amount = formatRwf(input.netRwf);
   const usdt = formatUsdt(input.usdtAmount);
   const chainName = getPublicChain(input.chain).name;
-  const momoFinancial =
-    input.momoFinancialId ?? input.momoRef ?? "confirmed";
+  const momoFinancial = input.momoFinancialId ?? input.momoRef ?? "confirmed";
 
   const textLines = [
     "Your NikoPay payout was confirmed by MTN Mobile Money.",
@@ -183,8 +182,7 @@ export function buildFailedEmailContent(
   const amount = formatRwf(input.netRwf);
   const usdt = formatUsdt(input.usdtAmount);
   const chainName = getPublicChain(input.chain).name;
-  const momoLabel =
-    input.momoStatus === "timeout" ? "timed out" : "failed";
+  const momoLabel = input.momoStatus === "timeout" ? "timed out" : "failed";
 
   const textLines = [
     "MTN Mobile Money confirmed that your NikoPay payout did not reach the recipient.",
@@ -279,9 +277,7 @@ export function buildFailedEmailContent(
 export async function sendPaidEmail(
   input: PaidEmailInput,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
-  return sendMail(input.to, (siteUrl) =>
-    buildPaidEmailContent(input, siteUrl),
-  );
+  return sendMail(input.to, (siteUrl) => buildPaidEmailContent(input, siteUrl));
 }
 
 export async function sendFailedEmail(
@@ -294,9 +290,7 @@ export async function sendFailedEmail(
 
 async function sendMail(
   to: string,
-  build: (
-    siteUrl: string,
-  ) => { subject: string; text: string; html: string },
+  build: (siteUrl: string) => { subject: string; text: string; html: string },
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   const loaded = getEmailConfig();
   if (!loaded.ok) {

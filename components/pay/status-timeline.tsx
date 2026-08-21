@@ -252,7 +252,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
       return 2;
     }
     if (status === "detected") return 1;
-    return 0; 
+    return 0;
   };
   const lineProgress = getLineProgress();
 

@@ -7,10 +7,7 @@ export type EthereumProvider = {
   isMetaMask?: boolean;
   isCoinbaseWallet?: boolean;
   providers?: EthereumProvider[];
-  request: (args: {
-    method: string;
-    params?: unknown;
-  }) => Promise<unknown>;
+  request: (args: { method: string; params?: unknown }) => Promise<unknown>;
   on?: (event: string, handler: (...args: unknown[]) => void) => void;
   removeListener?: (
     event: string,
@@ -142,7 +139,9 @@ export async function requestAccounts(
 /** Silent account read (no permission popup). Empty when locked/disconnected. */
 export async function getAccounts(
   provider: EthereumProvider,
-): Promise<{ ok: true; address: string | null } | { ok: false; reason: string }> {
+): Promise<
+  { ok: true; address: string | null } | { ok: false; reason: string }
+> {
   try {
     const result = await provider.request({ method: "eth_accounts" });
     if (!Array.isArray(result)) {

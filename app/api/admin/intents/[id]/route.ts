@@ -49,8 +49,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   const patch: IntentPatch = {};
 
   if (body.status !== undefined) {
-    if (!isPaymentStatus(body.status))
-      return jsonError("invalid status", 400);
+    if (!isPaymentStatus(body.status)) return jsonError("invalid status", 400);
     patch.status = body.status;
   }
 

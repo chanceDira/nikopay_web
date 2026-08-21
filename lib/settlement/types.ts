@@ -69,7 +69,10 @@ export type PaymentIntent = {
 
 // Returned by the public list endpoint:
 // msisdn and notifyEmail omitted to avoid leaking PII
-export type PaymentIntentSummary = Omit<PaymentIntent, "msisdn" | "notifyEmail">;
+export type PaymentIntentSummary = Omit<
+  PaymentIntent,
+  "msisdn" | "notifyEmail"
+>;
 
 export type TransitionActor = "system" | "admin";
 

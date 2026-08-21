@@ -36,7 +36,10 @@ type WalletPickerProps = {
   disabled?: boolean;
 };
 
-export function WalletPicker({ onSelect, disabled = false }: WalletPickerProps) {
+export function WalletPicker({
+  onSelect,
+  disabled = false,
+}: WalletPickerProps) {
   const walletConnectReady = Boolean(getWalletConnectProjectId());
 
   return (

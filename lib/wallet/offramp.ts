@@ -149,7 +149,5 @@ async function resolveWalletProvider(
   if (kind !== "WalletConnect") {
     return getInjectedProvider(kind);
   }
-  return connect
-    ? connectWalletConnect(chainId)
-    : restoreWalletConnect();
+  return connect ? connectWalletConnect(chainId) : restoreWalletConnect();
 }

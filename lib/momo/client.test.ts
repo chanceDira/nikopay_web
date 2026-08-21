@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  callbackHostFromUrl,
-  formatProviderReason,
-} from "@/lib/momo/client";
+import { callbackHostFromUrl, formatProviderReason } from "@/lib/momo/client";
 
 describe("formatProviderReason", () => {
   it("prefers reason code and optional message", () => {

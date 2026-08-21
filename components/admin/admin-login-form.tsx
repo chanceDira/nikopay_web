@@ -5,10 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { WalletPicker } from "@/components/shared/wallet-picker";
-import {
-  adminAccessMessage,
-  isAdminAccessReason,
-} from "@/lib/admin-access";
+import { adminAccessMessage, isAdminAccessReason } from "@/lib/admin-access";
 import { persistAdminWalletKind } from "@/lib/admin-wallet-kind";
 import type { WalletKind } from "@/lib/wallet/browser";
 import { proveTreasuryAdmin } from "@/lib/wallet/admin";
@@ -22,9 +19,7 @@ export function AdminLoginForm() {
   const [walletState, setWalletState] = useState<ConnectionState>("idle");
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const [error, setError] = useState(() =>
-    isAdminAccessReason(accessError)
-      ? adminAccessMessage(accessError)
-      : "",
+    isAdminAccessReason(accessError) ? adminAccessMessage(accessError) : "",
   );
 
   const handleConnect = async (walletName: WalletKind) => {

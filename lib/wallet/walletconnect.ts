@@ -109,9 +109,8 @@ async function createWalletConnectClient(): Promise<
   const origin = window.location.origin;
 
   try {
-    const { default: WalletConnectEthereumProvider } = await import(
-      "@walletconnect/ethereum-provider"
-    );
+    const { default: WalletConnectEthereumProvider } =
+      await import("@walletconnect/ethereum-provider");
     const provider = (await WalletConnectEthereumProvider.init({
       projectId,
       showQrModal: true,

@@ -153,7 +153,9 @@ export async function getPaymentIntent(
   return { ok: true, intent: { ...intent, payout } };
 }
 
-async function loadIntentPayout(intentId: string): Promise<IntentPayout | undefined> {
+async function loadIntentPayout(
+  intentId: string,
+): Promise<IntentPayout | undefined> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("momo_transfers")

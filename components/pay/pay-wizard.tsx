@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useLiveQuote, type AmountEntry } from "@/components/pay/use-live-quote";
+import {
+  useLiveQuote,
+  type AmountEntry,
+} from "@/components/pay/use-live-quote";
 import { useWalletSession } from "@/components/pay/use-wallet-session";
 import { WalletPicker } from "@/components/shared/wallet-picker";
 import { getPublicChain } from "@/lib/chain-config";
@@ -14,7 +17,10 @@ import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
 import { netRwfForUsdt, usdtForTargetRwf } from "@/lib/settlement/quote";
 import { formatRwf, formatUsdt } from "@/lib/rates";
 import { asWalletKind, type WalletKind } from "@/lib/wallet/browser";
-import { connectInjectedWallet, consentAndTransferUsdt } from "@/lib/wallet/offramp";
+import {
+  connectInjectedWallet,
+  consentAndTransferUsdt,
+} from "@/lib/wallet/offramp";
 import { sameWalletAddress, shortAddress } from "@/lib/wallet-session";
 
 type Step = 1 | 2 | 3 | 4;
@@ -94,9 +100,8 @@ export function PayWizard() {
   const [gateWalletState, setGateWalletState] = useState<
     "idle" | "connecting" | "success"
   >("idle");
-  const [gateSelectedWallet, setGateSelectedWallet] = useState<WalletKind | null>(
-    null,
-  );
+  const [gateSelectedWallet, setGateSelectedWallet] =
+    useState<WalletKind | null>(null);
   const [gateError, setGateError] = useState("");
   const [payError, setPayError] = useState("");
 
@@ -632,9 +637,9 @@ export function PayWizard() {
             disabled={!amountQuoteReady || !chainPayReady}
             className="w-full py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-                {quoteStatus === "loading" && hasAmount
-                  ? "Fetching live quote..."
-                  : continueLabel}
+            {quoteStatus === "loading" && hasAmount
+              ? "Fetching live quote..."
+              : continueLabel}
             <svg
               className="h-4 w-4"
               fill="none"
@@ -663,8 +668,7 @@ export function PayWizard() {
             </label>
             <p className="text-xs text-niko-muted mt-1">
               Rwanda MTN numbers (078…) or international E.164 for sandbox
-              testing. Sandbox success payee is set by the server
-              (56733123453).
+              testing. Sandbox success payee is set by the server (56733123453).
             </p>
             <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
               <input
@@ -1015,10 +1019,10 @@ export function PayWizard() {
                     Two-step wallet approval
                   </h4>
                   <p className="mt-1.5 text-xs text-foreground leading-relaxed">
-                    First you sign an offramp consent that shows the USDT amount,
-                    treasury, and MoMo recipient. Then your wallet sends USDT to
-                    the NikoPay treasury. RWF is paid after the deposit is
-                    confirmed on {chainConfig.name}.
+                    First you sign an offramp consent that shows the USDT
+                    amount, treasury, and MoMo recipient. Then your wallet sends
+                    USDT to the NikoPay treasury. RWF is paid after the deposit
+                    is confirmed on {chainConfig.name}.
                   </p>
                 </div>
 
@@ -1063,9 +1067,7 @@ export function PayWizard() {
                   )}
                 </div>
 
-                {payError && (
-                  <p className="text-xs text-red-400">{payError}</p>
-                )}
+                {payError && <p className="text-xs text-red-400">{payError}</p>}
 
                 <div className="flex gap-3 pt-2">
                   <button

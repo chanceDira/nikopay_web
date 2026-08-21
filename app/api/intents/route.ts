@@ -46,9 +46,12 @@ export async function GET(request: Request) {
     return jsonError(result.reason, result.status);
   }
 
-  const masked = result.intents.map(
-    ({ msisdn: _msisdn, notifyEmail: _notifyEmail, ...rest }) => rest,
-  );
+  const masked = result.intents.map((intent) => {
+    const rest = { ...intent } as Record<string, unknown>;
+    delete rest.msisdn;
+    delete rest.notifyEmail;
+    return rest;
+  });
 
   return jsonData(masked);
 }

@@ -140,7 +140,10 @@ export function AdminPayoutsTable() {
                     <td className="px-6 py-4 font-mono text-xs text-foreground">
                       {row.providerRef ?? "—"}
                     </td>
-                    <td className="px-6 py-4 font-mono text-xs text-niko-muted max-w-[14rem] truncate" title={row.providerReason ?? undefined}>
+                    <td
+                      className="px-6 py-4 font-mono text-xs text-niko-muted max-w-[14rem] truncate"
+                      title={row.providerReason ?? undefined}
+                    >
                       {row.providerReason ?? "—"}
                     </td>
                     <td className="px-6 py-4 text-right">

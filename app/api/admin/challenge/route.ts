@@ -1,8 +1,5 @@
 import { jsonData, jsonError } from "@/lib/http";
-import {
-  buildAdminChallenge,
-  getAdminHmacSecret,
-} from "@/lib/admin-auth";
+import { buildAdminChallenge, getAdminHmacSecret } from "@/lib/admin-auth";
 import { loadActiveTreasuryAddresses } from "@/lib/treasury";
 
 export async function GET() {

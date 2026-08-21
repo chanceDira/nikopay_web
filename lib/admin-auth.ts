@@ -34,10 +34,7 @@ export function resolveAdminHmacSecret(
   return null;
 }
 
-export function buildAdminChallenge(
-  secret: string,
-  now = Date.now(),
-): string {
+export function buildAdminChallenge(secret: string, now = Date.now()): string {
   return `${MESSAGE_HEAD}${now}.${hmacHex(secret, String(now))}`;
 }
 
@@ -145,18 +142,14 @@ export function clearAdminCookie(response: NextResponse): void {
 export async function authorizeAdmin(
   request: Request,
 ): Promise<
-  | { ok: true; address: string }
-  | { ok: false; reason: string; status: number }
+  { ok: true; address: string } | { ok: false; reason: string; status: number }
 > {
   const secret = getAdminHmacSecret();
   if (!secret) {
     return { ok: false, reason: "admin is not configured", status: 503 };
   }
 
-  const address = readAdminCookieAddress(
-    request.headers.get("cookie"),
-    secret,
-  );
+  const address = readAdminCookieAddress(request.headers.get("cookie"), secret);
   if (!address) {
     return { ok: false, reason: "unauthorized", status: 401 };
   }

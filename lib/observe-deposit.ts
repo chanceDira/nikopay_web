@@ -47,7 +47,11 @@ export async function observeDepositTx(input: {
     return { ok: false, reason: receipt.reason, status: 503 };
   }
   if (!receipt.result) {
-    return { ok: false, reason: "transaction is not confirmed yet", status: 409 };
+    return {
+      ok: false,
+      reason: "transaction is not confirmed yet",
+      status: 409,
+    };
   }
   if (receipt.result.status !== "0x1") {
     return { ok: false, reason: "transaction failed", status: 409 };
@@ -61,7 +65,11 @@ export async function observeDepositTx(input: {
     token.decimals,
   );
   if (transfers.length === 0) {
-    return { ok: false, reason: "no usdt transfer to treasury in this transaction", status: 409 };
+    return {
+      ok: false,
+      reason: "no usdt transfer to treasury in this transaction",
+      status: 409,
+    };
   }
 
   let last: IngestDepositResult | null = null;

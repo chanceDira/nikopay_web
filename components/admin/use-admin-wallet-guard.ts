@@ -95,9 +95,6 @@ export function useAdminWalletGuard(enabled: boolean): {
 
   useEffect(() => {
     if (!enabled) {
-      setReady(true);
-      setAuthed(false);
-      setSessionAddress(null);
       sessionRef.current = null;
       lockingOut.current = false;
       return;
@@ -105,8 +102,13 @@ export function useAdminWalletGuard(enabled: boolean): {
 
     let cancelled = false;
     lockingOut.current = false;
-    setReady(false);
-    setAuthed(false);
+    queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
+      setReady(false);
+      setAuthed(false);
+    });
 
     void (async () => {
       const res = await fetch("/api/admin/session", {
@@ -231,5 +233,9 @@ export function useAdminWalletGuard(enabled: boolean): {
     };
   }, [enabled, authed, sessionAddress, lockOut, verifyWalletMatchesSession]);
 
-  return { sessionAddress, ready, authed };
+  return {
+    sessionAddress: enabled ? sessionAddress : null,
+    ready: enabled ? ready : true,
+    authed: enabled ? authed : false,
+  };
 }

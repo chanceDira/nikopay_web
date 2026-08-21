@@ -34,7 +34,13 @@ export function useLiveQuote(input: {
 }) {
   const { chain, entry, rwfPayout, usdtSell } = input;
   const activeAmount =
-    entry === "rwf" ? (rwfPayout > 0 ? rwfPayout : 0) : usdtSell > 0 ? usdtSell : 0;
+    entry === "rwf"
+      ? rwfPayout > 0
+        ? rwfPayout
+        : 0
+      : usdtSell > 0
+        ? usdtSell
+        : 0;
   const requestKey = `${chain}:${entry}:${activeAmount}`;
   const [snapshot, setSnapshot] = useState<Snapshot>({
     key: "",

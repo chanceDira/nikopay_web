@@ -16,12 +16,7 @@ export default function PaymentsHistoryPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!hydrated) {
-      return;
-    }
-    if (!walletAddress) {
-      setIntents([]);
-      setLoading(false);
+    if (!hydrated || !walletAddress) {
       return;
     }
 
@@ -47,6 +42,9 @@ export default function PaymentsHistoryPage() {
       window.clearInterval(interval);
     };
   }, [hydrated, walletAddress]);
+
+  const visibleIntents = walletAddress ? intents : [];
+  const visibleLoading = !hydrated || (Boolean(walletAddress) && loading);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -112,14 +110,14 @@ export default function PaymentsHistoryPage() {
       title="Payment history"
       description="Track and review your recent USDT to Mobile Money payments."
     >
-      {loading ? (
+      {visibleLoading ? (
         <div className="flex flex-col items-center justify-center py-12 space-y-3">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-niko-teal border-t-transparent" />
           <p className="text-xs text-niko-muted font-medium">
             Loading history...
           </p>
         </div>
-      ) : intents.length === 0 ? (
+      ) : visibleIntents.length === 0 ? (
         <div className="text-center py-12 space-y-4">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-niko-teal/5 border border-niko-teal/10">
             <svg
@@ -165,7 +163,7 @@ export default function PaymentsHistoryPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-niko-border/30 text-sm">
-              {intents.map((intent) => {
+              {visibleIntents.map((intent) => {
                 const date = new Date(intent.createdAt).toLocaleDateString(
                   "en-RW",
                   {

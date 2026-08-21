@@ -1,8 +1,4 @@
-import {
-  jsonData,
-  jsonError,
-  readJsonBody,
-} from "@/lib/http";
+import { jsonData, jsonError, readJsonBody } from "@/lib/http";
 import { insertWaitlistSignup, parseWaitlistSignup } from "@/lib/waitlist";
 
 const WINDOW_MS = 10 * 60 * 1000;
@@ -46,7 +42,9 @@ function clientIp(request: Request): string {
 
 function allowWaitlist(ip: string): boolean {
   const now = Date.now();
-  const recent = (hits.get(ip) ?? []).filter((stamp) => now - stamp < WINDOW_MS);
+  const recent = (hits.get(ip) ?? []).filter(
+    (stamp) => now - stamp < WINDOW_MS,
+  );
   if (recent.length >= MAX_HITS) {
     hits.set(ip, recent);
     return false;

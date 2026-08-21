@@ -80,7 +80,7 @@ export async function requestTransfer(
     "x-target-environment": config.targetEnvironment,
     "content-type": "application/json",
   };
-  
+
   if (config.callbackUrl && config.targetEnvironment !== "sandbox") {
     headers["x-callback-url"] =
       `${config.callbackUrl.replace(/\/$/, "")}/${input.referenceId}`;
@@ -361,7 +361,9 @@ export function clearMomoTokenCache(): void {
   tokenCache = null;
 }
 
-export function callbackHostFromUrl(url: string | null | undefined): string | null {
+export function callbackHostFromUrl(
+  url: string | null | undefined,
+): string | null {
   if (!url?.trim()) {
     return null;
   }

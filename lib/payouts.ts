@@ -27,7 +27,7 @@ export type PayoutRunResult = {
 
 export async function runPayouts(
   intentId?: string,
-) : Promise<
+): Promise<
   | { ok: true; payouts: PayoutRunResult[] }
   | { ok: false; reason: string; status: number }
 > {
@@ -75,7 +75,7 @@ export async function applyMomoCallback(
   providerStatus: unknown,
   financialTransactionId: string | null,
   providerReason: string | null = null,
-) : Promise<
+): Promise<
   | { ok: true; result: PayoutRunResult }
   | { ok: false; reason: string; status: number }
 > {
@@ -94,7 +94,7 @@ export async function applyMomoCallback(
 
 async function payoutOne(
   intentId: string,
-) : Promise<
+): Promise<
   | { ok: true; result: PayoutRunResult }
   | { ok: false; reason: string; status: number }
 > {
@@ -194,7 +194,7 @@ async function payoutOne(
 
 async function startPayout(
   intent: PaymentIntent,
-) : Promise<{ ok: true } | { ok: false; reason: string; status: number }> {
+): Promise<{ ok: true } | { ok: false; reason: string; status: number }> {
   const moved = transitionStatus("credited", "payout_pending");
   if (!moved.ok) {
     return { ok: false, reason: moved.reason, status: 503 };
@@ -289,7 +289,7 @@ async function startPayout(
 
 async function loadOpenTransfer(
   intentId: string,
-) : Promise<
+): Promise<
   | { ok: true; row: MomoTransferRow }
   | { ok: false; reason: string; status: number }
 > {
@@ -317,7 +317,7 @@ async function settleReference(
   momoStatus: MomoTransferRow["status"],
   financialTransactionId: string | null,
   providerReason: string | null = null,
-) : Promise<
+): Promise<
   | { ok: true; result: PayoutRunResult }
   | { ok: false; reason: string; status: number }
 > {
@@ -340,11 +340,7 @@ async function settleReference(
     status: momoStatus,
     provider_ref: financialTransactionId,
   };
-  if (
-    momoStatus === "failed" ||
-    momoStatus === "timeout" ||
-    providerReason
-  ) {
+  if (momoStatus === "failed" || momoStatus === "timeout" || providerReason) {
     transferPatch.provider_reason = providerReason;
   }
 
@@ -441,7 +437,7 @@ async function moveIntentToManualReview(intentId: string): Promise<void> {
 
 export function parsePayoutIntentId(
   value: string | null,
-) : { ok: true; intentId?: string } | { ok: false; reason: string } {
+): { ok: true; intentId?: string } | { ok: false; reason: string } {
   if (value === null || value === "") {
     return { ok: true };
   }

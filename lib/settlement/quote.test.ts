@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createQuote, netRwfForUsdt, usdtForTargetRwf } from "@/lib/settlement/quote";
+import {
+  createQuote,
+  netRwfForUsdt,
+  usdtForTargetRwf,
+} from "@/lib/settlement/quote";
 import type { FxConfig } from "@/lib/settlement/types";
 
 const fx: FxConfig = {

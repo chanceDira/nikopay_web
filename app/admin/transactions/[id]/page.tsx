@@ -21,13 +21,15 @@ export default function AdminTransactionDetailPage({ params }: Props) {
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-
   useEffect(() => {
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       const res = await fetch(`/api/admin/intents/${id}`, { headers: HEADERS });
       if (cancelled) return;
-      if (res.status === 404) { setPageState("not_found"); return; }
+      if (res.status === 404) {
+        setPageState("not_found");
+        return;
+      }
       if (!res.ok) return;
       const json = (await res.json()) as { data: PaymentIntent };
       const data = json.data;
@@ -147,42 +149,70 @@ export default function AdminTransactionDetailPage({ params }: Props) {
           <div className="lg:col-span-2 space-y-6">
             <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md space-y-6">
               <div className="flex justify-between items-center border-b border-niko-border/20 pb-4">
-                <span className="font-mono text-sm text-niko-muted">ID: {intent.id}</span>
+                <span className="font-mono text-sm text-niko-muted">
+                  ID: {intent.id}
+                </span>
                 {statusBadge(intent.status)}
               </div>
 
               <div className="grid grid-cols-2 gap-6 text-sm font-mono">
                 <div>
-                  <span className="text-xs text-niko-muted block">USDT deposit</span>
-                  <span className="text-foreground font-bold">{intent.usdtAmount.toFixed(2)} USDT</span>
+                  <span className="text-xs text-niko-muted block">
+                    USDT deposit
+                  </span>
+                  <span className="text-foreground font-bold">
+                    {intent.usdtAmount.toFixed(2)} USDT
+                  </span>
                 </div>
                 <div>
-                  <span className="text-xs text-niko-muted block">RWF payout (net)</span>
-                  <span className="text-niko-teal-bright font-bold">{formatRwf(intent.netRwf)}</span>
+                  <span className="text-xs text-niko-muted block">
+                    RWF payout (net)
+                  </span>
+                  <span className="text-niko-teal-bright font-bold">
+                    {formatRwf(intent.netRwf)}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-xs text-niko-muted block">Exchange rate</span>
-                  <span className="text-foreground">1 USDT = {intent.rate} RWF</span>
+                  <span className="text-xs text-niko-muted block">
+                    Exchange rate
+                  </span>
+                  <span className="text-foreground">
+                    1 USDT = {intent.rate} RWF
+                  </span>
                 </div>
                 <div>
-                  <span className="text-xs text-niko-muted block">Service fee</span>
-                  <span className="text-foreground">{intent.feePercent}% ({formatRwf(intent.feeRwf)})</span>
+                  <span className="text-xs text-niko-muted block">
+                    Service fee
+                  </span>
+                  <span className="text-foreground">
+                    {intent.feePercent}% ({formatRwf(intent.feeRwf)})
+                  </span>
                 </div>
                 <div>
-                  <span className="text-xs text-niko-muted block">Recipient (MTN)</span>
-                  <span className="text-foreground font-semibold">{intent.msisdn}</span>
+                  <span className="text-xs text-niko-muted block">
+                    Recipient (MTN)
+                  </span>
+                  <span className="text-foreground font-semibold">
+                    {intent.msisdn}
+                  </span>
                 </div>
                 <div>
                   <span className="text-xs text-niko-muted block">Network</span>
-                  <span className="text-foreground capitalize">{intent.chain}</span>
+                  <span className="text-foreground capitalize">
+                    {intent.chain}
+                  </span>
                 </div>
                 <div>
                   <span className="text-xs text-niko-muted block">Created</span>
-                  <span className="text-foreground/80 font-sans">{new Date(intent.createdAt).toLocaleString()}</span>
+                  <span className="text-foreground/80 font-sans">
+                    {new Date(intent.createdAt).toLocaleString()}
+                  </span>
                 </div>
                 <div>
                   <span className="text-xs text-niko-muted block">Expires</span>
-                  <span className="text-foreground/80 font-sans">{new Date(intent.expiresAt).toLocaleString()}</span>
+                  <span className="text-foreground/80 font-sans">
+                    {new Date(intent.expiresAt).toLocaleString()}
+                  </span>
                 </div>
               </div>
 
@@ -237,24 +267,45 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                 Ops override controls
               </h4>
               <div className="space-y-3">
-                <button type="button" onClick={() => handleStatusChange("paid")} className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-bold rounded-md text-xs transition-all cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange("paid")}
+                  className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-bold rounded-md text-xs transition-all cursor-pointer"
+                >
                   Force complete (paid)
                 </button>
-                <button type="button" onClick={() => handleStatusChange("manual_review")} className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 font-bold rounded-md text-xs transition-all cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange("manual_review")}
+                  className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 font-bold rounded-md text-xs transition-all cursor-pointer"
+                >
                   Move to manual review
                 </button>
-                <button type="button" onClick={() => handleStatusChange("awaiting_payment")} className="w-full py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold rounded-md text-xs transition-all cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange("awaiting_payment")}
+                  className="w-full py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold rounded-md text-xs transition-all cursor-pointer"
+                >
                   Reset to awaiting
                 </button>
-                <button type="button" onClick={() => handleStatusChange("failed")} className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold rounded-md text-xs transition-all cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange("failed")}
+                  className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold rounded-md text-xs transition-all cursor-pointer"
+                >
                   Mark failed
                 </button>
-                <button type="button" onClick={() => handleStatusChange("expired")} className="w-full py-2.5 bg-neutral-600/20 hover:bg-neutral-600/30 text-neutral-400 border border-neutral-600/40 font-bold rounded-md text-xs transition-all cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange("expired")}
+                  className="w-full py-2.5 bg-neutral-600/20 hover:bg-neutral-600/30 text-neutral-400 border border-neutral-600/40 font-bold rounded-md text-xs transition-all cursor-pointer"
+                >
                   Force expired
                 </button>
               </div>
               <p className="p-3 rounded bg-background/50 border border-niko-border/20 text-[10px] text-niko-muted leading-relaxed">
-                Ops overrides bypass wallet and MTN confirmations. Use during audits or sandbox testing only.
+                Ops overrides bypass wallet and MTN confirmations. Use during
+                audits or sandbox testing only.
               </p>
             </div>
           </div>
