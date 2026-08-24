@@ -9,14 +9,14 @@ node_modules/
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
- 
+
 # testing
 coverage/
- 
+
 # next.js
 .next/
 out/
- 
+
 # production
 build/
 
@@ -30,7 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env 
+# env
 .env*
 !.env.example
 
@@ -41,7 +41,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local agent tooling 
+# local agent tooling
 .cursor/
 .claude/
 .vscode/
