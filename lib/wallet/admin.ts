@@ -76,7 +76,7 @@ async function resolveAdminProvider(
   { ok: true; provider: EthereumProvider } | { ok: false; reason: string }
 > {
   if (kind === "WalletConnect") {
-    return connectWalletConnect("base");
+    return connectWalletConnect("base", { forceNew: true });
   }
   return getInjectedProvider(kind);
 }

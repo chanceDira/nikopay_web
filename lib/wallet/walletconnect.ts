@@ -28,6 +28,7 @@ export function getWalletConnectProjectId(): string | null {
 
 export async function connectWalletConnect(
   chainId: ChainId,
+  options: { forceNew?: boolean } = {},
 ): Promise<
   { ok: true; provider: EthereumProvider } | { ok: false; reason: string }
 > {
@@ -38,6 +39,20 @@ export async function connectWalletConnect(
 
   const chain = getPublicChain(chainId);
   try {
+    if (options.forceNew && ready.client.session) {
+      if (typeof ready.client.disconnect === "function") {
+        await ready.client.disconnect();
+      }
+      client = null;
+      initLock = null;
+      const again = await initWalletConnect();
+      if (!again.ok) {
+        return again;
+      }
+      await again.client.connect({ chains: [chain.chainId] });
+      return { ok: true, provider: again.client };
+    }
+
     if (!ready.client.session) {
       await ready.client.connect({ chains: [chain.chainId] });
     }
@@ -62,18 +77,21 @@ export async function restoreWalletConnect(): Promise<
 }
 
 export async function disconnectWalletConnect(): Promise<void> {
-  if (!client) {
+  const active = client;
+  client = null;
+  initLock = null;
+
+  if (!active) {
     return;
   }
 
   try {
-    if (typeof client.disconnect === "function") {
-      await client.disconnect();
+    if (typeof active.disconnect === "function") {
+      await active.disconnect();
     }
   } catch {
-    // Best-effort; clear local client either way.
+    // Best-effort; local singleton already cleared.
   }
-  client = null;
 }
 
 async function initWalletConnect(): Promise<

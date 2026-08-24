@@ -64,6 +64,7 @@ const SwitchWalletIcon = () => (
 
 export function AppNav() {
   const [theme, setTheme] = useState(() => readLocal("nikopay_theme", "dark"));
+  const [switching, setSwitching] = useState(false);
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -77,9 +78,13 @@ export function AppNav() {
   };
 
   const switchWallet = () => {
+    if (switching) {
+      return;
+    }
+    setSwitching(true);
     clearConnectedWallet();
     void disconnectWalletConnect().finally(() => {
-      window.location.href = "/auth/sign-in";
+      window.location.href = "/auth/sign-in?switched=1";
     });
   };
 
@@ -114,7 +119,8 @@ export function AppNav() {
             <button
               type="button"
               onClick={switchWallet}
-              className="flex h-9 w-9 items-center justify-center rounded-md border border-niko-border bg-background/50 text-niko-muted hover:border-niko-teal/40 hover:bg-niko-surface hover:text-niko-teal transition-all cursor-pointer outline-none"
+              disabled={switching}
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-niko-border bg-background/50 text-niko-muted hover:border-niko-teal/40 hover:bg-niko-surface hover:text-niko-teal transition-all cursor-pointer outline-none disabled:opacity-50 disabled:cursor-wait"
               title="Switch wallet"
               aria-label="Switch wallet"
             >
