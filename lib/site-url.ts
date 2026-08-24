@@ -1,18 +1,10 @@
-const DEFAULT_PUBLIC_SITE_URL = "https://nikopay-mvp.vercel.app";
+const DEFAULT_PUBLIC_SITE_URL = "https://nikopay.rw";
 
-/** Public https origin. Never localhost (emails, sitemap, metadataBase). */
+/** Public https origin. Never localhost or Vercel preview/prod aliases. */
 export function resolvePublicSiteUrl(
   env: Record<string, string | undefined> = process.env,
 ): string {
-  const candidates = [
-    env.EMAIL_SITE_URL,
-    env.NEXT_PUBLIC_SITE_URL,
-    env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : undefined,
-    env.VERCEL_URL ? `https://${env.VERCEL_URL}` : undefined,
-    DEFAULT_PUBLIC_SITE_URL,
-  ];
+  const candidates = [env.EMAIL_SITE_URL, env.NEXT_PUBLIC_SITE_URL];
 
   for (const raw of candidates) {
     const normalized = normalizePublicOrigin(raw);
@@ -46,7 +38,8 @@ export function normalizePublicOrigin(
       host === "localhost" ||
       host === "127.0.0.1" ||
       host === "::1" ||
-      host.endsWith(".local")
+      host.endsWith(".local") ||
+      host.endsWith(".vercel.app")
     ) {
       return null;
     }

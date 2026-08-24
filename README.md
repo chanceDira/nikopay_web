@@ -8,7 +8,7 @@ USDT in, RWF out via MTN Mobile Money. Sender wallet → NikoPay treasury → re
 | DB          | Hosted Supabase (Postgres)                                    |
 | Test chains | Base Sepolia (USDT ready), Polygon Amoy (token not wired yet) |
 | MoMo        | MTN Disbursements API (sandbox uses EUR)                      |
-| Deploy      | Vercel (`nikopay-mvp.vercel.app`)                             |
+| Deploy      | Vercel hosting, public site `https://nikopay.rw`              |
 
 Never commit `.env.local`, service role keys, MoMo keys, or SMTP passwords.
 
@@ -16,12 +16,12 @@ Never commit `.env.local`, service role keys, MoMo keys, or SMTP passwords.
 
 The Next.js app lives at the **repo root** (this is the `0xJ11` layout). Use this structure on every branch.
 
-| Path | Role |
-| ---- | ---- |
-| `app/`, `components/`, `lib/` | Next.js App Router + UI + domain |
-| `package.json`, `next.config.ts`, `proxy.ts` | App entry at repo root |
-| `supabase/` | Migrations and DB config |
-| `contracts/` | Foundry / on-chain helpers |
+| Path                                         | Role                             |
+| -------------------------------------------- | -------------------------------- |
+| `app/`, `components/`, `lib/`                | Next.js App Router + UI + domain |
+| `package.json`, `next.config.ts`, `proxy.ts` | App entry at repo root           |
+| `supabase/`                                  | Migrations and DB config         |
+| `contracts/`                                 | Foundry / on-chain helpers       |
 
 Do **not** nest the app under `client/`. Vercel Root Directory must be `.` (repository root) so it can resolve `next` from root `package.json`. Preview on `0xJ11` and production on `main` must share this layout.
 
@@ -52,17 +52,17 @@ Copy from `.env.example`. Only `NEXT_PUBLIC_*` may reach the browser.
 
 ### Core
 
-| Variable                                                                  | Where           | Notes                                                                                                                                                         |
-| ------------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`                                                | Client + server | Project URL                                                                                                                                                   |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + server | Publishable / anon key                                                                                                                                        |
-| `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY`                      | Server only     | Service role. Never in the client                                                                                                                             |
-| `NEXT_PUBLIC_SITE_URL`                                                    | Client + server | Local: `http://localhost:3000`. **Production (Vercel): `https://nikopay-mvp.vercel.app`.** Used for OG/canonical; emails/sitemap skip localhost automatically |
-| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`                                    | Client          | Reown / WalletConnect Cloud project id                                                                                                                        |
-| `SETTLEMENT_INGEST_SECRET`                                                | Server          | Bearer token for deposit ingest and job routes                                                                                                                |
-| `ADMIN_SESSION_SECRET`                                                    | Server          | Optional. Falls back to Supabase secret if unset                                                                                                              |
-| `CHAIN_RPC_URL_BASE`                                                      | Server          | Prefer Alchemy/QuickNode. Public Sepolia RPC is rate-limited on Vercel                                                                                        |
-| `CHAIN_RPC_URL_POLYGON`                                                   | Server          | Optional until Polygon token is ready                                                                                                                         |
+| Variable                                                                  | Where           | Notes                                                                                                                                         |
+| ------------------------------------------------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`                                                | Client + server | Project URL                                                                                                                                   |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + server | Publishable / anon key                                                                                                                        |
+| `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY`                      | Server only     | Service role. Never in the client                                                                                                             |
+| `NEXT_PUBLIC_SITE_URL`                                                    | Client + server | Local: `http://localhost:3000`. **Production: `https://nikopay.rw`.** Used for OG/canonical; emails/sitemap skip localhost and `*.vercel.app` |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`                                    | Client          | Reown / WalletConnect Cloud project id                                                                                                        |
+| `SETTLEMENT_INGEST_SECRET`                                                | Server          | Bearer token for deposit ingest and job routes                                                                                                |
+| `ADMIN_SESSION_SECRET`                                                    | Server          | Optional. Falls back to Supabase secret if unset                                                                                              |
+| `CHAIN_RPC_URL_BASE`                                                      | Server          | Prefer Alchemy/QuickNode. Public Sepolia RPC is rate-limited on Vercel                                                                        |
+| `CHAIN_RPC_URL_POLYGON`                                                   | Server          | Optional until Polygon token is ready                                                                                                         |
 
 ### MoMo sandbox
 
@@ -81,15 +81,15 @@ Copy from `.env.example`. Only `NEXT_PUBLIC_*` may reach the browser.
 
 Payout emails use Google SMTP (app password, not account password).
 
-| Variable         | Notes                                                                                                                                                            |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SMTP_HOST`      | `smtp.gmail.com`                                                                                                                                                 |
-| `SMTP_PORT`      | `465`                                                                                                                                                            |
-| `SMTP_SECURE`    | `true`                                                                                                                                                           |
-| `SMTP_USER`      | Gmail address                                                                                                                                                    |
-| `SMTP_PASS`      | App password                                                                                                                                                     |
-| `EMAIL_FROM`     | e.g. `NikoPay <you@gmail.com>`                                                                                                                                   |
-| `EMAIL_SITE_URL` | Optional. Public https origin used in email links. If unset, uses a non-localhost `NEXT_PUBLIC_SITE_URL`, then Vercel URL, then `https://nikopay-mvp.vercel.app` |
+| Variable         | Notes                                                                                                                                                                                         |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SMTP_HOST`      | `smtp.gmail.com`                                                                                                                                                                              |
+| `SMTP_PORT`      | `465`                                                                                                                                                                                         |
+| `SMTP_SECURE`    | `true`                                                                                                                                                                                        |
+| `SMTP_USER`      | Gmail address                                                                                                                                                                                 |
+| `SMTP_PASS`      | App password                                                                                                                                                                                  |
+| `EMAIL_FROM`     | e.g. `NikoPay <you@gmail.com>`                                                                                                                                                                |
+| `EMAIL_SITE_URL` | Optional. Public https origin for email links. Prefer `https://nikopay.rw`. If unset, uses a public `NEXT_PUBLIC_SITE_URL`, else `https://nikopay.rw`. Never uses localhost or `*.vercel.app` |
 
 If SMTP is unset, payouts still run. Emails are skipped.
 
@@ -152,9 +152,11 @@ Do not use `46733123450` when you want a successful payout. It will fail with a 
 
 ### Callback URL (common failure)
 
-If `MOMO_CALLBACK_URL` points at Vercel (e.g. `https://nikopay-mvp.vercel.app/...`) but the sandbox API user was created with another host (e.g. `nikopay.local`), MTN rejects the transfer. Status shows MoMo **Failed** with `request_not_accepted` (or `INVALID_CALLBACK_URL_HOST`).
+If `MOMO_CALLBACK_URL` points at an old host (e.g. a Vercel alias) but the sandbox API user was created with another host (e.g. `nikopay.local`), MTN rejects the transfer. Status shows MoMo **Failed** with `request_not_accepted` (or `INVALID_CALLBACK_URL_HOST`).
 
 **Fix for sandbox:** remove `MOMO_CALLBACK_URL` from env (local + Vercel), redeploy. The app skips the callback header in sandbox and polls transfer status.
+
+**Production:** use `https://nikopay.rw/api/momo/callback` (or leave unset only while still on sandbox).
 
 ### When treasury shows 0 EUR
 
@@ -163,7 +165,7 @@ Sandbox gives each API user a fake balance. Successful transfers drain it. At **
 **Fix:** provision a **new** API user + API key, update only those two env vars, redeploy. Keep the subscription key.
 
 ```bash
-curl -X POST "https://nikopay-mvp.vercel.app/api/jobs/momo/provision" \
+curl -X POST "https://nikopay.rw/api/jobs/momo/provision" \
   -H "Authorization: Bearer YOUR_SETTLEMENT_INGEST_SECRET"
 ```
 
