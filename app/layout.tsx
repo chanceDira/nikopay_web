@@ -15,36 +15,73 @@ const outfit = Outfit({
 
 const siteUrl = resolvePublicSiteUrl();
 
+const title = "NikoPay | Making Stablecoins Spendable";
+const description =
+  "Convert USDT to Rwandan Francs via MTN Mobile Money. Instant, transparent, non-custodial.";
+
+const brandImage = {
+  url: "/favicon.ico",
+  width: 1254,
+  height: 1254,
+  alt: "NikoPay",
+  type: "image/png",
+} as const;
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  applicationName: "NikoPay",
   title: {
-    default: "NikoPay | Making Stablecoins Spendable",
+    default: title,
     template: "%s | NikoPay",
   },
-  description:
-    "Convert USDT to Rwandan Francs via MTN Mobile Money. Instant, transparent, non-custodial.",
+  description,
+  keywords: [
+    "NikoPay",
+    "USDT",
+    "MTN MoMo",
+    "Mobile Money",
+    "Rwanda",
+    "RWF",
+    "stablecoin",
+    "offramp",
+  ],
+  authors: [{ name: "NikoPay", url: siteUrl }],
+  creator: "NikoPay",
+  publisher: "NikoPay",
+  category: "finance",
   alternates: {
     canonical: "/",
   },
+  icons: {
+    icon: [{ url: "/favicon.ico", type: "image/png", sizes: "1254x1254" }],
+    shortcut: "/favicon.ico",
+    apple: [{ url: "/favicon.ico", type: "image/png", sizes: "1254x1254" }],
+  },
   openGraph: {
     type: "website",
+    locale: "en_US",
     url: siteUrl,
     siteName: "NikoPay",
-    title: "NikoPay | Making Stablecoins Spendable",
-    description:
-      "Convert USDT to Rwandan Francs via MTN Mobile Money. Instant, transparent, non-custodial.",
-    images: ["/nikopay-logo.png"],
+    title,
+    description,
+    images: [brandImage],
   },
   twitter: {
     card: "summary_large_image",
-    title: "NikoPay | Making Stablecoins Spendable",
-    description:
-      "Convert USDT to Rwandan Francs via MTN Mobile Money. Instant, transparent, non-custodial.",
-    images: ["/nikopay-logo.png"],
+    title,
+    description,
+    images: [brandImage],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
 };
 
