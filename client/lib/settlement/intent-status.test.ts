@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
-  allowedTransitions,
   assertTransition,
-  canTransition,
   IntentTransitionError,
   isPaymentStatus,
   isTerminalStatus,
   transitionStatus,
-} from "@/lib/settlement/index";
+} from "@/lib/settlement/intent-status";
+import {
+  allowedTransitions,
+  canTransition,
+} from "@/lib/settlement/transitions";
 import type { PaymentStatus } from "@/lib/settlement/types";
 import { PAYMENT_STATUSES } from "@/lib/settlement/types";
 

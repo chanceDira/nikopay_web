@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export { isUuid } from "@/lib/identity";
+
 export function jsonError(error: string, status: number) {
   return NextResponse.json({ error }, { status });
 }
@@ -42,11 +44,4 @@ export function parseNonNegativeInt(
     return { ok: false, reason: `${field} must be a non-negative integer` };
   }
   return { ok: true, value };
-}
-
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-export function isUuid(value: string): boolean {
-  return UUID_REGEX.test(value);
 }

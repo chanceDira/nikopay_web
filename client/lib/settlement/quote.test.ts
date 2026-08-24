@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createQuote } from "@/lib/settlement/quote";
+import {
+  createQuote,
+  netRwfForUsdt,
+  usdtForTargetRwf,
+} from "@/lib/settlement/quote";
 import type { FxConfig } from "@/lib/settlement/types";
 
 const fx: FxConfig = {
@@ -92,5 +96,28 @@ describe("createQuote", () => {
         expiresAt: "2026-08-12T13:00:00.000Z",
       }).ok,
     ).toBe(false);
+  });
+});
+
+describe("usdtForTargetRwf", () => {
+  it("inverts quote math for a target payout", () => {
+    expect(usdtForTargetRwf(132975, 1350, 1.5)).toBe(100);
+  });
+
+  it("returns null for invalid inputs", () => {
+    expect(usdtForTargetRwf(0, 1350, 1.5)).toBeNull();
+    expect(usdtForTargetRwf(1000, 0, 1.5)).toBeNull();
+    expect(usdtForTargetRwf(1000, 1350, 100)).toBeNull();
+  });
+});
+
+describe("netRwfForUsdt", () => {
+  it("matches createQuote net", () => {
+    expect(netRwfForUsdt(100, 1350, 1.5)).toBe(132975);
+  });
+
+  it("returns null for invalid inputs", () => {
+    expect(netRwfForUsdt(0, 1350, 1.5)).toBeNull();
+    expect(netRwfForUsdt(10, -1, 1.5)).toBeNull();
   });
 });

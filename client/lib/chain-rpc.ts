@@ -22,7 +22,75 @@ type RpcResponse<T> = {
   error?: { message?: string };
 };
 
+export function rpcClientReason(input: {
+  timedOut?: boolean;
+  httpStatus?: number;
+  rpcMessage?: string;
+}): string {
+  if (input.timedOut) {
+    return "chain rpc timed out";
+  }
+  if (input.httpStatus === 429) {
+    return "chain rpc is rate limited";
+  }
+
+  const text = (input.rpcMessage ?? "").toLowerCase();
+  if (text.includes("rate") || text.includes("too many")) {
+    return "chain rpc is rate limited";
+  }
+  if (
+    text.includes("block range") ||
+    text.includes("too large") ||
+    text.includes("query exceeds") ||
+    text.includes("limited to")
+  ) {
+    return "chain rpc rejected the log range";
+  }
+
+  if (input.httpStatus && input.httpStatus > 0) {
+    return `chain rpc is unavailable (http ${input.httpStatus})`;
+  }
+
+  const detail = sanitizeRpcDetail(input.rpcMessage);
+  if (detail) {
+    return `chain rpc is unavailable (${detail})`;
+  }
+
+  return "chain rpc is unavailable";
+}
+
+/** Keep operator-facing RPC text short and free of credentials. */
+function sanitizeRpcDetail(message: string | undefined): string | null {
+  if (!message?.trim()) {
+    return null;
+  }
+
+  const cleaned = message
+    .replace(/https?:\/\/[^\s]+/gi, "[url]")
+    .replace(/\b[0-9a-f]{8,}(?:-[0-9a-f]{4,})+\b/gi, "[id]")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!cleaned) {
+    return null;
+  }
+
+  return cleaned.length > 96 ? `${cleaned.slice(0, 93)}...` : cleaned;
+}
+
 export async function rpcCall<T>(
+  url: string,
+  method: string,
+  params: unknown[],
+): Promise<{ ok: true; result: T } | { ok: false; reason: string }> {
+  const first = await rpcCallOnce<T>(url, method, params);
+  if (first.ok) {
+    return first;
+  }
+  return rpcCallOnce<T>(url, method, params);
+}
+
+async function rpcCallOnce<T>(
   url: string,
   method: string,
   params: unknown[],
@@ -35,12 +103,34 @@ export async function rpcCall<T>(
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
       signal: AbortSignal.timeout(12_000),
     });
-  } catch {
-    return { ok: false, reason: "chain rpc is unavailable" };
+  } catch (err) {
+    const name = err instanceof Error ? err.name : "";
+    return {
+      ok: false,
+      reason: rpcClientReason({
+        timedOut: name === "TimeoutError" || name === "AbortError",
+      }),
+    };
   }
 
   if (!response.ok) {
-    return { ok: false, reason: "chain rpc is unavailable" };
+    let rpcMessage: string | undefined;
+    try {
+      const body = (await response.json()) as RpcResponse<unknown>;
+      rpcMessage =
+        typeof body.error?.message === "string"
+          ? body.error.message
+          : undefined;
+    } catch {
+      rpcMessage = undefined;
+    }
+    return {
+      ok: false,
+      reason: rpcClientReason({
+        httpStatus: response.status,
+        rpcMessage,
+      }),
+    };
   }
 
   let payload: RpcResponse<T>;
@@ -51,7 +141,10 @@ export async function rpcCall<T>(
   }
 
   if (payload.error || payload.result === undefined) {
-    return { ok: false, reason: "chain rpc is unavailable" };
+    return {
+      ok: false,
+      reason: rpcClientReason({ rpcMessage: payload.error?.message }),
+    };
   }
 
   return { ok: true, result: payload.result };
@@ -100,4 +193,24 @@ export async function rpcGetLogs(
   }
 
   return { ok: true, logs: result.result };
+}
+
+export async function rpcEthCall(
+  url: string,
+  to: string,
+  data: string,
+): Promise<{ ok: true; data: string } | { ok: false; reason: string }> {
+  const result = await rpcCall<string>(url, "eth_call", [
+    { to, data },
+    "latest",
+  ]);
+  if (!result.ok) {
+    return result;
+  }
+
+  if (typeof result.result !== "string") {
+    return { ok: false, reason: "chain rpc is unavailable" };
+  }
+
+  return { ok: true, data: result.result };
 }

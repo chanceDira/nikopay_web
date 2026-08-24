@@ -46,31 +46,21 @@ export function matchDeposit(
     }
   }
 
-  const liveExact = live.filter((intent) =>
+  const exact = [...live, ...expired].filter((intent) =>
     equalUsdt(intent.usdtAmount, deposit.amount),
   );
-  if (liveExact.length === 1) {
-    return { outcome: "credited", intentId: liveExact[0].id };
+  if (exact.length === 1) {
+    return { outcome: "credited", intentId: exact[0].id };
   }
-  if (liveExact.length > 1) {
+  if (exact.length > 1) {
     return {
       outcome: "manual_review",
-      intentIds: liveExact.map((intent) => intent.id),
+      intentIds: exact.map((intent) => intent.id),
     };
   }
 
   if (live.length === 1) {
     return { outcome: "manual_review", intentIds: [live[0].id] };
-  }
-
-  const expiredExact = expired.filter((intent) =>
-    equalUsdt(intent.usdtAmount, deposit.amount),
-  );
-  if (expiredExact.length > 0) {
-    return {
-      outcome: "expired",
-      intentIds: expiredExact.map((intent) => intent.id),
-    };
   }
 
   return { outcome: "unmatched" };

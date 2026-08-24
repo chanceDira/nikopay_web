@@ -5,7 +5,7 @@ export default function AdminTreasuryPage() {
   return (
     <PageHeader
       title="Treasury"
-      description="Crypto balances and MoMo liquidity"
+      description="Live treasury addresses, on-chain USDT, and MoMo balance"
     >
       <AdminTreasuryCards />
     </PageHeader>

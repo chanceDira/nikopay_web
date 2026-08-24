@@ -181,6 +181,9 @@ export type Database = {
           expires_at: string;
           deposit_tx: string | null;
           momo_ref: string | null;
+          notify_email: string | null;
+          paid_notified_at: string | null;
+          failed_notified_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -208,6 +211,9 @@ export type Database = {
           expires_at: string;
           deposit_tx?: string | null;
           momo_ref?: string | null;
+          notify_email?: string | null;
+          paid_notified_at?: string | null;
+          failed_notified_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -235,6 +241,9 @@ export type Database = {
           expires_at?: string;
           deposit_tx?: string | null;
           momo_ref?: string | null;
+          notify_email?: string | null;
+          paid_notified_at?: string | null;
+          failed_notified_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -306,6 +315,7 @@ export type Database = {
           msisdn: string;
           status: "pending" | "successful" | "failed" | "timeout";
           provider_ref: string | null;
+          provider_reason: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -317,6 +327,7 @@ export type Database = {
           msisdn: string;
           status?: "pending" | "successful" | "failed" | "timeout";
           provider_ref?: string | null;
+          provider_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -328,6 +339,7 @@ export type Database = {
           msisdn?: string;
           status?: "pending" | "successful" | "failed" | "timeout";
           provider_ref?: string | null;
+          provider_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };

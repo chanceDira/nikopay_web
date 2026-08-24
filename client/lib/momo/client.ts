@@ -16,11 +16,12 @@ let tokenCache: TokenCache | null = null;
 export type MomoTransferLookup = {
   status: MomoTransferStatus;
   financialTransactionId: string | null;
+  providerReason: string | null;
 };
 
 export async function createAccessToken(
   config: MomoConfig,
-) : Promise<{ ok: true; token: string } | { ok: false; reason: string }> {
+): Promise<{ ok: true; token: string } | { ok: false; reason: string }> {
   if (tokenCache && tokenCache.expiresAt > Date.now()) {
     return { ok: true, token: tokenCache.token };
   }
@@ -67,7 +68,7 @@ export async function requestTransfer(
     msisdn: string;
     externalId: string;
   },
-) : Promise<{ ok: true } | { ok: false; reason: string; conflict: boolean }> {
+): Promise<{ ok: true } | { ok: false; reason: string; conflict: boolean }> {
   const token = await createAccessToken(config);
   if (!token.ok) {
     return { ok: false, reason: token.reason, conflict: false };
@@ -79,7 +80,8 @@ export async function requestTransfer(
     "x-target-environment": config.targetEnvironment,
     "content-type": "application/json",
   };
-  if (config.callbackUrl) {
+
+  if (config.callbackUrl && config.targetEnvironment !== "sandbox") {
     headers["x-callback-url"] =
       `${config.callbackUrl.replace(/\/$/, "")}/${input.referenceId}`;
   }
@@ -109,9 +111,10 @@ export async function requestTransfer(
   }
 
   if (response.status !== 202) {
+    const detail = await momoErrorDetail(response);
     return {
       ok: false,
-      reason: "momo transfer request failed",
+      reason: detail ?? `momo transfer request failed (${response.status})`,
       conflict: false,
     };
   }
@@ -122,7 +125,7 @@ export async function requestTransfer(
 export async function getTransferStatus(
   config: MomoConfig,
   referenceId: string,
-) : Promise<
+): Promise<
   { ok: true; lookup: MomoTransferLookup } | { ok: false; reason: string }
 > {
   const token = await createAccessToken(config);
@@ -159,13 +162,87 @@ export async function getTransferStatus(
 
   return {
     ok: true,
-    lookup: { status, financialTransactionId },
+    lookup: {
+      status,
+      financialTransactionId,
+      providerReason: formatProviderReason(body),
+    },
   };
+}
+
+/** MTN returns `reason` (code) and sometimes `reasonCode` / message text. */
+export function formatProviderReason(
+  body: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!body) {
+    return null;
+  }
+
+  let code = "";
+  if (typeof body.reason === "string" && body.reason.trim()) {
+    code = body.reason.trim();
+  } else if (typeof body.reasonCode === "string" && body.reasonCode.trim()) {
+    code = body.reasonCode.trim();
+  }
+
+  const message =
+    typeof body.message === "string" && body.message.trim()
+      ? body.message.trim()
+      : "";
+
+  if (!code && !message) {
+    return null;
+  }
+  if (code && message && message !== code) {
+    return `${code}: ${message}`;
+  }
+  return code || message;
+}
+
+export async function getAccountBalance(
+  config: MomoConfig,
+): Promise<
+  | { ok: true; availableBalance: number; currency: string }
+  | { ok: false; reason: string }
+> {
+  const token = await createAccessToken(config);
+  if (!token.ok) {
+    return token;
+  }
+
+  const response = await momoFetch(
+    config,
+    "/disbursement/v1_0/account/balance",
+    {
+      method: "GET",
+      headers: {
+        authorization: `Bearer ${token.token}`,
+        "x-target-environment": config.targetEnvironment,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    return { ok: false, reason: "momo balance is unavailable" };
+  }
+
+  const body = asJsonRecord(await response.text());
+  const availableBalance = parseBalanceAmount(body?.availableBalance);
+  const currency =
+    typeof body?.currency === "string" && body.currency.trim()
+      ? body.currency.trim()
+      : null;
+
+  if (availableBalance === null || !currency) {
+    return { ok: false, reason: "momo balance is unavailable" };
+  }
+
+  return { ok: true, availableBalance, currency };
 }
 
 export async function provisionSandboxApiUser(input: {
   callbackHost: string;
-}) : Promise<
+}): Promise<
   { ok: true; apiUser: string; apiKey: string } | { ok: false; reason: string }
 > {
   const subscriptionKey = getMomoSubscriptionKey();
@@ -217,7 +294,7 @@ async function momoFetch(
   config: MomoConfig,
   path: string,
   init: RequestInit,
-) : Promise<Response> {
+): Promise<Response> {
   const headers = new Headers(init.headers);
   headers.set("ocp-apim-subscription-key", config.subscriptionKey);
 
@@ -226,6 +303,23 @@ async function momoFetch(
     headers,
     signal: AbortSignal.timeout(12_000),
   });
+}
+
+function parseBalanceAmount(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return value;
+  }
+
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+
+  return parsed;
 }
 
 function asJsonRecord(text: string): Record<string, unknown> | null {
@@ -248,6 +342,35 @@ function asJsonRecord(text: string): Record<string, unknown> | null {
   }
 }
 
+async function momoErrorDetail(response: Response): Promise<string | null> {
+  const text = await response.text();
+  const body = asJsonRecord(text);
+  const fromBody = formatProviderReason(body);
+  if (fromBody) {
+    return fromBody;
+  }
+
+  if (typeof body?.message === "string" && body.message.trim()) {
+    return body.message.trim().slice(0, 200);
+  }
+
+  return null;
+}
+
 export function clearMomoTokenCache(): void {
   tokenCache = null;
+}
+
+export function callbackHostFromUrl(
+  url: string | null | undefined,
+): string | null {
+  if (!url?.trim()) {
+    return null;
+  }
+
+  try {
+    return new URL(url.trim()).hostname || null;
+  } catch {
+    return null;
+  }
 }

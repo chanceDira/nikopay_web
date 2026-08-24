@@ -1,8 +1,6 @@
 import type { SupabaseClientOptions } from "@supabase/supabase-js";
 import ws from "ws";
 
-import type { Database } from "@/lib/supabase/database";
-
 type RealtimeOptions = Pick<SupabaseClientOptions<"public">, "realtime">;
 
 export function getNodeRealtimeOptions(): RealtimeOptions {
@@ -14,5 +12,3 @@ export function getNodeRealtimeOptions(): RealtimeOptions {
     },
   };
 }
-
-export type TypedDatabase = Database;

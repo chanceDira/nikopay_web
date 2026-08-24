@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Afacad, Outfit } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const afacad = Afacad({
@@ -12,18 +12,38 @@ const outfit = Outfit({
   subsets: ["latin"],
 });
 
+const siteUrl = resolvePublicSiteUrl();
+
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-  ),
-  title: "NikoPay | Making Stablecoins Spendable",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "NikoPay | Making Stablecoins Spendable",
+    template: "%s | NikoPay",
+  },
   description:
     "Convert USDT to Rwandan Francs via MTN Mobile Money. Instant, transparent, non-custodial.",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
+    type: "website",
+    url: siteUrl,
+    siteName: "NikoPay",
     title: "NikoPay | Making Stablecoins Spendable",
     description:
       "Convert USDT to Rwandan Francs via MTN Mobile Money. Instant, transparent, non-custodial.",
     images: ["/nikopay-logo.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NikoPay | Making Stablecoins Spendable",
+    description:
+      "Convert USDT to Rwandan Francs via MTN Mobile Money. Instant, transparent, non-custodial.",
+    images: ["/nikopay-logo.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 

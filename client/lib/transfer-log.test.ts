@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   confirmedHead,
   nextScanRange,
+  hexQuantityToTokenAmount,
   parseTransferLog,
   rawTokenToUsdt,
   topicForAddress,
@@ -26,6 +27,13 @@ describe("rawTokenToUsdt", () => {
 
   it("rejects zero", () => {
     expect(rawTokenToUsdt("0x0", 6)).toBeNull();
+  });
+});
+
+describe("hexQuantityToTokenAmount", () => {
+  it("allows a zero balance", () => {
+    expect(hexQuantityToTokenAmount("0x0", 6)).toBe(0);
+    expect(hexQuantityToTokenAmount("0x1312d00", 6)).toBe(20);
   });
 });
 

@@ -50,15 +50,8 @@ export function Hero() {
               </a>
             </div>
 
-            <p className="text-sm text-niko-muted">
-              Don't have a Web3 wallet yet?{" "}
-              <a
-                href="#waitlist"
-                className="text-niko-teal underline underline-offset-4 hover:text-niko-teal-bright transition-colors"
-              >
-                Subscribe for email updates
-              </a>
-            </p>
+          <div className="mt-10 max-w-sm">
+            <WaitlistForm compact />
           </div>
         </div>
 

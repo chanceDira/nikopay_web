@@ -5,6 +5,7 @@ import {
   jsonError,
   readJsonBody,
 } from "@/lib/http";
+import { formatProviderReason } from "@/lib/momo/client";
 import { applyMomoCallback } from "@/lib/payouts";
 
 type RouteContext = {
@@ -28,6 +29,7 @@ export async function POST(request: Request, context: RouteContext) {
     referenceId,
     body?.status,
     financialTransactionId,
+    formatProviderReason(body),
   );
   if (!result.ok) {
     return jsonError(result.reason, result.status);

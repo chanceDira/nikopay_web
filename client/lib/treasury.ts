@@ -50,3 +50,26 @@ export async function loadActiveTreasury(
 
   return { ok: true, address: data.address.toLowerCase() };
 }
+
+export async function loadActiveTreasuryAddresses(): Promise<
+  { ok: true; addresses: string[] } | { ok: false; reason: string }
+> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("treasury_wallets")
+    .select("address")
+    .eq("is_active", true);
+
+  if (error) {
+    return { ok: false, reason: "unable to load treasury" };
+  }
+
+  const addresses = [
+    ...new Set((data ?? []).map((row) => row.address.toLowerCase())),
+  ];
+  if (addresses.length === 0) {
+    return { ok: false, reason: "treasury is not configured" };
+  }
+
+  return { ok: true, addresses };
+}

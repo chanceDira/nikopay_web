@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
+
+export const metadata: Metadata = {
+  title: "Privacy policy",
+  description: "How NikoPay handles your data when you use the service.",
+  alternates: { canonical: "/privacy" },
+};
 
 export default function PrivacyPage() {
   return (

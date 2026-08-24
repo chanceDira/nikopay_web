@@ -1,0 +1,609 @@
+"use client";
+
+import { formatRwf, formatUsdt } from "@/lib/rates";
+import { useIntentView } from "@/components/pay/use-intent-view";
+import type { IntentPayout } from "@/lib/settlement/types";
+import Link from "next/link";
+
+type StatusTimelineProps = {
+  id?: string;
+};
+
+export function StatusTimeline({ id }: StatusTimelineProps) {
+  const { intent, loading } = useIntentView(id, true);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 space-y-4">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-niko-teal border-t-transparent" />
+        <p className="text-sm text-niko-muted font-medium">
+          Retrieving payment intent...
+        </p>
+      </div>
+    );
+  }
+
+  if (!intent) {
+    return (
+      <div className="text-center py-16 space-y-4">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
+          <svg
+            className="h-6 w-6 text-red-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+        </div>
+        <h3 className="text-lg font-bold text-foreground">
+          Payment Intent Not Found
+        </h3>
+        <p className="text-sm text-niko-muted max-w-sm mx-auto">
+          We couldn&apos;t find a transaction with the ID &quot;{id}&quot;.
+          Please check your link or visit history.
+        </p>
+        <Link
+          href="/app/payments"
+          className="inline-block mt-4 px-4 py-2 border border-niko-border hover:border-niko-teal/30 hover:bg-niko-surface rounded-md text-sm font-semibold transition-all"
+        >
+          View Payment History
+        </Link>
+      </div>
+    );
+  }
+
+  const depositReceived = Boolean(intent.depositTx);
+
+  const getStepState = (step: 1 | 2 | 3 | 4) => {
+    const status = intent.status;
+
+    if (status === "expired") {
+      if (step === 1) return depositReceived ? "completed" : "error";
+      return "expired";
+    }
+
+    // Deposit succeeded but payout needs ops / failed MoMo
+    if (status === "failed" || status === "manual_review") {
+      if (depositReceived) {
+        if (step === 1 || step === 2) return "completed";
+        if (step === 3) return status === "failed" ? "error" : "warning";
+        return "upcoming";
+      }
+      return status === "failed" ? "error" : "warning";
+    }
+
+    switch (step) {
+      case 1:
+        if (status === "awaiting_payment") return "active";
+        return "completed";
+      case 2:
+        if (status === "awaiting_payment") return "upcoming";
+        if (status === "detected") return "active";
+        return "completed";
+      case 3:
+        if (["awaiting_payment", "detected"].includes(status))
+          return "upcoming";
+        if (status === "credited") return "active";
+        if (status === "payout_pending") return "active";
+        return "completed";
+      case 4:
+        if (status === "paid") return "completed";
+        return "upcoming";
+      default:
+        return "upcoming";
+    }
+  };
+
+  const getStepIcon = (state: string, num: number) => {
+    if (state === "completed") {
+      return (
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      );
+    }
+    if (state === "error") {
+      return (
+        <svg
+          className="h-5 w-5 text-red-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      );
+    }
+    if (state === "warning" || state === "expired") {
+      return (
+        <svg
+          className="h-5 w-5 text-[#92400e] dark:text-amber-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+      );
+    }
+    return <span className="font-mono text-sm font-bold">{num}</span>;
+  };
+
+  const getStepStyles = (state: string) => {
+    switch (state) {
+      case "completed":
+        return "bg-niko-teal text-niko-navy border-niko-teal";
+      case "active":
+        return "bg-niko-teal/10 text-niko-teal border-niko-teal animate-pulse shadow-[0_0_12px_rgba(0,212,200,0.3)]";
+      case "error":
+        return "bg-red-500/10 text-red-400 border-red-500";
+      case "warning":
+      case "expired":
+        return "bg-[#fffbeb] dark:bg-amber-500/10 text-[#92400e] dark:text-amber-400 border-amber-200/60 dark:border-amber-500";
+      default:
+        return "bg-niko-surface border-niko-border text-niko-muted";
+    }
+  };
+
+  const getTimelineDetails = () => {
+    const status = intent.status;
+    if (status === "awaiting_payment") {
+      return {
+        title: "Awaiting USDT Deposit",
+        desc: "Send the quoted USDT amount to the treasury address below. We watch the chain for a matching deposit.",
+      };
+    }
+    if (status === "detected") {
+      return {
+        title: "USDT Deposit Detected",
+        desc: "We have detected your deposit on-chain! Waiting for network confirmations to secure the transaction.",
+      };
+    }
+    if (status === "credited") {
+      return {
+        title: "USDT Deposit Confirmed",
+        desc: "Your deposit is confirmed. We are sending the RWF payout to the MoMo number.",
+      };
+    }
+    if (status === "payout_pending") {
+      return {
+        title: "Processing MoMo Payout",
+        desc: intent.payout
+          ? `MTN status: ${momoStatusLabel(intent.payout.status)}. Sandbox does not send SMS; watch this page until it shows completed.`
+          : "The RWF payout has been submitted to MTN Mobile Money. Sandbox does not send SMS; this page updates when MTN confirms.",
+      };
+    }
+    if (status === "paid") {
+      return {
+        title: "Payout Completed Successfully",
+        desc: intent.payout?.providerRef
+          ? `MTN confirmed the payout (ref ${intent.payout.providerRef}). Funds reached the Mobile Money wallet.`
+          : "RWF transfer has settled. The recipient received funds on their MTN Mobile Money account.",
+      };
+    }
+    if (status === "failed") {
+      if (depositReceived) {
+        return {
+          title: "Payout Failed",
+          desc: "Your USDT deposit was received. The Mobile Money payout did not complete. Support can retry the payout.",
+        };
+      }
+      return {
+        title: "Payment Failed",
+        desc: "Something went wrong before we could confirm your deposit. Please reach out to support.",
+      };
+    }
+    if (status === "expired") {
+      return {
+        title: "Deposit Window Expired",
+        desc: "The 20-minute deposit window elapsed before we detected your transfer. If you have already sent funds, contact support.",
+      };
+    }
+    if (status === "manual_review") {
+      if (depositReceived) {
+        return {
+          title: "Payout Needs Review",
+          desc: "Your USDT deposit is confirmed. The Mobile Money payout needs a manual retry from operations.",
+        };
+      }
+      return {
+        title: "Manual Operations Review",
+        desc: "Our automated systems flagged an inconsistency (e.g. deposit mismatch). An administrator is reviewing this payout manually.",
+      };
+    }
+    return { title: "", desc: "" };
+  };
+
+  const getLineProgress = () => {
+    if (!intent) return 0;
+    const status = intent.status;
+    if (status === "paid") return 3;
+    if (["credited", "payout_pending"].includes(status)) return 2;
+    if (
+      (status === "failed" || status === "manual_review") &&
+      depositReceived
+    ) {
+      return 2;
+    }
+    if (status === "detected") return 1;
+    return 0;
+  };
+  const lineProgress = getLineProgress();
+
+  const timelineDetails = getTimelineDetails();
+
+  return (
+    <div className="space-y-8">
+      {/* Top Banner Alert */}
+      <div
+        className={`p-4 rounded-md border flex gap-3 ${
+          intent.status === "paid"
+            ? "border-niko-teal/20 bg-niko-teal/5 text-niko-teal"
+            : ["failed", "expired"].includes(intent.status)
+              ? "border-red-500/20 bg-red-500/5 text-red-400"
+              : intent.status === "manual_review"
+                ? "border-amber-200/60 dark:border-amber-500/20 bg-[#fffbeb] dark:bg-amber-500/5 text-[#92400e] dark:text-amber-300"
+                : "border-niko-border bg-niko-surface/80 text-foreground"
+        }`}
+      >
+        {intent.status === "paid" ? (
+          <svg
+            className="h-5 w-5 shrink-0 text-niko-teal"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        ) : ["failed", "expired"].includes(intent.status) ? (
+          <svg
+            className="h-5 w-5 shrink-0 text-red-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        ) : (
+          <div className="h-5 w-5 shrink-0 flex items-center justify-center">
+            <span className="h-2 w-2 rounded-full bg-niko-teal animate-pulse-glow" />
+          </div>
+        )}
+        <div className="flex-1 text-sm">
+          <p className="font-bold">{timelineDetails.title}</p>
+          <p className="mt-1 text-xs opacity-90 leading-relaxed">
+            {timelineDetails.desc}
+          </p>
+        </div>
+        {intent.status === "paid" && (
+          <Link
+            href={`/app/payments/${id}/receipt`}
+            className="self-center px-3.5 py-1.5 bg-niko-teal text-niko-navy font-bold text-xs rounded-md hover:bg-niko-teal-bright transition-colors"
+          >
+            Receipt
+          </Link>
+        )}
+      </div>
+
+      {/* Visual Timeline Steps (Vertical style on mobile, grid-column on tablet) */}
+      <div className="relative border border-niko-border bg-background/50 rounded-md p-6 md:p-8 space-y-8">
+        <div className="relative grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Desktop Horizontal Connecting Line */}
+          <div className="absolute top-[20px] left-[12.5%] right-[12.5%] hidden md:block h-0.5 bg-niko-border/60 -z-10">
+            <div
+              className="h-full bg-niko-teal transition-all duration-500 shadow-[0_0_8px_rgba(0,212,200,0.4)]"
+              style={{ width: `${lineProgress * 33.33}%` }}
+            />
+          </div>
+
+          <div className="absolute left-[20px] top-[20px] bottom-[20px] md:hidden w-0.5 bg-niko-border/60 -z-10">
+            <div
+              className="w-full bg-niko-teal transition-all duration-500 shadow-[0_0_8px_rgba(0,212,200,0.4)]"
+              style={{ height: `${lineProgress * 33.33}%` }}
+            />
+          </div>
+
+          <div className="flex md:flex-col items-start gap-4 md:text-center md:items-center">
+            <div
+              className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 font-bold transition-all ${getStepStyles(
+                getStepState(1),
+              )}`}
+            >
+              {getStepIcon(getStepState(1), 1)}
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-semibold">1. Deposit Awaiting</h4>
+              <p className="text-xs text-niko-muted leading-snug md:max-w-[150px]">
+                USDT sent to treasury wallet.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex md:flex-col items-start gap-4 md:text-center md:items-center">
+            <div
+              className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 font-bold transition-all ${getStepStyles(
+                getStepState(2),
+              )}`}
+            >
+              {getStepIcon(getStepState(2), 2)}
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-semibold">2. Confirmation</h4>
+              <p className="text-xs text-niko-muted leading-snug md:max-w-[150px]">
+                Blockchain confirmations completed.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex md:flex-col items-start gap-4 md:text-center md:items-center">
+            <div
+              className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 font-bold transition-all ${getStepStyles(
+                getStepState(3),
+              )}`}
+            >
+              {getStepIcon(getStepState(3), 3)}
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-semibold">3. Payout Sent</h4>
+              <p className="text-xs text-niko-muted leading-snug md:max-w-[150px]">
+                MTN Mobile Money transaction processed.
+              </p>
+            </div>
+          </div>
+
+          {/* Step 4 */}
+          <div className="flex md:flex-col items-start gap-4 md:text-center md:items-center">
+            <div
+              className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 font-bold transition-all ${getStepStyles(
+                getStepState(4),
+              )}`}
+            >
+              {getStepIcon(getStepState(4), 4)}
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-semibold">4. Completed</h4>
+              <p className="text-xs text-niko-muted leading-snug md:max-w-[150px]">
+                RWF deposited in destination wallet.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {intent.payout && (
+        <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">
+              MoMo payout status
+            </h3>
+            <span
+              className={`rounded-md px-2.5 py-1 text-xs font-bold ${momoStatusStyles(intent.payout.status)}`}
+            >
+              {momoStatusLabel(intent.payout.status)}
+            </span>
+          </div>
+          <p className="text-xs text-niko-muted leading-relaxed">
+            {momoStatusHint(intent.payout.status)}
+          </p>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+            <div>
+              <dt className="text-niko-muted mb-1 font-sans">MoMo reference</dt>
+              <dd className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+                {intent.payout.referenceId}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-niko-muted mb-1 font-sans">
+                Provider financial id
+              </dt>
+              <dd className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+                {intent.payout.providerRef ?? "Waiting for MTN confirmation"}
+              </dd>
+            </div>
+            {intent.payout.providerReason ? (
+              <div className="sm:col-span-2">
+                <dt className="text-niko-muted mb-1 font-sans">
+                  Provider reason
+                </dt>
+                <dd className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+                  {intent.payout.providerReason}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-4">
+          <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">
+            Transfer Parameters
+          </h3>
+          <dl className="grid grid-cols-2 gap-y-3 text-sm">
+            <dt className="text-niko-muted">USDT Transfer</dt>
+            <dd className="font-mono font-semibold text-right text-foreground">
+              {formatUsdt(intent.usdtAmount)}
+            </dd>
+
+            <dt className="text-niko-muted">Settlement Chain</dt>
+            <dd className="font-semibold text-right text-foreground capitalize">
+              {intent.chain}
+            </dd>
+
+            <dt className="text-niko-muted">Rate Applied</dt>
+            <dd className="font-mono text-right text-foreground">
+              1 USDT = {intent.rate.toLocaleString()} RWF
+            </dd>
+
+            <dt className="text-niko-muted">
+              Network Fee ({intent.feePercent}%)
+            </dt>
+            <dd className="font-mono text-right text-red-400">
+              -{formatRwf(intent.feeRwf)}
+            </dd>
+
+            <dt className="text-foreground font-semibold">
+              Recipient Receives
+            </dt>
+            <dd className="font-mono font-bold text-right text-niko-teal-bright">
+              {formatRwf(intent.netRwf)}
+            </dd>
+          </dl>
+        </div>
+
+        <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-4">
+          <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">
+            Transaction Identifiers
+          </h3>
+          <div className="space-y-3 text-xs font-mono">
+            <div>
+              <p className="text-niko-muted mb-1 font-sans">
+                Payment Intent ID
+              </p>
+              <p className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+                {intent.id}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-niko-muted mb-1 font-sans">
+                Treasury deposit address
+              </p>
+              <p
+                className="p-2.5 rounded-md bg-background border border-niko-border/60 text-niko-teal-bright break-all"
+                title={intent.treasuryAddress}
+              >
+                {intent.treasuryAddress}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-niko-muted mb-1 font-sans">
+                Recipient Mobile Money
+              </p>
+              <p className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground font-bold">
+                {intent.msisdn}
+              </p>
+            </div>
+
+            {intent.notifyEmail && (
+              <div>
+                <p className="text-niko-muted mb-1 font-sans">
+                  Payout confirmation email
+                </p>
+                <p className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+                  {intent.notifyEmail}
+                </p>
+              </div>
+            )}
+
+            {intent.depositTx && (
+              <div>
+                <p className="text-niko-muted mb-1 font-sans">
+                  On-chain Deposit Tx Hash
+                </p>
+                <p
+                  className="p-2.5 rounded-md bg-background border border-niko-border/60 text-niko-teal-bright break-all truncate hover:text-clip"
+                  title={intent.depositTx}
+                >
+                  {intent.depositTx}
+                </p>
+              </div>
+            )}
+
+            {intent.momoRef && (
+              <div>
+                <p className="text-niko-muted mb-1 font-sans">
+                  MTN Transaction Ref
+                </p>
+                <p className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground font-bold">
+                  {intent.momoRef}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function momoStatusLabel(status: IntentPayout["status"]) {
+  switch (status) {
+    case "successful":
+      return "Reached user";
+    case "pending":
+      return "Pending at MTN";
+    case "failed":
+      return "Failed";
+    case "timeout":
+      return "Timed out";
+    default:
+      return status;
+  }
+}
+
+function momoStatusStyles(status: IntentPayout["status"]) {
+  switch (status) {
+    case "successful":
+      return "bg-niko-teal/15 text-niko-teal border border-niko-teal/30";
+    case "pending":
+      return "bg-niko-surface text-foreground border border-niko-border";
+    case "failed":
+    case "timeout":
+      return "bg-red-500/10 text-red-400 border border-red-500/30";
+    default:
+      return "bg-niko-surface text-foreground border border-niko-border";
+  }
+}
+
+function momoStatusHint(status: IntentPayout["status"]) {
+  switch (status) {
+    case "successful":
+      return "MTN confirmed the disbursement. This is the signal that funds were sent to the payee wallet.";
+    case "pending":
+      return "Submitted to MTN. In sandbox there is no SMS. We poll until MTN returns successful or failed.";
+    case "failed":
+      return "MTN rejected or could not complete the disbursement. Ops can retry from admin review.";
+    case "timeout":
+      return "MTN did not confirm in time. Ops can retry from admin review.";
+    default:
+      return "";
+  }
+}

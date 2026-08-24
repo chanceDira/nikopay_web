@@ -55,7 +55,3 @@ docs/
 # supabase local
 supabase/.temp/
 supabase/.branches/
-
-# Planning documents
-/nikopay-plan.html
-/ui-splint-plan.md

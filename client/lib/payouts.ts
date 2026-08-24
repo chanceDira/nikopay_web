@@ -5,10 +5,12 @@ import { getPaymentIntent } from "@/lib/intents";
 import { getTransferStatus, requestTransfer } from "@/lib/momo/client";
 import { getMomoConfig } from "@/lib/momo/config";
 import {
-  formatMomoAmount,
   mapMomoProviderStatus,
   payeeMsisdnForPayout,
+  transferAmountForMomo,
 } from "@/lib/momo/status";
+import { notifyIntentFailed } from "@/lib/notify/failed";
+import { notifyIntentPaid } from "@/lib/notify/paid";
 import { transitionStatus } from "@/lib/settlement/intent-status";
 import type { PaymentIntent } from "@/lib/settlement/types";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -25,7 +27,7 @@ export type PayoutRunResult = {
 
 export async function runPayouts(
   intentId?: string,
-) : Promise<
+): Promise<
   | { ok: true; payouts: PayoutRunResult[] }
   | { ok: false; reason: string; status: number }
 > {
@@ -72,7 +74,8 @@ export async function applyMomoCallback(
   referenceId: string,
   providerStatus: unknown,
   financialTransactionId: string | null,
-) : Promise<
+  providerReason: string | null = null,
+): Promise<
   | { ok: true; result: PayoutRunResult }
   | { ok: false; reason: string; status: number }
 > {
@@ -81,12 +84,17 @@ export async function applyMomoCallback(
     return { ok: false, reason: "invalid momo status", status: 400 };
   }
 
-  return settleReference(referenceId, status, financialTransactionId);
+  return settleReference(
+    referenceId,
+    status,
+    financialTransactionId,
+    providerReason,
+  );
 }
 
 async function payoutOne(
   intentId: string,
-) : Promise<
+): Promise<
   | { ok: true; result: PayoutRunResult }
   | { ok: false; reason: string; status: number }
 > {
@@ -121,23 +129,36 @@ async function payoutOne(
       transfer.row.reference_id,
       lookup.lookup.status,
       lookup.lookup.financialTransactionId,
+      lookup.lookup.providerReason,
     );
   }
 
-  const amount = formatMomoAmount(loaded.intent.netRwf);
+  const amount = transferAmountForMomo({
+    netRwf: loaded.intent.netRwf,
+    targetEnvironment: config.config.targetEnvironment,
+  });
   if (!amount) {
     return { ok: false, reason: "payout amount is invalid", status: 409 };
+  }
+
+  const payee = payeeMsisdnForPayout({
+    intentMsisdn: loaded.intent.msisdn,
+    targetEnvironment: config.config.targetEnvironment,
+    sandboxPayeeMsisdn: config.config.sandboxPayeeMsisdn,
+  });
+  if (!payee) {
+    return {
+      ok: false,
+      reason: "momo sandbox payee is not configured",
+      status: 503,
+    };
   }
 
   const retried = await requestTransfer(config.config, {
     referenceId: transfer.row.reference_id,
     amount,
     currency: config.config.currency,
-    msisdn: payeeMsisdnForPayout({
-      intentMsisdn: loaded.intent.msisdn,
-      targetEnvironment: config.config.targetEnvironment,
-      sandboxPayeeMsisdn: config.config.sandboxPayeeMsisdn,
-    }),
+    msisdn: payee,
     externalId: loaded.intent.id,
   });
 
@@ -151,8 +172,12 @@ async function payoutOne(
         transfer.row.reference_id,
         again.lookup.status,
         again.lookup.financialTransactionId,
+        again.lookup.providerReason,
       );
     }
+  } else {
+    await markTransferFailed(transfer.row.reference_id, retried.reason);
+    await moveIntentToManualReview(intentId);
   }
 
   const current = await getPaymentIntent(intentId);
@@ -169,7 +194,7 @@ async function payoutOne(
 
 async function startPayout(
   intent: PaymentIntent,
-) : Promise<{ ok: true } | { ok: false; reason: string; status: number }> {
+): Promise<{ ok: true } | { ok: false; reason: string; status: number }> {
   const moved = transitionStatus("credited", "payout_pending");
   if (!moved.ok) {
     return { ok: false, reason: moved.reason, status: 503 };
@@ -180,9 +205,25 @@ async function startPayout(
     return { ok: false, reason: config.reason, status: 503 };
   }
 
-  const amount = formatMomoAmount(intent.netRwf);
+  const amount = transferAmountForMomo({
+    netRwf: intent.netRwf,
+    targetEnvironment: config.config.targetEnvironment,
+  });
   if (!amount) {
     return { ok: false, reason: "payout amount is invalid", status: 409 };
+  }
+
+  const payee = payeeMsisdnForPayout({
+    intentMsisdn: intent.msisdn,
+    targetEnvironment: config.config.targetEnvironment,
+    sandboxPayeeMsisdn: config.config.sandboxPayeeMsisdn,
+  });
+  if (!payee) {
+    return {
+      ok: false,
+      reason: "momo sandbox payee is not configured",
+      status: 503,
+    };
   }
 
   const supabase = createAdminClient();
@@ -199,11 +240,6 @@ async function startPayout(
   }
 
   const referenceId = existing.data?.reference_id ?? randomUUID();
-  const payee = payeeMsisdnForPayout({
-    intentMsisdn: intent.msisdn,
-    targetEnvironment: config.config.targetEnvironment,
-    sandboxPayeeMsisdn: config.config.sandboxPayeeMsisdn,
-  });
 
   const claimed = await supabase
     .from("payment_intents")
@@ -225,7 +261,7 @@ async function startPayout(
       intent_id: intent.id,
       reference_id: referenceId,
       amount_rwf: intent.netRwf,
-      msisdn: intent.msisdn,
+      msisdn: payee,
       status: "pending",
     });
 
@@ -243,6 +279,8 @@ async function startPayout(
   });
 
   if (!requested.ok && !requested.conflict) {
+    await markTransferFailed(referenceId, requested.reason);
+    await moveIntentToManualReview(intent.id);
     return { ok: true };
   }
 
@@ -251,7 +289,7 @@ async function startPayout(
 
 async function loadOpenTransfer(
   intentId: string,
-) : Promise<
+): Promise<
   | { ok: true; row: MomoTransferRow }
   | { ok: false; reason: string; status: number }
 > {
@@ -278,7 +316,8 @@ async function settleReference(
   referenceId: string,
   momoStatus: MomoTransferRow["status"],
   financialTransactionId: string | null,
-) : Promise<
+  providerReason: string | null = null,
+): Promise<
   | { ok: true; result: PayoutRunResult }
   | { ok: false; reason: string; status: number }
 > {
@@ -293,12 +332,21 @@ async function settleReference(
     return { ok: false, reason: "payout not found", status: 404 };
   }
 
+  const transferPatch: {
+    status: MomoTransferRow["status"];
+    provider_ref: string | null;
+    provider_reason?: string | null;
+  } = {
+    status: momoStatus,
+    provider_ref: financialTransactionId,
+  };
+  if (momoStatus === "failed" || momoStatus === "timeout" || providerReason) {
+    transferPatch.provider_reason = providerReason;
+  }
+
   const updated = await supabase
     .from("momo_transfers")
-    .update({
-      status: momoStatus,
-      provider_ref: financialTransactionId,
-    })
+    .update(transferPatch)
     .eq("id", data.id)
     .select()
     .maybeSingle();
@@ -319,6 +367,12 @@ async function settleReference(
         })
         .eq("id", data.intent_id)
         .eq("status", "payout_pending");
+
+      if (intentUpdate === "paid") {
+        await notifyIntentPaid(data.intent_id);
+      } else if (intentUpdate === "manual_review") {
+        await notifyIntentFailed(data.intent_id);
+      }
     }
   }
 
@@ -340,19 +394,50 @@ async function settleReference(
 
 function nextIntentStatus(
   momoStatus: MomoTransferRow["status"],
-) : "paid" | "failed" | null {
+): "paid" | "manual_review" | null {
   if (momoStatus === "successful") {
     return "paid";
   }
   if (momoStatus === "failed" || momoStatus === "timeout") {
-    return "failed";
+    return "manual_review";
   }
   return null;
 }
 
+async function markTransferFailed(
+  referenceId: string,
+  reason = "request_not_accepted",
+): Promise<void> {
+  const supabase = createAdminClient();
+  await supabase
+    .from("momo_transfers")
+    .update({
+      status: "failed",
+      // Local submit failure only. Do not email: MTN may have accepted
+      // the transfer even if our HTTP response was lost.
+      provider_reason: reason.slice(0, 240),
+    })
+    .eq("reference_id", referenceId)
+    .eq("status", "pending");
+}
+
+async function moveIntentToManualReview(intentId: string): Promise<void> {
+  const allowed = transitionStatus("payout_pending", "manual_review");
+  if (!allowed.ok) {
+    return;
+  }
+
+  const supabase = createAdminClient();
+  await supabase
+    .from("payment_intents")
+    .update({ status: "manual_review" })
+    .eq("id", intentId)
+    .eq("status", "payout_pending");
+}
+
 export function parsePayoutIntentId(
   value: string | null,
-) : { ok: true; intentId?: string } | { ok: false; reason: string } {
+): { ok: true; intentId?: string } | { ok: false; reason: string } {
   if (value === null || value === "") {
     return { ok: true };
   }

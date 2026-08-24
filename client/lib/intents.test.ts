@@ -18,6 +18,9 @@ const row: PaymentIntentRow = {
   expires_at: "2026-08-14T12:00:00.000Z",
   deposit_tx: null,
   momo_ref: null,
+  notify_email: null,
+  paid_notified_at: null,
+  failed_notified_at: null,
   created_at: "2026-08-14T11:45:00.000Z",
   updated_at: "2026-08-14T11:45:00.000Z",
 };

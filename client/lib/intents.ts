@@ -1,15 +1,27 @@
-import { normalizeMsisdn, normalizeWalletAddress } from "@/lib/identity";
+import {
+  normalizeMsisdn,
+  normalizeOptionalEmail,
+  normalizeWalletAddress,
+} from "@/lib/identity";
+import { isMomoPayoutStatus } from "@/lib/admin-payouts";
 import { toNumber } from "@/lib/numbers";
 import { createServerQuote } from "@/lib/quotes";
 import { isPaymentStatus } from "@/lib/settlement/intent-status";
-import { isChainId, type PaymentIntent } from "@/lib/settlement/types";
+import {
+  isChainId,
+  type IntentPayout,
+  type PaymentIntent,
+} from "@/lib/settlement/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { PaymentIntentRow } from "@/lib/supabase/types";
 import { loadActiveTreasury } from "@/lib/treasury";
 
 const LIST_LIMIT = 50;
 
-export function toPaymentIntent(row: PaymentIntentRow): PaymentIntent | null {
+export function toPaymentIntent(
+  row: PaymentIntentRow,
+  payout?: IntentPayout,
+): PaymentIntent | null {
   if (!isChainId(row.chain_id) || !isPaymentStatus(row.status)) {
     return null;
   }
@@ -31,6 +43,8 @@ export function toPaymentIntent(row: PaymentIntentRow): PaymentIntent | null {
     updatedAt: row.updated_at,
     depositTx: row.deposit_tx ?? undefined,
     momoRef: row.momo_ref ?? undefined,
+    notifyEmail: row.notify_email ?? undefined,
+    payout,
   };
 }
 
@@ -39,6 +53,7 @@ export async function createPaymentIntent(input: {
   chain: unknown;
   msisdn: unknown;
   walletAddress: unknown;
+  notifyEmail?: unknown;
 }): Promise<
   | { ok: true; intent: PaymentIntent }
   | { ok: false; reason: string; status: number }
@@ -51,6 +66,11 @@ export async function createPaymentIntent(input: {
   const msisdn = normalizeMsisdn(input.msisdn);
   if (!msisdn.ok) {
     return { ok: false, reason: msisdn.reason, status: 400 };
+  }
+
+  const notifyEmail = normalizeOptionalEmail(input.notifyEmail);
+  if (!notifyEmail.ok) {
+    return { ok: false, reason: notifyEmail.reason, status: 400 };
   }
 
   const quoted = await createServerQuote(input.usdtAmount, input.chain);
@@ -78,6 +98,7 @@ export async function createPaymentIntent(input: {
       net_rwf: quoted.quote.netRwf,
       treasury_address: treasury.address,
       expires_at: quoted.quote.expiresAt,
+      notify_email: notifyEmail.email,
     })
     .select()
     .single();
@@ -128,7 +149,33 @@ export async function getPaymentIntent(
     return { ok: false, reason: "unable to load payment intent", status: 503 };
   }
 
-  return { ok: true, intent };
+  const payout = await loadIntentPayout(id);
+  return { ok: true, intent: { ...intent, payout } };
+}
+
+async function loadIntentPayout(
+  intentId: string,
+): Promise<IntentPayout | undefined> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("momo_transfers")
+    .select("status, reference_id, provider_ref, provider_reason, updated_at")
+    .eq("intent_id", intentId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data || !isMomoPayoutStatus(data.status)) {
+    return undefined;
+  }
+
+  return {
+    status: data.status,
+    referenceId: data.reference_id,
+    providerRef: data.provider_ref ?? undefined,
+    providerReason: data.provider_reason ?? undefined,
+    updatedAt: data.updated_at,
+  };
 }
 
 export async function listPaymentIntents(

@@ -67,3 +67,44 @@ export function createQuote(input: CreateQuoteInput): CreateQuoteResult {
     },
   };
 }
+
+export function usdtForTargetRwf(
+  rwfPayout: number,
+  rate: number,
+  feePercent: number,
+): number | null {
+  const factor = rate * (1 - feePercent / 100);
+  if (
+    !Number.isFinite(rwfPayout) ||
+    rwfPayout <= 0 ||
+    !Number.isFinite(factor) ||
+    factor <= 0
+  ) {
+    return null;
+  }
+
+  return Number((rwfPayout / factor).toFixed(6));
+}
+
+/** Net RWF the recipient receives for a given USDT sell amount. */
+export function netRwfForUsdt(
+  usdtAmount: number,
+  rate: number,
+  feePercent: number,
+): number | null {
+  if (
+    !Number.isFinite(usdtAmount) ||
+    usdtAmount <= 0 ||
+    !Number.isFinite(rate) ||
+    rate <= 0 ||
+    !Number.isFinite(feePercent) ||
+    feePercent < 0 ||
+    feePercent >= 100
+  ) {
+    return null;
+  }
+
+  const grossRwf = usdtAmount * rate;
+  const feeRwf = grossRwf * (feePercent / 100);
+  return Number((grossRwf - feeRwf).toFixed(2));
+}

@@ -1,0 +1,21 @@
+[profile.default]
+src = "contracts/src"
+out = "contracts/out"
+libs = ["contracts/lib"]
+script = "contracts/script"
+test = "contracts/test"
+cache_path = "contracts/cache"
+broadcast = "contracts/broadcast"
+solc = "0.8.24"
+optimizer = true
+optimizer_runs = 200
+evm_version = "cancun"
+
+[rpc_endpoints]
+polygon = "${CHAIN_RPC_URL_POLYGON}"
+base = "${CHAIN_RPC_URL_BASE}"
+amoy = "https://rpc-amoy.polygon.technology"
+base_sepolia = "https://sepolia.base.org"
+
+[lint]
+exclude_lints = ["screaming-snake-case-const"]
