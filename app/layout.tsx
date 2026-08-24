@@ -1,29 +1,50 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Afacad, Outfit } from "next/font/google";
+import { resolvePublicSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const afacad = Afacad({
+  variable: "--font-afacad",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
 });
+
+const siteUrl = resolvePublicSiteUrl();
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-  ),
-  title: "NikoPay | Making Stablecoins Spendable",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "NikoPay | Making Stablecoins Spendable",
+    template: "%s | NikoPay",
+  },
   description:
     "Convert USDT to Rwandan Francs via MTN Mobile Money. Instant, transparent, non-custodial.",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "NikoPay — Making Stablecoins Spendable",
+    type: "website",
+    url: siteUrl,
+    siteName: "NikoPay",
+    title: "NikoPay | Making Stablecoins Spendable",
     description:
       "Convert USDT to Rwandan Francs via MTN Mobile Money. Instant, transparent, non-custodial.",
     images: ["/nikopay-logo.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NikoPay | Making Stablecoins Spendable",
+    description:
+      "Convert USDT to Rwandan Francs via MTN Mobile Money. Instant, transparent, non-custodial.",
+    images: ["/nikopay-logo.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
@@ -35,8 +56,27 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${afacad.variable} ${outfit.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const theme = localStorage.getItem('nikopay_theme') || 'dark';
+                  if (theme === 'light') {
+                    document.documentElement.classList.add('light');
+                  } else {
+                    document.documentElement.classList.remove('light');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
       </body>

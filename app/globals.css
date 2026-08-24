@@ -10,6 +10,26 @@
   --niko-surface: #0d1117;
   --niko-muted: #8b9cb3;
   --niko-border: rgba(0, 212, 200, 0.12);
+  --niko-card-bg: rgba(19, 27, 46, 0.15);
+  --niko-warning-bg: rgba(245, 158, 11, 0.05);
+  --niko-warning-border: rgba(245, 158, 11, 0.1);
+  --niko-warning-text: #fcd34d;
+}
+
+.light {
+  --background: #b0c0d0;
+  --foreground: #0f172a;
+  --niko-navy: #a4b6c7;
+  --niko-blue: #7e95a9;
+  --niko-teal: #0891b2;
+  --niko-teal-bright: #0e7490;
+  --niko-surface: #c4d1db;
+  --niko-muted: #2c3e50;
+  --niko-border: rgba(8, 145, 178, 0.25);
+  --niko-card-bg: rgba(196, 209, 219, 0.95);
+  --niko-warning-bg: rgba(146, 64, 14, 0.1);
+  --niko-warning-border: rgba(146, 64, 14, 0.25);
+  --niko-warning-text: #92400e;
 }
 
 @theme inline {
@@ -22,14 +42,24 @@
   --color-niko-surface: var(--niko-surface);
   --color-niko-muted: var(--niko-muted);
   --color-niko-border: var(--niko-border);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-afacad);
+  --font-heading: var(--font-outfit);
+  --font-mono: var(--font-afacad);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-sans), sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading), sans-serif;
 }
 
 @layer utilities {
@@ -38,7 +68,11 @@ body {
   }
 
   .niko-gradient-text {
-    background: linear-gradient(135deg, var(--niko-teal-bright), var(--niko-teal));
+    background: linear-gradient(
+      135deg,
+      var(--niko-teal-bright),
+      var(--niko-teal)
+    );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -103,4 +137,19 @@ body {
   .bridge-progress {
     transform: scaleX(1) !important;
   }
+}
+
+/* Prevent browser autofill from turning input fields white */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px var(--background) inset !important;
+  -webkit-text-fill-color: var(--foreground) !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
