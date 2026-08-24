@@ -12,6 +12,19 @@ USDT in, RWF out via MTN Mobile Money. Sender wallet → NikoPay treasury → re
 
 Never commit `.env.local`, service role keys, MoMo keys, or SMTP passwords.
 
+## Repository layout (canonical)
+
+The Next.js app lives at the **repo root** (this is the `0xJ11` layout). Use this structure on every branch.
+
+| Path | Role |
+| ---- | ---- |
+| `app/`, `components/`, `lib/` | Next.js App Router + UI + domain |
+| `package.json`, `next.config.ts`, `proxy.ts` | App entry at repo root |
+| `supabase/` | Migrations and DB config |
+| `contracts/` | Foundry / on-chain helpers |
+
+Do **not** nest the app under `client/`. Vercel Root Directory must be `.` (repository root) so it can resolve `next` from root `package.json`. Preview on `0xJ11` and production on `main` must share this layout.
+
 ## Quick start
 
 ```bash
