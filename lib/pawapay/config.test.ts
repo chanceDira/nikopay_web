@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getPawapayConfig, getPayoutProvider } from "@/lib/pawapay/config";
+import {
+  getPawapayConfig,
+  getPayoutProvider,
+  isPawapayConfigured,
+} from "@/lib/pawapay/config";
 
 const keys = [
   "PAWAPAY_API_TOKEN",
@@ -74,5 +78,14 @@ describe("getPayoutProvider", () => {
   it("selects pawapay when flagged", () => {
     process.env.PAYOUT_PROVIDER = "pawapay";
     expect(getPayoutProvider()).toBe("pawapay");
+  });
+});
+
+describe("isPawapayConfigured", () => {
+  it("tracks whether a token is present", () => {
+    delete process.env.PAWAPAY_API_TOKEN;
+    expect(isPawapayConfigured()).toBe(false);
+    process.env.PAWAPAY_API_TOKEN = "test-token";
+    expect(isPawapayConfigured()).toBe(true);
   });
 });

@@ -18,6 +18,11 @@ export function getPayoutProvider(): PayoutProvider {
   return "momo";
 }
 
+/** True when a bearer token is present. Does not imply the orchestrator uses PawaPay. */
+export function isPawapayConfigured(): boolean {
+  return getPawapayConfig().ok;
+}
+
 export function getPawapayConfig():
   { ok: true; config: PawapayConfig } | { ok: false; reason: string } {
   const apiToken = process.env.PAWAPAY_API_TOKEN?.trim();

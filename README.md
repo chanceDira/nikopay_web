@@ -1,16 +1,16 @@
 # NikoPay
 
-USDT in, RWF out via MTN Mobile Money. Sender wallet → NikoPay treasury → recipient MoMo.
+USDT in, local mobile money out. Sender wallet → NikoPay treasury → recipient wallet (MTN MoMo today; PawaPay is the target rail).
 
-| Piece       | Value                                                         |
-| ----------- | ------------------------------------------------------------- |
-| App         | Next.js (App Router)                                          |
-| DB          | Hosted Supabase (Postgres)                                    |
-| Test chains | Base Sepolia (USDT ready), Polygon Amoy (token not wired yet) |
-| MoMo        | MTN Disbursements API (sandbox uses EUR)                      |
-| Deploy      | Vercel hosting, public site `https://nikopay.rw`              |
+| Piece       | Value                                                                 |
+| ----------- | --------------------------------------------------------------------- |
+| App         | Next.js (App Router)                                                  |
+| DB          | Hosted Supabase (Postgres)                                            |
+| Test chains | Base Sepolia (USDT ready), Polygon Amoy (token not wired yet)         |
+| Payout rail | MTN MoMo Disbursements (live path). PawaPay v2 foundation in progress |
+| Deploy      | Vercel hosting, public site `https://nikopay.rw`                      |
 
-Never commit `.env.local`, service role keys, MoMo keys, or SMTP passwords.
+Never commit `.env.local`, service role keys, MoMo/PawaPay tokens, or SMTP passwords.
 
 ## Repository layout (canonical)
 
@@ -76,6 +76,18 @@ Copy from `.env.example`. Only `NEXT_PUBLIC_*` may reach the browser.
 | `MOMO_API_KEY`                       | Sandbox API key for that user                                                                                                                                                                                                                                                                              |
 | `MOMO_CALLBACK_URL`                  | Optional production callback base, e.g. `https://your-host/api/momo/callback`. **Leave unset in sandbox.** Sandbox rejects the header when the URL host does not match the host used at API-user provision (common cause of `request_not_accepted` / `INVALID_CALLBACK_URL_HOST`). We poll status instead. |
 | `MOMO_SANDBOX_PAYEE_MSISDN`          | Sandbox payee override. Use `56733123453` for **success**. `46733123450` always fails (that is what caused `INTERNAL_PROCESSING_ERROR` on recent tests)                                                                                                                                                    |
+
+### PawaPay (target rail)
+
+Foundation only (`lib/pawapay`). Orchestrator still uses MoMo until `PAYOUT_PROVIDER=pawapay` is wired and proven.
+
+| Variable                   | Notes                                                                           |
+| -------------------------- | ------------------------------------------------------------------------------- |
+| `PAWAPAY_BASE_URL`         | Sandbox: `https://api.sandbox.pawapay.io`. Production: `https://api.pawapay.io` |
+| `PAWAPAY_API_TOKEN`        | Bearer token from the matching PawaPay dashboard. Never commit                  |
+| `PAWAPAY_CALLBACK_PATH`    | Default `/api/pawapay/callback`. Production host: `https://nikopay.rw`          |
+| `PAWAPAY_VERIFY_CALLBACKS` | Set `true` in production when signed callbacks are enabled                      |
+| `PAYOUT_PROVIDER`          | `momo` (default) or `pawapay`. Keep `momo` in production until cutover          |
 
 ### Email (optional)
 
