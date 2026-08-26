@@ -2,7 +2,12 @@ export type PawapayInitiationStatus =
   "ACCEPTED" | "REJECTED" | "DUPLICATE_IGNORED";
 
 export type PawapayPayoutStatus =
-  "ACCEPTED" | "SUBMITTED" | "COMPLETED" | "FAILED" | "ENQUEUED";
+  | "ACCEPTED"
+  | "ENQUEUED"
+  | "PROCESSING"
+  | "IN_RECONCILIATION"
+  | "COMPLETED"
+  | "FAILED";
 
 export type DomainPayoutStatus =
   "pending" | "successful" | "failed" | "enqueued";
