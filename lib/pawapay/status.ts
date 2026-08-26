@@ -9,7 +9,6 @@ const PENDING_STATUSES = new Set<string>([
   "IN_RECONCILIATION",
 ]);
 
-
 export function mapPawapayPayoutStatus(
   value: unknown,
 ): DomainPayoutStatus | null {
