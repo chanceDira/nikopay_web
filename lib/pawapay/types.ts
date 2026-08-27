@@ -40,3 +40,42 @@ export type InitiatePayoutResponse = {
   created?: string;
   failureReason?: PawapayFailureReason;
 };
+
+export type PayoutLookupData = {
+  payoutId: string;
+  status: PawapayPayoutStatus;
+  amount?: string;
+  currency?: string;
+  country?: string;
+  providerTransactionId?: string;
+  failureReason?: PawapayFailureReason;
+};
+
+export type GetPayoutResponse =
+  { status: "FOUND"; data: PayoutLookupData } | { status: "NOT_FOUND" };
+
+export type PredictProviderResponse = {
+  country: string;
+  provider: string;
+  phoneNumber: string;
+};
+
+export type WalletBalance = {
+  country: string;
+  balance: string;
+  currency: string;
+  provider: string;
+};
+
+export type AvailabilityOperationStatus = "OPERATIONAL" | "DELAYED" | "CLOSED";
+
+export type AvailabilityCountry = {
+  country: string;
+  providers: Array<{
+    provider: string;
+    operationTypes: Array<{
+      operationType: string;
+      status: AvailabilityOperationStatus;
+    }>;
+  }>;
+};
