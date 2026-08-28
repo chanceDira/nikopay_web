@@ -29,8 +29,8 @@ describe("formatProviderReason", () => {
 
 describe("callbackHostFromUrl", () => {
   it("extracts hostname", () => {
-    expect(callbackHostFromUrl("https://nikopay.rw/api/momo/callback")).toBe(
-      "nikopay.rw",
+    expect(callbackHostFromUrl("https://nikopay.to/api/momo/callback")).toBe(
+      "nikopay.to",
     );
   });
 

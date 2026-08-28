@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useIntentView } from "@/components/pay/use-intent-view";
+import { CONTACT } from "@/lib/contact";
 import { formatRwf, formatUsdt } from "@/lib/rates";
 
 type PaymentReceiptProps = {
@@ -254,7 +255,7 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
           <p className="text-[10px] text-niko-muted print:text-neutral-400 leading-relaxed">
             Payment handled by NikoPay (RDB Registered Entity).
             <br />
-            For support questions, write to info@nikopay.rw.
+            For support questions, write to {CONTACT.email}.
           </p>
         </div>
       </div>

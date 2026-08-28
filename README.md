@@ -8,7 +8,7 @@ USDT in, local mobile money out. Sender wallet → NikoPay treasury → recipien
 | DB          | Hosted Supabase (Postgres)                                            |
 | Test chains | Base Sepolia (USDT ready), Polygon Amoy (token not wired yet)         |
 | Payout rail | MTN MoMo Disbursements (live path). PawaPay v2 foundation in progress |
-| Deploy      | Vercel hosting, public site `https://nikopay.rw`                      |
+| Deploy      | Vercel hosting, public site `https://nikopay.to`                      |
 
 Never commit `.env.local`, service role keys, MoMo/PawaPay tokens, or SMTP passwords.
 
@@ -57,7 +57,7 @@ Copy from `.env.example`. Only `NEXT_PUBLIC_*` may reach the browser.
 | `NEXT_PUBLIC_SUPABASE_URL`                                                | Client + server | Project URL                                                                                                                                   |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + server | Publishable / anon key                                                                                                                        |
 | `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY`                      | Server only     | Service role. Never in the client                                                                                                             |
-| `NEXT_PUBLIC_SITE_URL`                                                    | Client + server | Local: `http://localhost:3000`. **Production: `https://nikopay.rw`.** Used for OG/canonical; emails/sitemap skip localhost and `*.vercel.app` |
+| `NEXT_PUBLIC_SITE_URL`                                                    | Client + server | Local: `http://localhost:3000`. **Production: `https://nikopay.to`.** Used for OG/canonical; emails/sitemap skip localhost and `*.vercel.app` |
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`                                    | Client          | Reown / WalletConnect Cloud project id                                                                                                        |
 | `SETTLEMENT_INGEST_SECRET`                                                | Server          | Bearer token for deposit ingest and job routes                                                                                                |
 | `ADMIN_SESSION_SECRET`                                                    | Server          | Optional. Falls back to Supabase secret if unset                                                                                              |
@@ -85,7 +85,7 @@ Foundation only (`lib/pawapay`). Orchestrator still uses MoMo until `PAYOUT_PROV
 | -------------------------- | ------------------------------------------------------------------------------- |
 | `PAWAPAY_BASE_URL`         | Sandbox: `https://api.sandbox.pawapay.io`. Production: `https://api.pawapay.io` |
 | `PAWAPAY_API_TOKEN`        | Bearer token from the matching PawaPay dashboard. Never commit                  |
-| `PAWAPAY_CALLBACK_PATH`    | Default `/api/pawapay/callback`. Production host: `https://nikopay.rw`          |
+| `PAWAPAY_CALLBACK_PATH`    | Default `/api/pawapay/callback`. Production host: `https://nikopay.to`          |
 | `PAWAPAY_VERIFY_CALLBACKS` | Set `true` in production when signed callbacks are enabled                      |
 | `PAYOUT_PROVIDER`          | `momo` (default) or `pawapay`. Keep `momo` in production until cutover          |
 
@@ -101,7 +101,7 @@ Payout emails use Google SMTP (app password, not account password).
 | `SMTP_USER`      | Gmail address                                                                                                                                                                                 |
 | `SMTP_PASS`      | App password                                                                                                                                                                                  |
 | `EMAIL_FROM`     | e.g. `NikoPay <you@gmail.com>`                                                                                                                                                                |
-| `EMAIL_SITE_URL` | Optional. Public https origin for email links. Prefer `https://nikopay.rw`. If unset, uses a public `NEXT_PUBLIC_SITE_URL`, else `https://nikopay.rw`. Never uses localhost or `*.vercel.app` |
+| `EMAIL_SITE_URL` | Optional. Public https origin for email links. Prefer `https://nikopay.to`. If unset, uses a public `NEXT_PUBLIC_SITE_URL`, else `https://nikopay.to`. Never uses localhost or `*.vercel.app` |
 
 If SMTP is unset, payouts still run. Emails are skipped.
 
@@ -168,7 +168,7 @@ If `MOMO_CALLBACK_URL` points at an old host (e.g. a Vercel alias) but the sandb
 
 **Fix for sandbox:** remove `MOMO_CALLBACK_URL` from env (local + Vercel), redeploy. The app skips the callback header in sandbox and polls transfer status.
 
-**Production:** use `https://nikopay.rw/api/momo/callback` (or leave unset only while still on sandbox).
+**Production:** use `https://nikopay.to/api/momo/callback` (or leave unset only while still on sandbox).
 
 ### When treasury shows 0 EUR
 
@@ -177,7 +177,7 @@ Sandbox gives each API user a fake balance. Successful transfers drain it. At **
 **Fix:** provision a **new** API user + API key, update only those two env vars, redeploy. Keep the subscription key.
 
 ```bash
-curl -X POST "https://nikopay.rw/api/jobs/momo/provision" \
+curl -X POST "https://nikopay.to/api/jobs/momo/provision" \
   -H "Authorization: Bearer YOUR_SETTLEMENT_INGEST_SECRET"
 ```
 
