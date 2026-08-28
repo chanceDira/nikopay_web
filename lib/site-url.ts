@@ -1,4 +1,4 @@
-const DEFAULT_PUBLIC_SITE_URL = "https://nikopay.rw";
+const DEFAULT_PUBLIC_SITE_URL = "https://nikopay.to";
 
 /** Public https origin. Never localhost or Vercel preview/prod aliases. */
 export function resolvePublicSiteUrl(

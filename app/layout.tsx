@@ -17,10 +17,10 @@ const siteUrl = resolvePublicSiteUrl();
 
 const title = "NikoPay | Making Stablecoins Spendable";
 const description =
-  "Convert USDT to Rwandan Francs via MTN Mobile Money. Instant, transparent, non-custodial.";
+  "Convert USDT to local currency via mobile money across Africa. Instant, transparent, non-custodial.";
 
 const brandImage = {
-  url: "/favicon.ico",
+  url: "/og-image.png",
   width: 1254,
   height: 1254,
   alt: "NikoPay",
@@ -38,12 +38,12 @@ export const metadata: Metadata = {
   keywords: [
     "NikoPay",
     "USDT",
-    "MTN MoMo",
-    "Mobile Money",
+    "mobile money",
+    "stablecoin offramp",
+    "crypto to mobile money",
+    "Africa",
     "Rwanda",
-    "RWF",
-    "stablecoin",
-    "offramp",
+    "MTN MoMo",
   ],
   authors: [{ name: "NikoPay", url: siteUrl }],
   creator: "NikoPay",
@@ -53,9 +53,9 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   icons: {
-    icon: [{ url: "/favicon.ico", type: "image/png", sizes: "1254x1254" }],
+    icon: [{ url: "/favicon.ico", sizes: "1254x1254" }],
     shortcut: "/favicon.ico",
-    apple: [{ url: "/favicon.ico", type: "image/png", sizes: "1254x1254" }],
+    apple: [{ url: "/og-image.png", type: "image/png", sizes: "1254x1254" }],
   },
   openGraph: {
     type: "website",
@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     images: [brandImage],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title,
     description,
     images: [brandImage],

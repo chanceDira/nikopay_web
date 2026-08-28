@@ -25,7 +25,7 @@ describe("buildPaidEmailContent", () => {
         momoFinancialId: "FIN-1",
         momoReferenceId: "22222222-2222-4222-8222-222222222222",
       },
-      "https://nikopay.rw",
+      "https://nikopay.to",
     );
 
     expect(content.subject).toBe("NikoPay payout confirmed");
@@ -35,7 +35,7 @@ describe("buildPaidEmailContent", () => {
     expect(content.text).toContain("FIN-1");
     expect(content.text).toContain("sepolia.basescan.org");
     expect(content.text).toContain(
-      "https://nikopay.rw/app/payments/11111111-1111-4111-8111-111111111111",
+      "https://nikopay.to/app/payments/11111111-1111-4111-8111-111111111111",
     );
   });
 });
@@ -56,7 +56,7 @@ describe("buildFailedEmailContent", () => {
         momoReferenceId: "33333333-3333-4333-8333-333333333333",
         providerReason: "LOW_BALANCE_OR_PAYEE_LIMIT_REACHED",
       },
-      "https://nikopay.rw",
+      "https://nikopay.to",
     );
 
     expect(content.subject).toBe("NikoPay payout did not complete");
