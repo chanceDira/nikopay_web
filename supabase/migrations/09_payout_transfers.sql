@@ -1,4 +1,4 @@
--- PawaPay payout attempts. Does not replace momo_transfers yet.
+-- PawaPay payout attempts. we shallnot replace momo transfers yet
 
 create table public.payout_transfers (
   id uuid primary key default gen_random_uuid(),

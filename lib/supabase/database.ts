@@ -345,6 +345,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      payout_transfers: {
+        Row: {
+          id: string;
+          intent_id: string;
+          payout_id: string;
+          country: string;
+          currency: string;
+          provider: string;
+          msisdn: string;
+          amount: number;
+          status: "pending" | "enqueued" | "successful" | "failed";
+          provider_ref: string | null;
+          provider_reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          intent_id: string;
+          payout_id: string;
+          country: string;
+          currency: string;
+          provider: string;
+          msisdn: string;
+          amount: number;
+          status?: "pending" | "enqueued" | "successful" | "failed";
+          provider_ref?: string | null;
+          provider_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          intent_id?: string;
+          payout_id?: string;
+          country?: string;
+          currency?: string;
+          provider?: string;
+          msisdn?: string;
+          amount?: number;
+          status?: "pending" | "enqueued" | "successful" | "failed";
+          provider_ref?: string | null;
+          provider_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       waitlist_entries: {
         Row: {
           id: string;
