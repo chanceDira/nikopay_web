@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState } from "react";
+import { BrandLogo } from "@/components/shared/brand-logo";
 import { adminLoginPath, revokeAdminSession } from "@/lib/admin-access";
 import { clearAdminWalletKind } from "@/lib/admin-wallet-kind";
 import { readLocal } from "@/lib/read-local";
@@ -98,14 +98,7 @@ export function AdminNav() {
         >
           <div className="flex items-center gap-3">
             <Link href="/admin" className="flex items-center gap-2">
-              <Image
-                src="/nikopay-logo.png"
-                alt="NikoPay"
-                width={130}
-                height={36}
-                className="h-8 w-auto sm:h-8.5"
-                priority
-              />
+              <BrandLogo className="h-8 sm:h-8.5" priority />
             </Link>
             <span className="text-[10px] uppercase tracking-widest font-mono text-niko-teal border border-niko-teal/30 px-1.5 py-0.5 rounded bg-niko-teal/5 font-semibold">
               admin

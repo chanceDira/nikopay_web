@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
+import { BrandLogo } from "@/components/shared/brand-logo";
 import { WalletPicker } from "@/components/shared/wallet-picker";
 import { adminAccessMessage, isAdminAccessReason } from "@/lib/admin-access";
 import { persistAdminWalletKind } from "@/lib/admin-wallet-kind";
@@ -52,12 +52,10 @@ export function AdminLoginForm() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="flex justify-center mb-6">
           <Link href="/">
-            <Image
-              src="/nikopay-logo.png"
-              alt="NikoPay Logo"
+            <BrandLogo
               width={160}
               height={45}
-              className="h-10 w-auto"
+              className="h-10"
               priority
             />
           </Link>

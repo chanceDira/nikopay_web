@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState } from "react";
+import { BrandLogo } from "@/components/shared/brand-logo";
 import { readLocal } from "@/lib/read-local";
 import { clearConnectedWallet } from "@/lib/wallet-session";
 import { disconnectWalletConnect } from "@/lib/wallet/walletconnect";
@@ -96,14 +96,7 @@ export function AppNav() {
           aria-label="Main navigation"
         >
           <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/nikopay-logo.png"
-              alt="NikoPay"
-              width={130}
-              height={36}
-              className="h-8 w-auto sm:h-8.5"
-              priority
-            />
+            <BrandLogo className="h-8 sm:h-8.5" priority />
           </Link>
           <div className="flex items-center gap-6 text-sm">
             {links.map((link) => (

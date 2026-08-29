@@ -1,12 +1,12 @@
-import Image from "next/image";
 import Link from "next/link";
+import { BrandLogo } from "@/components/shared/brand-logo";
 import { CONTACT } from "@/lib/contact";
 
 const footerLinks = {
   product: [
-    { href: "#how-it-works", label: "How it Works" },
-    { href: "#features", label: "Features" },
-    { href: "#faq", label: "FAQ" },
+    { href: "/#how-it-works", label: "How it Works" },
+    { href: "/#features", label: "Features" },
+    { href: "/#faq", label: "FAQ" },
   ],
   legal: [
     { href: "#", label: "Privacy Policy" },
@@ -20,13 +20,7 @@ export function Footer() {
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           <div className="sm:col-span-2 lg:col-span-2">
-            <Image
-              src="/nikopay-logo.png"
-              alt="NikoPay"
-              width={140}
-              height={40}
-              className="h-8 w-auto"
-            />
+            <BrandLogo width={140} height={40} className="h-8" />
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-niko-muted">
               Making digital assets spendable across Africa by connecting
               stablecoins with everyday payment networks. Launching first in
