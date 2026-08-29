@@ -37,6 +37,25 @@ export async function loadIntentStatus(
   return { ok: true, status: data.status };
 }
 
+export async function loadPayoutTransfer(
+  payoutId: string,
+): Promise<
+  { ok: true; row: PayoutTransferRow | null } | { ok: false; reason: string }
+> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("payout_transfers")
+    .select()
+    .eq("payout_id", payoutId)
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, reason: "unable to load payout" };
+  }
+
+  return { ok: true, row: data };
+}
+
 export async function insertPayoutTransfer(
   row: PayoutTransferInsert,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {

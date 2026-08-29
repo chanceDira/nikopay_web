@@ -9,6 +9,7 @@ import type {
   InitiatePayoutResponse,
   PawapayFailureReason,
   PawapayInitiationStatus,
+  PawapayPublicKey,
   PredictProviderResponse,
   WalletBalance,
 } from "@/lib/pawapay/types";
@@ -164,6 +165,43 @@ export async function getAvailability(
   }
 
   return { ok: true, data: parsed };
+}
+
+export async function getPublicKeys(
+  config: PawapayConfig,
+  fetchImpl: FetchLike = fetch,
+): Promise<PawapayHttpResult<PawapayPublicKey[]>> {
+  const response = await pawapayFetch(config, "/v2/public-key/http", {
+    method: "GET",
+    fetchImpl,
+  });
+
+  if (!response.ok) {
+    if (response.timedOut) {
+      return { ok: false, reason: "pawapay public-key timed out" };
+    }
+    return {
+      ok: false,
+      reason: `pawapay public-key failed (${response.status})`,
+    };
+  }
+
+  if (!Array.isArray(response.json)) {
+    return { ok: false, reason: "pawapay public-key response invalid" };
+  }
+
+  const keys: PawapayPublicKey[] = [];
+  for (const item of response.json) {
+    const row = asRecord(item);
+    const id = asNonEmptyString(row?.id);
+    const key = asNonEmptyString(row?.key);
+    if (!id || !key) {
+      return { ok: false, reason: "pawapay public-key response invalid" };
+    }
+    keys.push({ id, key });
+  }
+
+  return { ok: true, data: keys };
 }
 
 export async function getWalletBalances(
