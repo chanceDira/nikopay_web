@@ -54,6 +54,11 @@ export type PayoutLookupData = {
 export type GetPayoutResponse =
   { status: "FOUND"; data: PayoutLookupData } | { status: "NOT_FOUND" };
 
+export type PawapayPublicKey = {
+  id: string;
+  key: string;
+};
+
 export type PredictProviderResponse = {
   country: string;
   provider: string;
