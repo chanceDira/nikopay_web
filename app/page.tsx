@@ -1,3 +1,4 @@
+import { FirstVisitSurprise } from "@/components/landing/first-visit-surprise";
 import { Navbar } from "@/components/landing/navbar";
 import { Hero } from "@/components/landing/hero";
 import { TrustBar } from "@/components/landing/trust-bar";
@@ -13,6 +14,7 @@ import { CONTACT } from "@/lib/contact";
 export default function Home() {
   return (
     <>
+      <FirstVisitSurprise />
       <Navbar />
       <main>
         <Hero />

@@ -128,9 +128,85 @@ h6 {
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
+@keyframes confetti-fall {
+  from {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(var(--confetti-drift, 0px), 115vh, 0) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes surprise-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.7) translateY(16px);
+  }
+  60% {
+    transform: scale(1.06) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes surprise-wiggle {
+  0%,
+  100% {
+    transform: rotate(-12deg) scale(1);
+  }
+  50% {
+    transform: rotate(12deg) scale(1.15);
+  }
+}
+
+@keyframes surprise-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes surprise-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall linear both;
+}
+
+.animate-surprise-pop {
+  animation: surprise-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.animate-surprise-wiggle {
+  animation: surprise-wiggle 0.9s ease-in-out infinite;
+}
+
+.animate-surprise-in {
+  animation: surprise-in 0.35s ease-out both;
+}
+
+.animate-surprise-out {
+  animation: surprise-out 0.5s ease-in both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
-  .animate-pulse-glow {
+  .animate-pulse-glow,
+  .animate-confetti-fall,
+  .animate-surprise-pop,
+  .animate-surprise-wiggle {
     animation: none;
   }
 
