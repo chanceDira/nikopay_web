@@ -1,14 +1,14 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { BrandLogo } from "@/components/shared/brand-logo";
 import { readLocal } from "@/lib/read-local";
 
 const navLinks = [
-  { href: "#how-it-works", label: "How it Works" },
-  { href: "#features", label: "Features" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/#how-it-works", label: "How it Works" },
+  { href: "/#features", label: "Features" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 const SunIcon = () => (
@@ -66,14 +66,7 @@ export function Navbar() {
           aria-label="Main navigation"
         >
           <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/nikopay-logo.png"
-              alt="NikoPay"
-              width={130}
-              height={36}
-              className="h-8 w-auto sm:h-8.5"
-              priority
-            />
+            <BrandLogo className="h-8 sm:h-8.5" priority />
           </Link>
 
           {/* Desktop Links */}
@@ -102,7 +95,7 @@ export function Navbar() {
               href="/auth/sign-in"
               className="rounded-md bg-niko-teal px-5 py-2.5 text-sm font-sans font-bold text-niko-navy hover:bg-niko-teal-bright transition-colors"
             >
-              Launch App
+              Pay Now
             </Link>
           </div>
 
@@ -176,7 +169,7 @@ export function Navbar() {
               className="rounded-md bg-niko-teal px-5 py-2.5 text-center text-sm font-sans font-bold text-niko-navy"
               onClick={() => setOpen(false)}
             >
-              Launch App
+              Pay Now
             </Link>
           </div>
         )}

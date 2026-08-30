@@ -37,7 +37,7 @@ export function Hero() {
           <div className="mt-8 flex flex-col gap-6 sm:items-start">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
-                href="/auth/sign-in"
+                href="/download"
                 className="inline-flex h-12 items-center justify-center rounded-md bg-niko-teal px-8 text-sm font-semibold text-niko-navy transition-colors hover:bg-niko-teal-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-niko-teal"
               >
                 Launch App
