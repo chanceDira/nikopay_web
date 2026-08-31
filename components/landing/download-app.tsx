@@ -52,7 +52,9 @@ function PhonePreview() {
                 </div>
                 <div className="mt-3 flex justify-between text-niko-muted">
                   <span>To</span>
-                  <span className="font-mono text-foreground">078 725 9588</span>
+                  <span className="font-mono text-foreground">
+                    078 725 9588
+                  </span>
                 </div>
               </div>
               <div className="rounded-xl bg-niko-teal py-3.5 text-center text-sm font-bold text-niko-navy">

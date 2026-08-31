@@ -52,12 +52,7 @@ export function AdminLoginForm() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="flex justify-center mb-6">
           <Link href="/">
-            <BrandLogo
-              width={160}
-              height={45}
-              className="h-10"
-              priority
-            />
+            <BrandLogo width={160} height={45} className="h-10" priority />
           </Link>
         </div>
 

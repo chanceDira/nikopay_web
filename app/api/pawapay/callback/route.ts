@@ -2,6 +2,7 @@ import { jsonData, jsonError } from "@/lib/http";
 import { applyPayoutCallback } from "@/lib/pawapay/callback";
 import { getPublicKeys } from "@/lib/pawapay/client";
 import { getPawapayConfig } from "@/lib/pawapay/config";
+import { settlePayout } from "@/lib/pawapay/settle";
 import { verifyCallbackSignature } from "@/lib/pawapay/signatures";
 
 export async function POST(request: Request) {
@@ -41,6 +42,11 @@ export async function POST(request: Request) {
   if (!result.ok) {
     const status = result.reason === "payout not found" ? 404 : 400;
     return jsonError(result.reason, status);
+  }
+
+  const { payoutId, status } = result.outcome;
+  if (status === "successful" || status === "failed") {
+    await settlePayout(payoutId);
   }
 
   return jsonData(result.outcome);
