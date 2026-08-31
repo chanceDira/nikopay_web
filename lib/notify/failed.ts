@@ -1,5 +1,6 @@
 import { txExplorerUrl } from "@/lib/chain-config";
 import { sendFailedEmail } from "@/lib/notify/email";
+import { loadFailedRefs } from "@/lib/notify/transfer-refs";
 import { toNumber } from "@/lib/numbers";
 import { isChainId } from "@/lib/settlement/types";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -30,25 +31,12 @@ export async function notifyIntentFailed(intentId: string): Promise<void> {
     return;
   }
 
-  const transfer = await supabase
-    .from("momo_transfers")
-    .select("reference_id, status, provider_reason")
-    .eq("intent_id", intentId)
-    .in("status", ["failed", "timeout"])
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (transfer.error || !transfer.data) {
+  const transfer = await loadFailedRefs(intentId);
+  if (!transfer) {
     return;
   }
 
-  if (isUnconfirmedSubmitFailure(transfer.data.provider_reason)) {
-    return;
-  }
-
-  const momoStatus = transfer.data.status;
-  if (momoStatus !== "failed" && momoStatus !== "timeout") {
+  if (isUnconfirmedSubmitFailure(transfer.providerReason)) {
     return;
   }
 
@@ -68,9 +56,9 @@ export async function notifyIntentFailed(intentId: string): Promise<void> {
     depositExplorerUrl: depositTx
       ? (txExplorerUrl(row.chain_id, depositTx) ?? undefined)
       : undefined,
-    momoStatus,
-    momoReferenceId: transfer.data.reference_id,
-    providerReason: transfer.data.provider_reason ?? undefined,
+    momoStatus: transfer.status,
+    momoReferenceId: transfer.referenceId,
+    providerReason: transfer.providerReason ?? undefined,
   });
 
   if (!sent.ok) {

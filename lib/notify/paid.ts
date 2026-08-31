@@ -1,13 +1,10 @@
 import { txExplorerUrl } from "@/lib/chain-config";
 import { sendPaidEmail } from "@/lib/notify/email";
+import { loadPaidRefs } from "@/lib/notify/transfer-refs";
 import { toNumber } from "@/lib/numbers";
 import { isChainId } from "@/lib/settlement/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/**
- * Send MoMo success email once per intent. Safe to call on every settle.
- * Does not log the email address.
- */
 export async function notifyIntentPaid(intentId: string): Promise<void> {
   const supabase = createAdminClient();
   const loaded = await supabase
@@ -30,18 +27,10 @@ export async function notifyIntentPaid(intentId: string): Promise<void> {
     return;
   }
 
-  const transfer = await supabase
-    .from("momo_transfers")
-    .select("reference_id, provider_ref")
-    .eq("intent_id", intentId)
-    .eq("status", "successful")
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const refs = await loadPaidRefs(intentId);
 
   const depositTx = row.deposit_tx ?? undefined;
-  const momoFinancial =
-    transfer.data?.provider_ref ?? row.momo_ref ?? undefined;
+  const momoFinancial = refs.providerRef ?? row.momo_ref ?? undefined;
 
   const sent = await sendPaidEmail({
     to: row.notify_email,
@@ -59,7 +48,7 @@ export async function notifyIntentPaid(intentId: string): Promise<void> {
       : undefined,
     momoRef: momoFinancial,
     momoFinancialId: momoFinancial,
-    momoReferenceId: transfer.data?.reference_id ?? undefined,
+    momoReferenceId: refs.referenceId ?? undefined,
   });
 
   if (!sent.ok) {
