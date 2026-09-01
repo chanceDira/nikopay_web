@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { isUuid } from "@/lib/http";
 import { getPaymentIntent } from "@/lib/intents";
+import { getPayoutProvider } from "@/lib/pawapay/config";
+import { runPawapayPayouts } from "@/lib/pawapay/payouts";
 import { getTransferStatus, requestTransfer } from "@/lib/momo/client";
 import { getMomoConfig } from "@/lib/momo/config";
 import {
@@ -31,6 +33,10 @@ export async function runPayouts(
   | { ok: true; payouts: PayoutRunResult[] }
   | { ok: false; reason: string; status: number }
 > {
+  if (getPayoutProvider() === "pawapay") {
+    return runPawapayPayouts(intentId);
+  }
+
   const config = getMomoConfig();
   if (!config.ok) {
     return { ok: false, reason: config.reason, status: 503 };

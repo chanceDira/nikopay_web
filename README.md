@@ -79,7 +79,7 @@ Copy from `.env.example`. Only `NEXT_PUBLIC_*` may reach the browser.
 
 ### PawaPay (target rail)
 
-Foundation only (`lib/pawapay`). Orchestrator still uses MoMo until `PAYOUT_PROVIDER=pawapay` is wired and proven.
+Foundation through Phase B (`lib/pawapay`). Set `PAYOUT_PROVIDER=pawapay` locally to use the PawaPay orchestrator; production stays on `momo` until cutover.
 
 | Variable                   | Notes                                                                           |
 | -------------------------- | ------------------------------------------------------------------------------- |
