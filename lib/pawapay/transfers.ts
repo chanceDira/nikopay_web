@@ -76,6 +76,27 @@ export async function loadOpenPayoutTransfers(
   return { ok: true, rows: data ?? [] };
 }
 
+export async function loadLatestPayoutTransfer(
+  intentId: string,
+): Promise<
+  { ok: true; row: PayoutTransferRow | null } | { ok: false; reason: string }
+> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("payout_transfers")
+    .select()
+    .eq("intent_id", intentId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, reason: "unable to load payout" };
+  }
+
+  return { ok: true, row: data };
+}
+
 export async function insertPayoutTransfer(
   row: PayoutTransferInsert,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {

@@ -43,7 +43,12 @@ export async function runPawapayPoll(input: {
 
   const polled: PollResult[] = [];
   for (const row of open.rows) {
-    const result = await pollOne(row.payout_id, input.config, fetchImpl, store);
+    const result = await reconcilePayout(
+      row.payout_id,
+      input.config,
+      fetchImpl,
+      store,
+    );
     if (result) {
       polled.push(result);
     }
@@ -52,11 +57,15 @@ export async function runPawapayPoll(input: {
   return { ok: true, polled };
 }
 
-async function pollOne(
+export async function reconcilePayout(
   payoutId: string,
   config: PawapayConfig,
-  fetchImpl: FetchLike,
-  store: PollStore,
+  fetchImpl: FetchLike = fetch,
+  store: PollStore = {
+    getOpen: loadOpenPayoutTransfers,
+    apply: applyPayoutCallback,
+    settle: settlePayout,
+  },
 ): Promise<PollResult | null> {
   const lookup = await getPayout(config, payoutId, fetchImpl);
   if (!lookup.ok || lookup.data.status !== "FOUND") {
