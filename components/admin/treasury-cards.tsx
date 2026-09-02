@@ -6,6 +6,7 @@ import { summarizeAdminIntents } from "@/lib/admin-metrics";
 import type {
   AdminTreasurySnapshot,
   MomoPoolSnapshot,
+  PawapayPoolSnapshot,
   TreasuryWalletSnapshot,
 } from "@/lib/admin-treasury-types";
 import { formatRwf, formatUsdt } from "@/lib/rates";
@@ -78,7 +79,11 @@ export function AdminTreasuryCards() {
 
   return (
     <div className="space-y-6">
-      <MomoPoolCard momo={snapshot.momo} paidRwf={metrics.paidRwf} />
+      {snapshot.payoutProvider === "pawapay" && snapshot.pawapay ? (
+        <PawapayPoolCard pawapay={snapshot.pawapay} paidRwf={metrics.paidRwf} />
+      ) : snapshot.momo ? (
+        <MomoPoolCard momo={snapshot.momo} paidRwf={metrics.paidRwf} />
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {snapshot.wallets.map((wallet) => (
@@ -88,6 +93,56 @@ export function AdminTreasuryCards() {
             receivedUsdt={metrics.matchedUsdtByChain[wallet.chain]}
           />
         ))}
+      </div>
+    </div>
+  );
+}
+
+function PawapayPoolCard(props: {
+  pawapay: PawapayPoolSnapshot;
+  paidRwf: number;
+}) {
+  const available =
+    props.pawapay.ok && props.pawapay.currency.toUpperCase() === "RWF"
+      ? props.pawapay.availableBalance
+      : null;
+  const isLow = available !== null && available < 1_000_000;
+
+  return (
+    <div className="space-y-6">
+      {isLow ? (
+        <div className="p-4 rounded-md border border-[var(--niko-warning-border)] bg-[var(--niko-warning-bg)] text-xs text-[var(--niko-warning-text)] leading-relaxed">
+          <strong className="font-semibold block mb-0.5">
+            Low PawaPay RWF balance
+          </strong>
+          <p>
+            The disbursement wallet is below RWF 1,000,000. Large payouts may
+            fail until the pool is topped up in the PawaPay dashboard.
+          </p>
+        </div>
+      ) : null}
+
+      <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
+        <p className="text-xs font-mono uppercase tracking-widest text-niko-muted">
+          PawaPay disbursement balance
+        </p>
+        <h3 className="text-2xl font-bold font-mono text-foreground mt-3">
+          {props.pawapay.ok
+            ? formatMomoBalance(
+                props.pawapay.availableBalance,
+                props.pawapay.currency,
+              )
+            : "Unavailable"}
+        </h3>
+        <p className="text-xs text-niko-muted mt-1 font-sans">
+          {props.pawapay.ok
+            ? `Live ${props.pawapay.country} balance from PawaPay wallet-balances.`
+            : props.pawapay.reason}
+        </p>
+        <div className="mt-6 flex items-center justify-between text-xs text-niko-muted font-mono border-t border-niko-border/10 pt-4">
+          <span>RWF paid from intents</span>
+          <span className="text-foreground">{formatRwf(props.paidRwf)}</span>
+        </div>
       </div>
     </div>
   );

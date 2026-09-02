@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  isMomoPayoutStatus,
+  isAdminPayoutStatus,
   type AdminPayout,
-  type MomoPayoutStatus,
+  type AdminPayoutStatus,
 } from "@/lib/admin-payouts";
 import { paginate } from "@/lib/paginate";
 import { formatRwf } from "@/lib/rates";
@@ -14,10 +14,11 @@ import { formatRwf } from "@/lib/rates";
 const PAGE_SIZE = 10;
 const POLL_MS = 8000;
 
-const FILTERS: { value: "all" | MomoPayoutStatus; label: string }[] = [
+const FILTERS: { value: "all" | AdminPayoutStatus; label: string }[] = [
   { value: "all", label: "All" },
   { value: "successful", label: "Reached user" },
   { value: "pending", label: "Pending" },
+  { value: "enqueued", label: "Enqueued" },
   { value: "failed", label: "Failed" },
   { value: "timeout", label: "Timeout" },
 ];
@@ -25,7 +26,7 @@ const FILTERS: { value: "all" | MomoPayoutStatus; label: string }[] = [
 export function AdminPayoutsTable() {
   const searchParams = useSearchParams();
   const requested = searchParams.get("status");
-  const statusFilter: "all" | MomoPayoutStatus = isMomoPayoutStatus(requested)
+  const statusFilter: "all" | AdminPayoutStatus = isAdminPayoutStatus(requested)
     ? requested
     : "all";
 
@@ -98,7 +99,7 @@ export function AdminPayoutsTable() {
                 <th className="px-6 py-4">Sent</th>
                 <th className="px-6 py-4">Recipient</th>
                 <th className="px-6 py-4">Amount</th>
-                <th className="px-6 py-4">MoMo status</th>
+                <th className="px-6 py-4">Payout status</th>
                 <th className="px-6 py-4">Provider ref</th>
                 <th className="px-6 py-4">Reason</th>
                 <th className="px-6 py-4 text-right">Intent</th>
@@ -120,7 +121,7 @@ export function AdminPayoutsTable() {
                     colSpan={7}
                     className="px-6 py-12 text-center text-niko-muted"
                   >
-                    No MoMo transfers yet. Run payouts after a deposit is
+                    No payout transfers yet. Run payouts after a deposit is
                     credited.
                   </td>
                 </tr>
@@ -191,17 +192,19 @@ export function AdminPayoutsTable() {
   );
 }
 
-function statusBadge(status: MomoPayoutStatus) {
-  const styles: Record<MomoPayoutStatus, string> = {
+function statusBadge(status: AdminPayoutStatus) {
+  const styles: Record<AdminPayoutStatus, string> = {
     successful: "bg-niko-teal/15 text-niko-teal border-niko-teal/20",
     pending: "bg-blue-400/10 text-blue-400 border-blue-400/20",
+    enqueued: "bg-violet-400/10 text-violet-300 border-violet-400/20",
     failed: "bg-red-500/10 text-red-400 border-red-500/20",
     timeout: "bg-amber-500/10 text-amber-400 border-amber-500/20",
   };
 
-  const labels: Record<MomoPayoutStatus, string> = {
+  const labels: Record<AdminPayoutStatus, string> = {
     successful: "Reached user",
     pending: "Pending",
+    enqueued: "Enqueued",
     failed: "Failed",
     timeout: "Timeout",
   };

@@ -16,10 +16,11 @@ export function formatPayoutAmount(
   }
 
   if (decimals === "NONE") {
-    if (!Number.isInteger(amount)) {
+    const rounded = Math.round(amount);
+    if (rounded <= 0) {
       return null;
     }
-    return String(amount);
+    return String(rounded);
   }
 
   if (Number.isInteger(amount)) {
