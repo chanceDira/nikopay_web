@@ -1,11 +1,19 @@
 import { fetchErc20Balance } from "@/lib/erc20-balance";
 import { getAccountBalance } from "@/lib/momo/client";
 import { getMomoConfig } from "@/lib/momo/config";
+import { getWalletBalances } from "@/lib/pawapay/client";
+import {
+  getPawapayConfig,
+  getPayoutProvider,
+  isPawapayConfigured,
+} from "@/lib/pawapay/config";
+import { toNumber } from "@/lib/numbers";
 import { CHAIN_IDS, type ChainId } from "@/lib/settlement/types";
 import { loadActiveTreasury, loadActiveUsdtToken } from "@/lib/treasury";
 import type {
   AdminTreasurySnapshot,
   MomoPoolSnapshot,
+  PawapayPoolSnapshot,
   TreasuryWalletSnapshot,
 } from "@/lib/admin-treasury-types";
 
@@ -44,20 +52,59 @@ async function loadWallet(chain: ChainId): Promise<TreasuryWalletSnapshot> {
   };
 }
 
-async function loadMomoPool(): Promise<MomoPoolSnapshot> {
+async function loadMomoPool(): Promise<MomoPoolSnapshot | null> {
   const config = getMomoConfig();
   if (!config.ok) {
-    return config;
+    return null;
   }
 
   return getAccountBalance(config.config);
 }
 
+async function loadPawapayPool(): Promise<PawapayPoolSnapshot | null> {
+  if (!isPawapayConfigured()) {
+    return null;
+  }
+
+  const configured = getPawapayConfig();
+  if (!configured.ok) {
+    return { ok: false, reason: configured.reason };
+  }
+
+  const balances = await getWalletBalances(configured.config, {
+    country: "RWA",
+  });
+  if (!balances.ok) {
+    return { ok: false, reason: balances.reason };
+  }
+
+  const rwa = balances.data.find(
+    (row) => row.country === "RWA" && row.currency === "RWF",
+  );
+  if (!rwa) {
+    return { ok: false, reason: "RWA RWF balance not found" };
+  }
+
+  const availableBalance = toNumber(rwa.balance);
+  if (!Number.isFinite(availableBalance)) {
+    return { ok: false, reason: "RWA RWF balance is invalid" };
+  }
+
+  return {
+    ok: true,
+    availableBalance,
+    currency: rwa.currency,
+    country: rwa.country,
+  };
+}
+
 export async function loadAdminTreasurySnapshot(): Promise<AdminTreasurySnapshot> {
-  const [wallets, momo] = await Promise.all([
+  const payoutProvider = getPayoutProvider();
+  const [wallets, momo, pawapay] = await Promise.all([
     Promise.all(CHAIN_IDS.map((chain) => loadWallet(chain))),
     loadMomoPool(),
+    loadPawapayPool(),
   ]);
 
-  return { wallets, momo };
+  return { wallets, payoutProvider, momo, pawapay };
 }

@@ -5,7 +5,7 @@ export default function AdminTreasuryPage() {
   return (
     <PageHeader
       title="Treasury"
-      description="Live treasury addresses, on-chain USDT, and MoMo balance"
+      description="Live treasury addresses, on-chain USDT, and disbursement balance"
     >
       <AdminTreasuryCards />
     </PageHeader>
