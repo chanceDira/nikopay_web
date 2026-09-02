@@ -2,14 +2,10 @@ import { randomUUID } from "node:crypto";
 
 import { toNumber } from "@/lib/numbers";
 import { formatPayoutAmount } from "@/lib/pawapay/amount";
-import {
-  getActiveConf,
-  getPayout,
-  initiatePayout,
-  predictProvider,
-} from "@/lib/pawapay/client";
+import { getActiveConf, getPayout, initiatePayout } from "@/lib/pawapay/client";
 import type { PawapayConfig } from "@/lib/pawapay/config";
 import { pickPayoutCorridor } from "@/lib/pawapay/corridor";
+import { resolvePayoutProvider } from "@/lib/pawapay/sandbox";
 import {
   isPawapayFinalStatus,
   mapPawapayPayoutStatus,
@@ -26,6 +22,7 @@ import {
 const SPIKE_INTENT_STATUSES = new Set(["expired", "failed", "manual_review"]);
 
 export const SANDBOX_SUCCESS_MSISDN = "250783456789";
+export { SANDBOX_FAILURE_MSISDN } from "@/lib/pawapay/sandbox";
 
 export type SpikeStore = {
   getIntentStatus: typeof loadIntentStatus;
@@ -64,7 +61,7 @@ export async function runSandboxPayoutSpike(input: {
     return { ok: false, reason: "spike refuses live payment intents" };
   }
 
-  const predicted = await predictProvider(
+  const predicted = await resolvePayoutProvider(
     input.config,
     input.msisdn,
     fetchImpl,

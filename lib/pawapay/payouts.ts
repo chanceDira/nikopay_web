@@ -4,17 +4,14 @@ import { isUuid } from "@/lib/http";
 import { getPaymentIntent } from "@/lib/intents";
 import { toNumber } from "@/lib/numbers";
 import { formatPayoutAmount } from "@/lib/pawapay/amount";
-import {
-  getActiveConf,
-  initiatePayout,
-  predictProvider,
-} from "@/lib/pawapay/client";
+import { getActiveConf, initiatePayout } from "@/lib/pawapay/client";
 import { getPawapayConfig, type PawapayConfig } from "@/lib/pawapay/config";
 import {
   pickPayoutCorridor,
   type PayoutCorridor,
 } from "@/lib/pawapay/corridor";
 import { reconcilePayout } from "@/lib/pawapay/poll";
+import { resolvePayoutProvider } from "@/lib/pawapay/sandbox";
 import { settlePayout } from "@/lib/pawapay/settle";
 import {
   insertPayoutTransfer,
@@ -322,7 +319,11 @@ async function resolveCorridor(
     }
   | { ok: false; reason: string; status: number }
 > {
-  const predicted = await predictProvider(config, intent.msisdn, fetchImpl);
+  const predicted = await resolvePayoutProvider(
+    config,
+    intent.msisdn,
+    fetchImpl,
+  );
   if (!predicted.ok) {
     return { ok: false, reason: predicted.reason, status: 409 };
   }
