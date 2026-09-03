@@ -28,6 +28,9 @@ export async function POST(request: Request) {
     chain: body.chain,
     msisdn: body.msisdn,
     walletAddress: body.walletAddress,
+    country: body.country,
+    currency: body.currency,
+    provider: body.provider,
     notifyEmail: body.notifyEmail,
   });
 

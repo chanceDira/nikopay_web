@@ -52,6 +52,9 @@ export type PaymentIntent = {
   chain: ChainId;
   walletAddress: string;
   msisdn: string;
+  country: string;
+  currency: string;
+  provider: string;
   usdtAmount: number;
   rate: number;
   feePercent: number;

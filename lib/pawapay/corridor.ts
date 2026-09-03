@@ -10,6 +10,71 @@ export type PayoutCorridor = {
   maxAmount: string;
 };
 
+export type CorridorProviderOption = {
+  country: string;
+  provider: string;
+  displayName: string;
+  currency: string;
+  decimalsInAmount: AmountDecimals;
+  minAmount: string;
+  maxAmount: string;
+};
+
+export function listPayoutProviders(
+  conf: unknown,
+  country: string,
+): CorridorProviderOption[] {
+  const countries = asRecord(conf)?.countries;
+  if (!Array.isArray(countries)) {
+    return [];
+  }
+
+  const code = country.trim().toUpperCase();
+  const options: CorridorProviderOption[] = [];
+
+  for (const item of countries) {
+    const row = asRecord(item);
+    const countryCode = asNonEmptyString(row?.country)?.toUpperCase();
+    const providers = row?.providers;
+    if (countryCode !== code || !Array.isArray(providers)) {
+      continue;
+    }
+
+    for (const providerItem of providers) {
+      const providerRow = asRecord(providerItem);
+      const provider = asNonEmptyString(providerRow?.provider)?.toUpperCase();
+      if (!provider) {
+        continue;
+      }
+      const displayName =
+        asNonEmptyString(providerRow?.displayName) ??
+        asNonEmptyString(providerRow?.nameDisplayedToCustomer) ??
+        provider;
+      const currencies = providerRow?.currencies;
+      if (!Array.isArray(currencies)) {
+        continue;
+      }
+      for (const currencyItem of currencies) {
+        const corridor = pickFromCurrency(currencyItem, countryCode, provider);
+        if (!corridor) {
+          continue;
+        }
+        options.push({
+          country: corridor.country,
+          provider: corridor.provider,
+          displayName,
+          currency: corridor.currency,
+          decimalsInAmount: corridor.decimalsInAmount,
+          minAmount: corridor.minAmount,
+          maxAmount: corridor.maxAmount,
+        });
+      }
+    }
+  }
+
+  return options;
+}
+
 export function pickPayoutCorridor(
   conf: unknown,
   query: { country: string; provider: string },

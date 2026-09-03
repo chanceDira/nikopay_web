@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -11,7 +11,13 @@ import { useWalletSession } from "@/components/pay/use-wallet-session";
 import { WalletPicker } from "@/components/shared/wallet-picker";
 import { getPublicChain } from "@/lib/chain-config";
 import { normalizeMsisdn, normalizeOptionalEmail } from "@/lib/identity";
-import { createLiveIntent, reportIntentDepositWhenReady } from "@/lib/pay-api";
+import {
+  createLiveIntent,
+  fetchCorridorProviders,
+  predictCorridorProvider,
+  reportIntentDepositWhenReady,
+  type CorridorProviderOption,
+} from "@/lib/pay-api";
 import { readLocal } from "@/lib/read-local";
 import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
 import { netRwfForUsdt, usdtForTargetRwf } from "@/lib/settlement/quote";
@@ -24,6 +30,8 @@ import {
 import { sameWalletAddress, shortAddress } from "@/lib/wallet-session";
 
 type Step = 1 | 2 | 3 | 4;
+
+const DEFAULT_CORRIDOR_COUNTRY = "RWA";
 
 const CheckIcon = () => (
   <svg
@@ -64,6 +72,16 @@ export function PayWizard() {
   const [amountUsdt, setAmountUsdt] = useState<string>("");
   const [msisdn, setMsisdn] = useState<string>("");
   const [formattedMsisdn, setFormattedMsisdn] = useState<string>("");
+  const [corridorCountry, setCorridorCountry] = useState(
+    DEFAULT_CORRIDOR_COUNTRY,
+  );
+  const [corridorCurrency, setCorridorCurrency] = useState("RWF");
+  const [corridorProvider, setCorridorProvider] = useState("");
+  const [corridorProviders, setCorridorProviders] = useState<
+    CorridorProviderOption[]
+  >([]);
+  const [corridorError, setCorridorError] = useState("");
+  const [corridorLoading, setCorridorLoading] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState<string>("");
   const [emailError, setEmailError] = useState<string>("");
   const [rate] = useState(() =>
@@ -104,6 +122,43 @@ export function PayWizard() {
     useState<WalletKind | null>(null);
   const [gateError, setGateError] = useState("");
   const [payError, setPayError] = useState("");
+
+  useEffect(() => {
+    if (step !== 2) {
+      return;
+    }
+
+    let cancelled = false;
+    const load = async () => {
+      setCorridorLoading(true);
+      setCorridorError("");
+      const result = await fetchCorridorProviders(DEFAULT_CORRIDOR_COUNTRY);
+      if (cancelled) {
+        return;
+      }
+      setCorridorLoading(false);
+      if (!result.ok) {
+        setCorridorError(result.reason);
+        return;
+      }
+      setCorridorProviders(result.data.providers);
+      setCorridorCountry(result.data.country);
+      if (!corridorProvider && result.data.providers[0]) {
+        const first = result.data.providers[0];
+        setCorridorProvider(first.provider);
+        setCorridorCurrency(first.currency);
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once when entering step 2
+  }, [step]);
+
+  const selectedCorridor =
+    corridorProviders.find((row) => row.provider === corridorProvider) ?? null;
 
   const walletDrifted =
     Boolean(liveIntent) &&
@@ -213,11 +268,36 @@ export function PayWizard() {
     const parsed = normalizeMsisdn(msisdn);
     if (!parsed.ok) {
       setMsisdnError(
-        "Enter a valid mobile number (e.g. 078XXXXXXX or +46733123450)",
+        "Enter a valid mobile number (e.g. 078XXXXXXX or +2507XXXXXXXX)",
       );
       return false;
     }
     setMsisdnError("");
+    return true;
+  };
+
+  const validateCorridor = () => {
+    if (!corridorProvider || !corridorCurrency || !corridorCountry) {
+      setCorridorError("Select a mobile money provider");
+      return false;
+    }
+    if (selectedCorridor && quote && Number.isFinite(quote.netRwf)) {
+      const min = Number(selectedCorridor.minAmount);
+      const max = Number(selectedCorridor.maxAmount);
+      if (Number.isFinite(min) && quote.netRwf < min) {
+        setCorridorError(
+          `Payout is below the provider minimum (${selectedCorridor.minAmount} ${selectedCorridor.currency})`,
+        );
+        return false;
+      }
+      if (Number.isFinite(max) && quote.netRwf > max) {
+        setCorridorError(
+          `Payout exceeds the provider maximum (${selectedCorridor.maxAmount} ${selectedCorridor.currency})`,
+        );
+        return false;
+      }
+    }
+    setCorridorError("");
     return true;
   };
 
@@ -229,6 +309,33 @@ export function PayWizard() {
     }
     setEmailError("");
     return true;
+  };
+
+  const applyPredictedProvider = async (phone: string) => {
+    const predicted = await predictCorridorProvider(phone);
+    if (!predicted.ok) {
+      return;
+    }
+    setCorridorCountry(predicted.data.country);
+    setCorridorCurrency(predicted.data.currency);
+    setCorridorProvider(predicted.data.provider);
+    setCorridorProviders((prev) => {
+      if (prev.some((row) => row.provider === predicted.data.provider)) {
+        return prev;
+      }
+      return [
+        ...prev,
+        {
+          country: predicted.data.country,
+          provider: predicted.data.provider,
+          displayName: predicted.data.provider,
+          currency: predicted.data.currency,
+          decimalsInAmount: predicted.data.decimalsInAmount,
+          minAmount: predicted.data.minAmount,
+          maxAmount: predicted.data.maxAmount,
+        },
+      ];
+    });
   };
 
   const handleMsisdnChange = (value: string) => {
@@ -248,6 +355,16 @@ export function PayWizard() {
     setFormattedMsisdn(value.trim());
   };
 
+  const handleMsisdnBlur = () => {
+    if (!validateMsisdn()) {
+      return;
+    }
+    const parsed = normalizeMsisdn(msisdn);
+    if (parsed.ok) {
+      void applyPredictedProvider(parsed.msisdn);
+    }
+  };
+
   const handleNextStep = () => {
     if (step === 1) {
       if (!validateAmount()) {
@@ -265,7 +382,7 @@ export function PayWizard() {
       }
       setStep(2);
     } else if (step === 2) {
-      if (validateMsisdn() && validateEmail()) {
+      if (validateMsisdn() && validateCorridor() && validateEmail()) {
         setLiveIntent(null);
         setIntentError("");
         setStep(3);
@@ -308,6 +425,9 @@ export function PayWizard() {
       intent.chain === chain &&
       sameWalletAddress(intent.walletAddress, active) &&
       intent.msisdn === parsedMsisdn.msisdn &&
+      intent.country === corridorCountry &&
+      intent.currency === corridorCurrency &&
+      intent.provider === corridorProvider &&
       intentEmail === parsedEmail.email
     );
   };
@@ -331,6 +451,11 @@ export function PayWizard() {
     const parsedMsisdn = normalizeMsisdn(msisdn);
     if (!parsedMsisdn.ok) {
       setIntentError(parsedMsisdn.reason);
+      return;
+    }
+
+    if (!corridorCountry || !corridorCurrency || !corridorProvider) {
+      setIntentError("Select a mobile money provider");
       return;
     }
 
@@ -358,6 +483,9 @@ export function PayWizard() {
       chain,
       msisdn: parsedMsisdn.msisdn,
       walletAddress: activeAddress,
+      country: corridorCountry,
+      currency: corridorCurrency,
+      provider: corridorProvider,
       notifyEmail: parsedEmail.email ?? undefined,
     });
     setCreatingIntent(false);
@@ -664,11 +792,11 @@ export function PayWizard() {
               htmlFor="msisdn-input"
               className="text-sm font-medium text-foreground"
             >
-              Recipient Mobile Money Number
+              Recipient mobile money number
             </label>
             <p className="text-xs text-niko-muted mt-1">
-              Rwanda MTN numbers (078…) or international E.164 for sandbox
-              testing. Sandbox success payee is set by the server (56733123453).
+              Rwanda numbers (078…) or E.164. We suggest a provider from the
+              phone number; you can change it below.
             </p>
             <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
               <input
@@ -683,12 +811,12 @@ export function PayWizard() {
                     if (msisdnError) setMsisdnError("");
                   }
                 }}
-                onBlur={validateMsisdn}
+                onBlur={handleMsisdnBlur}
                 className="w-full bg-transparent font-mono text-lg font-semibold text-foreground outline-none placeholder:text-niko-muted/40"
-                placeholder="e.g. 0787259588 or +56733123453"
+                placeholder="e.g. 0787259588 or +250783456789"
               />
-              <span className="ml-3 font-semibold text-niko-teal text-xs tracking-wider uppercase">
-                MTN MoMo
+              <span className="ml-3 font-semibold text-niko-teal text-xs tracking-wider uppercase shrink-0">
+                {selectedCorridor?.displayName ?? "MMO"}
               </span>
             </div>
             {msisdnError && (
@@ -698,13 +826,66 @@ export function PayWizard() {
             {formattedMsisdn && !msisdnError && (
               <div className="mt-3 p-3 rounded-lg bg-niko-surface/80 border border-niko-border/40 flex justify-between items-center">
                 <span className="text-xs text-niko-muted">
-                  Formatted Address:
+                  Formatted address
                 </span>
                 <span className="text-xs font-mono font-bold text-niko-teal-bright">
                   {formattedMsisdn}
                 </span>
               </div>
             )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="provider-select"
+              className="text-sm font-medium text-foreground"
+            >
+              Mobile money provider
+            </label>
+            <p className="text-xs text-niko-muted mt-1">
+              {corridorLoading
+                ? "Loading providers from PawaPay…"
+                : `${corridorCountry} · amounts in ${corridorCurrency}`}
+            </p>
+            <select
+              id="provider-select"
+              value={corridorProvider}
+              disabled={corridorLoading || corridorProviders.length === 0}
+              onChange={(e) => {
+                const next = corridorProviders.find(
+                  (row) => row.provider === e.target.value,
+                );
+                setCorridorProvider(e.target.value);
+                if (next) {
+                  setCorridorCountry(next.country);
+                  setCorridorCurrency(next.currency);
+                }
+                setCorridorError("");
+              }}
+              className="mt-3 w-full rounded-md border border-niko-border bg-background px-4 py-3.5 font-mono text-sm text-foreground outline-none focus:border-niko-teal/50 disabled:opacity-50"
+            >
+              {corridorProviders.length === 0 ? (
+                <option value="">No providers available</option>
+              ) : (
+                corridorProviders.map((row) => (
+                  <option key={row.provider} value={row.provider}>
+                    {row.displayName} ({row.provider})
+                  </option>
+                ))
+              )}
+            </select>
+            {selectedCorridor ? (
+              <p className="mt-2 text-[11px] font-mono text-niko-muted">
+                Min {selectedCorridor.minAmount} · max{" "}
+                {selectedCorridor.maxAmount} {selectedCorridor.currency}
+                {selectedCorridor.decimalsInAmount === "NONE"
+                  ? " · whole amounts only"
+                  : ""}
+              </p>
+            ) : null}
+            {corridorError ? (
+              <p className="mt-2 text-xs text-red-400">{corridorError}</p>
+            ) : null}
           </div>
 
           <div>
@@ -716,8 +897,8 @@ export function PayWizard() {
               <span className="text-niko-muted font-normal">(optional)</span>
             </label>
             <p className="text-xs text-niko-muted mt-1">
-              We email you immediately when MTN confirms the MoMo payout. No
-              account required.
+              We email you when the mobile money payout completes or failed. No account
+              required.
             </p>
             <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
               <input
@@ -862,9 +1043,14 @@ export function PayWizard() {
                 {formatUsdt(usdtAmount)}
               </div>
 
-              <div className="text-niko-muted">MTN Wallet Number</div>
+              <div className="text-niko-muted">Mobile money number</div>
               <div className="font-mono font-bold text-right text-foreground">
                 {formattedMsisdn}
+              </div>
+
+              <div className="text-niko-muted">Provider</div>
+              <div className="font-mono font-bold text-right text-foreground">
+                {selectedCorridor?.displayName ?? corridorProvider}
               </div>
 
               {notifyEmail.trim() && (

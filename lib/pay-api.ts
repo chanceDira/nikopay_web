@@ -67,6 +67,9 @@ export function isPaymentIntentPayload(value: unknown): value is PaymentIntent {
     isChainId(intent.chain) &&
     typeof intent.walletAddress === "string" &&
     typeof intent.msisdn === "string" &&
+    typeof intent.country === "string" &&
+    typeof intent.currency === "string" &&
+    typeof intent.provider === "string" &&
     typeof intent.usdtAmount === "number" &&
     Number.isFinite(intent.usdtAmount) &&
     typeof intent.rate === "number" &&
@@ -202,12 +205,112 @@ export async function createLiveIntent(input: {
   chain: Quote["chain"];
   msisdn: string;
   walletAddress: string;
+  country: string;
+  currency: string;
+  provider: string;
   notifyEmail?: string;
 }): Promise<ApiResult<PaymentIntent>> {
   return requestJson("/api/intents", isPaymentIntentPayload, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
+  });
+}
+
+export type CorridorProviderOption = {
+  country: string;
+  provider: string;
+  displayName: string;
+  currency: string;
+  decimalsInAmount: "NONE" | "TWO_PLACES";
+  minAmount: string;
+  maxAmount: string;
+};
+
+export type CorridorPredictResult = {
+  country: string;
+  provider: string;
+  currency: string;
+  phoneNumber: string;
+  decimalsInAmount: "NONE" | "TWO_PLACES";
+  minAmount: string;
+  maxAmount: string;
+};
+
+function isCorridorProvidersPayload(
+  value: unknown,
+): value is { country: string; providers: CorridorProviderOption[] } {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.country === "string" &&
+    Array.isArray(row.providers) &&
+    row.providers.every(isCorridorProviderOption)
+  );
+}
+
+function isCorridorProviderOption(
+  value: unknown,
+): value is CorridorProviderOption {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.country === "string" &&
+    typeof row.provider === "string" &&
+    typeof row.displayName === "string" &&
+    typeof row.currency === "string" &&
+    (row.decimalsInAmount === "NONE" ||
+      row.decimalsInAmount === "TWO_PLACES") &&
+    typeof row.minAmount === "string" &&
+    typeof row.maxAmount === "string"
+  );
+}
+
+function isCorridorPredictPayload(
+  value: unknown,
+): value is CorridorPredictResult {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.country === "string" &&
+    typeof row.provider === "string" &&
+    typeof row.currency === "string" &&
+    typeof row.phoneNumber === "string" &&
+    (row.decimalsInAmount === "NONE" ||
+      row.decimalsInAmount === "TWO_PLACES") &&
+    typeof row.minAmount === "string" &&
+    typeof row.maxAmount === "string"
+  );
+}
+
+export async function fetchCorridorProviders(
+  country = "RWA",
+  signal?: AbortSignal,
+): Promise<
+  ApiResult<{ country: string; providers: CorridorProviderOption[] }>
+> {
+  return requestJson(
+    `/api/corridors?country=${encodeURIComponent(country)}`,
+    isCorridorProvidersPayload,
+    { signal },
+  );
+}
+
+export async function predictCorridorProvider(
+  msisdn: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<CorridorPredictResult>> {
+  return requestJson("/api/corridors/predict", isCorridorPredictPayload, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ msisdn }),
+    signal,
   });
 }
 
