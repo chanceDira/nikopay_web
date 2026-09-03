@@ -172,6 +172,9 @@ export type Database = {
             | "manual_review";
           chain_id: "polygon" | "base";
           msisdn: string;
+          country: string;
+          currency: string;
+          provider: string;
           usdt_amount: number;
           rate: number;
           fee_percent: number;
@@ -202,6 +205,9 @@ export type Database = {
             | "manual_review";
           chain_id: "polygon" | "base";
           msisdn: string;
+          country: string;
+          currency: string;
+          provider: string;
           usdt_amount: number;
           rate: number;
           fee_percent: number;
@@ -232,6 +238,9 @@ export type Database = {
             | "manual_review";
           chain_id?: "polygon" | "base";
           msisdn?: string;
+          country?: string;
+          currency?: string;
+          provider?: string;
           usdt_amount?: number;
           rate?: number;
           fee_percent?: number;

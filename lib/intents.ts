@@ -3,6 +3,11 @@ import {
   normalizeOptionalEmail,
   normalizeWalletAddress,
 } from "@/lib/identity";
+import {
+  normalizeCorridorCountry,
+  normalizeCorridorCurrency,
+  normalizeCorridorProvider,
+} from "@/lib/corridor";
 import { isMomoPayoutStatus } from "@/lib/admin-payouts";
 import { toNumber } from "@/lib/numbers";
 import { createServerQuote } from "@/lib/quotes";
@@ -32,6 +37,9 @@ export function toPaymentIntent(
     chain: row.chain_id,
     walletAddress: row.wallet_address,
     msisdn: row.msisdn,
+    country: row.country,
+    currency: row.currency,
+    provider: row.provider,
     usdtAmount: toNumber(row.usdt_amount),
     rate: toNumber(row.rate),
     feePercent: toNumber(row.fee_percent),
@@ -53,6 +61,9 @@ export async function createPaymentIntent(input: {
   chain: unknown;
   msisdn: unknown;
   walletAddress: unknown;
+  country: unknown;
+  currency: unknown;
+  provider: unknown;
   notifyEmail?: unknown;
 }): Promise<
   | { ok: true; intent: PaymentIntent }
@@ -66,6 +77,21 @@ export async function createPaymentIntent(input: {
   const msisdn = normalizeMsisdn(input.msisdn);
   if (!msisdn.ok) {
     return { ok: false, reason: msisdn.reason, status: 400 };
+  }
+
+  const country = normalizeCorridorCountry(input.country);
+  if (!country.ok) {
+    return { ok: false, reason: country.reason, status: 400 };
+  }
+
+  const currency = normalizeCorridorCurrency(input.currency);
+  if (!currency.ok) {
+    return { ok: false, reason: currency.reason, status: 400 };
+  }
+
+  const provider = normalizeCorridorProvider(input.provider);
+  if (!provider.ok) {
+    return { ok: false, reason: provider.reason, status: 400 };
   }
 
   const notifyEmail = normalizeOptionalEmail(input.notifyEmail);
@@ -91,6 +117,9 @@ export async function createPaymentIntent(input: {
       status: "awaiting_payment",
       chain_id: quoted.quote.chain,
       msisdn: msisdn.msisdn,
+      country: country.country,
+      currency: currency.currency,
+      provider: provider.provider,
       usdt_amount: quoted.quote.usdtAmount,
       rate: quoted.quote.rate,
       fee_percent: quoted.quote.feePercent,

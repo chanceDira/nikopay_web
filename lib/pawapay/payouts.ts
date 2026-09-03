@@ -328,23 +328,31 @@ async function resolveCorridor(
     return { ok: false, reason: predicted.reason, status: 409 };
   }
 
+  const country = intent.country || predicted.data.country;
+  const provider = intent.provider || predicted.data.provider;
+
   const conf = await getActiveConf(
     config,
-    { country: predicted.data.country, operationType: "PAYOUT" },
+    { country, operationType: "PAYOUT" },
     fetchImpl,
   );
   if (!conf.ok) {
     return { ok: false, reason: conf.reason, status: 503 };
   }
 
-  const corridor = pickPayoutCorridor(conf.data, {
-    country: predicted.data.country,
-    provider: predicted.data.provider,
-  });
+  const corridor = pickPayoutCorridor(conf.data, { country, provider });
   if (!corridor) {
     return {
       ok: false,
       reason: "payout corridor is not configured",
+      status: 409,
+    };
+  }
+
+  if (intent.currency && intent.currency !== corridor.currency) {
+    return {
+      ok: false,
+      reason: "payout currency does not match corridor",
       status: 409,
     };
   }
