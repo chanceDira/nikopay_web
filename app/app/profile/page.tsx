@@ -4,7 +4,7 @@ export default function ProfilePage() {
   return (
     <PageHeader
       title="Profile"
-      description="Manage your account and MoMo number."
+      description="Manage your account and mobile money number."
     />
   );
 }

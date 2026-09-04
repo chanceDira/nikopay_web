@@ -241,7 +241,7 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
           {intent.momoRef && (
             <div className="flex justify-between border-b border-niko-border/30 pb-2 print:border-neutral-200">
               <span className="text-niko-muted print:text-neutral-500">
-                MTN Payout Reference
+                Payout reference
               </span>
               <span className="font-mono font-bold text-foreground print:text-black">
                 {intent.momoRef}

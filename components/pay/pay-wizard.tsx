@@ -897,8 +897,8 @@ export function PayWizard() {
               <span className="text-niko-muted font-normal">(optional)</span>
             </label>
             <p className="text-xs text-niko-muted mt-1">
-              We email you when the mobile money payout completes or failed. No account
-              required.
+              We email you when the mobile money payout completes or failed. No
+              account required.
             </p>
             <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
               <input
@@ -1206,9 +1206,9 @@ export function PayWizard() {
                   </h4>
                   <p className="mt-1.5 text-xs text-foreground leading-relaxed">
                     First you sign an offramp consent that shows the USDT
-                    amount, treasury, and MoMo recipient. Then your wallet sends
-                    USDT to the NikoPay treasury. RWF is paid after the deposit
-                    is confirmed on {chainConfig.name}.
+                    amount, treasury, and mobile money recipient. Then your
+                    wallet sends USDT to the NikoPay treasury. RWF is paid after
+                    the deposit is confirmed on {chainConfig.name}.
                   </p>
                 </div>
 
@@ -1245,7 +1245,7 @@ export function PayWizard() {
                   </div>
                   {liveIntent && (
                     <div className="flex justify-between text-xs text-niko-muted mt-1">
-                      <span>MoMo recipient</span>
+                      <span>Mobile money recipient</span>
                       <span className="font-mono text-foreground">
                         {liveIntent.msisdn}
                       </span>

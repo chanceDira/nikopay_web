@@ -135,7 +135,7 @@ export function AdminNav() {
                 href="/admin/payouts"
                 className="text-niko-muted font-sans text-xs transition-colors hover:text-niko-teal"
               >
-                MoMo
+                Pay
               </Link>
               <Link
                 href="/admin/review"

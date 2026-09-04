@@ -192,7 +192,7 @@ function ReviewCard(props: {
             )
           }
         />
-        <Field label="MoMo ref" value={item.momoRef || "—"} />
+        <Field label="Payout ref" value={item.momoRef || "—"} />
       </div>
     </div>
   );

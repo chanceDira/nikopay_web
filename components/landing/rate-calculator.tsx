@@ -119,7 +119,7 @@ export function RateCalculator() {
             "-"
           )}
         </p>
-        <p className="mt-1 text-xs text-niko-muted">via MTN Mobile Money</p>
+        <p className="mt-1 text-xs text-niko-muted">via mobile money</p>
       </div>
 
       {payout && (
