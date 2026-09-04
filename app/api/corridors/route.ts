@@ -1,10 +1,24 @@
 import { jsonData, jsonError } from "@/lib/http";
 import { normalizeCorridorCountry } from "@/lib/corridor";
+import {
+  allowIpRequest,
+  clientIp,
+  createIpRateLimiter,
+} from "@/lib/ip-rate-limit";
 import { getActiveConf } from "@/lib/pawapay/client";
 import { getPawapayConfig } from "@/lib/pawapay/config";
 import { listPayoutProviders } from "@/lib/pawapay/corridor";
 
+const corridorListLimit = createIpRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  maxHits: 60,
+});
+
 export async function GET(request: Request) {
+  if (!allowIpRequest(corridorListLimit, clientIp(request))) {
+    return jsonError("too many corridor requests", 429);
+  }
+
   const configured = getPawapayConfig();
   if (!configured.ok) {
     return jsonError(configured.reason, 503);
