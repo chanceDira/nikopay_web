@@ -190,7 +190,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                 </div>
                 <div>
                   <span className="text-xs text-niko-muted block">
-                    Recipient (MTN)
+                    Recipient (mobile money)
                   </span>
                   <span className="text-foreground font-semibold">
                     {intent.msisdn}
@@ -221,7 +221,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                 className="border-t border-niko-border/20 pt-6 space-y-4"
               >
                 <h5 className="text-xs font-semibold uppercase tracking-wider text-niko-teal font-mono">
-                  Blockchain + MoMo references
+                  Blockchain + payout references
                 </h5>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -238,7 +238,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                   </div>
                   <div>
                     <label className="block text-[11px] font-medium text-foreground mb-1">
-                      MTN payout ref
+                      Payout reference
                     </label>
                     <input
                       type="text"
@@ -304,8 +304,8 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                 </button>
               </div>
               <p className="p-3 rounded bg-background/50 border border-niko-border/20 text-[10px] text-niko-muted leading-relaxed">
-                Ops overrides bypass wallet and MTN confirmations. Use during
-                audits or sandbox testing only.
+                Ops overrides bypass wallet and provider confirmations. Use
+                during audits or sandbox testing only.
               </p>
             </div>
           </div>

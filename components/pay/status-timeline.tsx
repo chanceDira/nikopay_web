@@ -68,7 +68,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
       return "expired";
     }
 
-    // Deposit succeeded but payout needs ops / failed MoMo
+    // Deposit succeeded but payout needs ops / failed payout
     if (status === "failed" || status === "manual_review") {
       if (depositReceived) {
         if (step === 1 || step === 2) return "completed";
@@ -188,23 +188,23 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
     if (status === "credited") {
       return {
         title: "USDT Deposit Confirmed",
-        desc: "Your deposit is confirmed. We are sending the RWF payout to the MoMo number.",
+        desc: "Your deposit is confirmed. We are sending the RWF payout to the mobile money number.",
       };
     }
     if (status === "payout_pending") {
       return {
-        title: "Processing MoMo Payout",
+        title: "Processing mobile money payout",
         desc: intent.payout
-          ? `MTN status: ${momoStatusLabel(intent.payout.status)}. Sandbox does not send SMS; watch this page until it shows completed.`
-          : "The RWF payout has been submitted to MTN Mobile Money. Sandbox does not send SMS; this page updates when MTN confirms.",
+          ? `Payout status: ${momoStatusLabel(intent.payout.status)}. Sandbox does not send SMS; watch this page until it shows completed.`
+          : "The RWF payout has been submitted to mobile money. Sandbox does not send SMS; this page updates when the provider confirms.",
       };
     }
     if (status === "paid") {
       return {
         title: "Payout Completed Successfully",
         desc: intent.payout?.providerRef
-          ? `MTN confirmed the payout (ref ${intent.payout.providerRef}). Funds reached the Mobile Money wallet.`
-          : "RWF transfer has settled. The recipient received funds on their MTN Mobile Money account.",
+          ? `Payout confirmed (ref ${intent.payout.providerRef}). Funds reached the mobile money wallet.`
+          : "RWF transfer has settled. The recipient received funds on their mobile money account.",
       };
     }
     if (status === "failed") {
@@ -382,7 +382,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
             <div className="space-y-1">
               <h4 className="text-sm font-semibold">3. Payout Sent</h4>
               <p className="text-xs text-niko-muted leading-snug md:max-w-[150px]">
-                MTN Mobile Money transaction processed.
+                Mobile money transaction processed.
               </p>
             </div>
           </div>
@@ -410,7 +410,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
         <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">
-              MoMo payout status
+              Payout status
             </h3>
             <span
               className={`rounded-md px-2.5 py-1 text-xs font-bold ${momoStatusStyles(intent.payout.status)}`}
@@ -423,7 +423,9 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
           </p>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
             <div>
-              <dt className="text-niko-muted mb-1 font-sans">MoMo reference</dt>
+              <dt className="text-niko-muted mb-1 font-sans">
+                Payout reference
+              </dt>
               <dd className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
                 {intent.payout.referenceId}
               </dd>
@@ -433,7 +435,8 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
                 Provider financial id
               </dt>
               <dd className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
-                {intent.payout.providerRef ?? "Waiting for MTN confirmation"}
+                {intent.payout.providerRef ??
+                  "Waiting for provider confirmation"}
               </dd>
             </div>
             {intent.payout.providerReason ? (
@@ -550,7 +553,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
             {intent.momoRef && (
               <div>
                 <p className="text-niko-muted mb-1 font-sans">
-                  MTN Transaction Ref
+                  Payout reference
                 </p>
                 <p className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground font-bold">
                   {intent.momoRef}
@@ -569,7 +572,7 @@ function momoStatusLabel(status: IntentPayout["status"]) {
     case "successful":
       return "Reached user";
     case "pending":
-      return "Pending at MTN";
+      return "Pending with provider";
     case "failed":
       return "Failed";
     case "timeout":
@@ -596,13 +599,13 @@ function momoStatusStyles(status: IntentPayout["status"]) {
 function momoStatusHint(status: IntentPayout["status"]) {
   switch (status) {
     case "successful":
-      return "MTN confirmed the disbursement. This is the signal that funds were sent to the payee wallet.";
+      return "The provider confirmed the disbursement. Funds were sent to the payee wallet.";
     case "pending":
-      return "Submitted to MTN. In sandbox there is no SMS. We poll until MTN returns successful or failed.";
+      return "Submitted to the mobile money provider. In sandbox there is no SMS. We poll until the provider returns successful or failed.";
     case "failed":
-      return "MTN rejected or could not complete the disbursement. Ops can retry from admin review.";
+      return "The provider rejected or could not complete the disbursement. Ops can retry from admin review.";
     case "timeout":
-      return "MTN did not confirm in time. Ops can retry from admin review.";
+      return "The provider did not confirm in time. Ops can retry from admin review.";
     default:
       return "";
   }

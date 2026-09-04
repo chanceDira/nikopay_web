@@ -58,7 +58,7 @@ export default function SignInPage() {
           Sign in to NikoPay
         </h2>
         <p className="mt-2 text-center text-sm text-niko-muted">
-          Connect a wallet to send USDT and pay out RWF on MoMo.
+          Connect a wallet to send USDT and pay out RWF on mobile money.
         </p>
       </div>
 

@@ -22,7 +22,7 @@ const steps = [
     label: "Finally",
     title: "Recipient gets RWF",
     description:
-      "RWF lands on the recipient's MTN Mobile Money account. Track status in real time and download your receipt.",
+      "RWF lands on the recipient's mobile money account. Track status in real time and download your receipt.",
   },
 ];
 

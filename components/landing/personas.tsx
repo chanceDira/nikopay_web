@@ -16,7 +16,7 @@ const originalPersonas = [
   {
     title: "Diaspora Remitters",
     description:
-      "Send value back home instantly. Your family receives RWF directly on their MTN Mobile Money account.",
+      "Send value back home instantly. Your family receives RWF directly on their mobile money account.",
   },
   {
     title: "Tourists & Visitors",

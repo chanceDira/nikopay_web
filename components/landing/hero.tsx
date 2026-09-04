@@ -30,7 +30,7 @@ export function Hero() {
           </h1>
 
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-niko-muted">
-            Bridge your USDT to Rwandan Francs through MTN Mobile Money.
+            Bridge your USDT to Rwandan Francs through mobile money.
             Non-custodial, transparent rates, and instant local payouts.
           </p>
 

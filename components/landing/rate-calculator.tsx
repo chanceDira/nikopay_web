@@ -197,7 +197,7 @@ export function RateCalculator() {
             "-"
           )}
         </p>
-        <p className="mt-1 text-xs text-niko-muted">{resultHint}</p>
+        <p className="mt-1 text-xs text-niko-muted">via mobile money</p>
       </div>
 
       {payout && (

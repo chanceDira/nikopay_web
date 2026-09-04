@@ -96,7 +96,7 @@ export function buildPaidEmailContent(
   const momoFinancial = input.momoFinancialId ?? input.momoRef ?? "confirmed";
 
   const textLines = [
-    "Your NikoPay payout was confirmed by MTN Mobile Money.",
+    "Your NikoPay payout was confirmed on mobile money.",
     "",
     "Payment details",
     `Payment ID: ${input.intentId}`,
@@ -104,7 +104,7 @@ export function buildPaidEmailContent(
     `Amount paid: ${amount}`,
     ...(input.rate !== undefined ? [`Rate: ${input.rate} RWF per USDT`] : []),
     ...(input.feeRwf !== undefined ? [`Fee: ${formatRwf(input.feeRwf)}`] : []),
-    `Recipient (MoMo): ${input.msisdn}`,
+    `Recipient (mobile money): ${input.msisdn}`,
     ...(input.walletAddress ? [`Sender wallet: ${input.walletAddress}`] : []),
     `Chain: ${chainName}`,
     "",
@@ -116,7 +116,7 @@ export function buildPaidEmailContent(
       ? [`Explorer: ${input.depositExplorerUrl}`]
       : []),
     "",
-    "MoMo proof",
+    "Payout proof",
     `Financial transaction ID: ${momoFinancial}`,
     ...(input.momoReferenceId
       ? [`Transfer reference: ${input.momoReferenceId}`]
@@ -137,7 +137,7 @@ export function buildPaidEmailContent(
     ...(input.feeRwf !== undefined
       ? [detailItem("Fee", formatRwf(input.feeRwf))]
       : []),
-    detailItem("Recipient (MoMo)", input.msisdn),
+    detailItem("Recipient (mobile money)", input.msisdn),
     ...(input.walletAddress
       ? [detailItem("Sender wallet", input.walletAddress)]
       : []),
@@ -145,7 +145,7 @@ export function buildPaidEmailContent(
   ];
 
   const html = `
-    <p>Your NikoPay payout was confirmed by MTN Mobile Money.</p>
+    <p>Your NikoPay payout was confirmed on mobile money.</p>
     <h3>Payment details</h3>
     <ul>${htmlItems.join("")}</ul>
     <h3>Blockchain proof</h3>
@@ -157,7 +157,7 @@ export function buildPaidEmailContent(
           : ""
       }
     </ul>
-    <h3>MoMo proof</h3>
+    <h3>Payout proof</h3>
     <ul>
       ${detailItem("Financial transaction ID", momoFinancial)}
       ${
@@ -185,16 +185,16 @@ export function buildFailedEmailContent(
   const momoLabel = input.momoStatus === "timeout" ? "timed out" : "failed";
 
   const textLines = [
-    "MTN Mobile Money confirmed that your NikoPay payout did not reach the recipient.",
+    "The mobile money provider confirmed that your NikoPay payout did not reach the recipient.",
     "Your USDT deposit was received and is held while we review the payout.",
     "",
     "Payment details",
     `Payment ID: ${input.intentId}`,
     `USDT deposited: ${usdt}`,
-    `Intended MoMo amount: ${amount}`,
+    `Intended payout amount: ${amount}`,
     ...(input.rate !== undefined ? [`Rate: ${input.rate} RWF per USDT`] : []),
     ...(input.feeRwf !== undefined ? [`Fee: ${formatRwf(input.feeRwf)}`] : []),
-    `Recipient (MoMo): ${input.msisdn}`,
+    `Recipient (mobile money): ${input.msisdn}`,
     ...(input.walletAddress ? [`Sender wallet: ${input.walletAddress}`] : []),
     `Chain: ${chainName}`,
     "",
@@ -206,8 +206,8 @@ export function buildFailedEmailContent(
       ? [`Explorer: ${input.depositExplorerUrl}`]
       : []),
     "",
-    "MoMo status",
-    `Result: ${momoLabel} (confirmed by MTN)`,
+    "Payout status",
+    `Result: ${momoLabel} (confirmed by provider)`,
     ...(input.momoReferenceId
       ? [`Transfer reference: ${input.momoReferenceId}`]
       : []),
@@ -222,20 +222,20 @@ export function buildFailedEmailContent(
   ];
 
   const html = `
-    <p>MTN Mobile Money confirmed that your NikoPay payout did not reach the recipient.</p>
+    <p>The mobile money provider confirmed that your NikoPay payout did not reach the recipient.</p>
     <p>Your USDT deposit was received and is held while we review the payout.</p>
     <h3>Payment details</h3>
     <ul>
       ${detailItem("Payment ID", input.intentId)}
       ${detailItem("USDT deposited", usdt)}
-      ${detailItem("Intended MoMo amount", amount)}
+      ${detailItem("Intended payout amount", amount)}
       ${
         input.rate !== undefined
           ? detailItem("Rate", `${input.rate} RWF per USDT`)
           : ""
       }
       ${input.feeRwf !== undefined ? detailItem("Fee", formatRwf(input.feeRwf)) : ""}
-      ${detailItem("Recipient (MoMo)", input.msisdn)}
+      ${detailItem("Recipient (mobile money)", input.msisdn)}
       ${
         input.walletAddress
           ? detailItem("Sender wallet", input.walletAddress)
@@ -252,9 +252,9 @@ export function buildFailedEmailContent(
           : ""
       }
     </ul>
-    <h3>MoMo status</h3>
+    <h3>Payout status</h3>
     <ul>
-      ${detailItem("Result", `${momoLabel} (confirmed by MTN)`)}
+      ${detailItem("Result", `${momoLabel} (confirmed by provider)`)}
       ${
         input.momoReferenceId
           ? detailItem("Transfer reference", input.momoReferenceId)

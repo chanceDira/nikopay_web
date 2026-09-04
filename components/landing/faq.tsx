@@ -16,12 +16,12 @@ const faqs = [
   {
     question: "Which mobile money networks are supported?",
     answer:
-      "We launch with MTN Mobile Money in Rwanda. Airtel Money and additional networks across East Africa are on our roadmap.",
+      "We launch with mobile money in Rwanda. Additional providers and countries across Africa are on our roadmap.",
   },
   {
     question: "How fast are payouts?",
     answer:
-      "Once your USDT transfer is confirmed on-chain, payouts to MTN Mobile Money are processed in near real-time. You can track status at every step.",
+      "Once your USDT transfer is confirmed on-chain, mobile money payouts are processed in near real-time. You can track status at every step.",
   },
   {
     question: "What are the fees?",

@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     "crypto to mobile money",
     "Africa",
     "Rwanda",
-    "MTN MoMo",
+    "PawaPay",
   ],
   authors: [{ name: "NikoPay", url: siteUrl }],
   creator: "NikoPay",

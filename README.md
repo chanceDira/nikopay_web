@@ -79,15 +79,15 @@ Copy from `.env.example`. Only `NEXT_PUBLIC_*` may reach the browser.
 
 ### PawaPay (target rail)
 
-Foundation through Phase B (`lib/pawapay`). Set `PAYOUT_PROVIDER=pawapay` locally to use the PawaPay orchestrator; production stays on `momo` until cutover.
+Foundation through Phase B (`lib/pawapay`). Set `PAYOUT_PROVIDER=pawapay` locally **or on a Vercel Preview** to use the PawaPay orchestrator; keep production on `momo` until cutover.
 
-| Variable                   | Notes                                                                           |
-| -------------------------- | ------------------------------------------------------------------------------- |
-| `PAWAPAY_BASE_URL`         | Sandbox: `https://api.sandbox.pawapay.io`. Production: `https://api.pawapay.io` |
-| `PAWAPAY_API_TOKEN`        | Bearer token from the matching PawaPay dashboard. Never commit                  |
-| `PAWAPAY_CALLBACK_PATH`    | Default `/api/pawapay/callback`. Production host: `https://nikopay.to`          |
-| `PAWAPAY_VERIFY_CALLBACKS` | Set `true` in production when signed callbacks are enabled                      |
-| `PAYOUT_PROVIDER`          | `momo` (default) or `pawapay`. Keep `momo` in production until cutover          |
+| Variable                   | Notes                                                                                           |
+| -------------------------- | ----------------------------------------------------------------------------------------------- |
+| `PAWAPAY_BASE_URL`         | Sandbox: `https://api.sandbox.pawapay.io`. Production: `https://api.pawapay.io`                 |
+| `PAWAPAY_API_TOKEN`        | Bearer token from the matching PawaPay dashboard. Never commit                                  |
+| `PAWAPAY_CALLBACK_PATH`    | Default `/api/pawapay/callback`. Production host: `https://nikopay.to`                          |
+| `PAWAPAY_VERIFY_CALLBACKS` | Set `true` in production when signed callbacks are enabled                                      |
+| `PAYOUT_PROVIDER`          | `momo` (default) or `pawapay`. Preview may use `pawapay`; production stays `momo` until cutover |
 
 ### Email (optional)
 

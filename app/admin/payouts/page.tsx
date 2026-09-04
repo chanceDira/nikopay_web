@@ -6,7 +6,7 @@ export default function AdminPayoutsPage() {
   return (
     <PageHeader
       title="Payouts"
-      description="MoMo amounts sent to recipient numbers"
+      description="Payout amounts sent to recipient numbers"
     >
       <Suspense
         fallback={
