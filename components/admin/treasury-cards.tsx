@@ -5,7 +5,6 @@ import { useAdminIntents } from "@/components/admin/use-admin-intents";
 import { summarizeAdminIntents } from "@/lib/admin-metrics";
 import type {
   AdminTreasurySnapshot,
-  MomoPoolSnapshot,
   PawapayPoolSnapshot,
   TreasuryWalletSnapshot,
 } from "@/lib/admin-treasury-types";
@@ -79,10 +78,8 @@ export function AdminTreasuryCards() {
 
   return (
     <div className="space-y-6">
-      {snapshot.payoutProvider === "pawapay" && snapshot.pawapay ? (
+      {snapshot.pawapay ? (
         <PawapayPoolCard pawapay={snapshot.pawapay} paidRwf={metrics.paidRwf} />
-      ) : snapshot.momo ? (
-        <MomoPoolCard momo={snapshot.momo} paidRwf={metrics.paidRwf} />
       ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -128,7 +125,7 @@ function PawapayPoolCard(props: {
         </p>
         <h3 className="text-2xl font-bold font-mono text-foreground mt-3">
           {props.pawapay.ok
-            ? formatMomoBalance(
+            ? formatPoolBalance(
                 props.pawapay.availableBalance,
                 props.pawapay.currency,
               )
@@ -138,53 +135,6 @@ function PawapayPoolCard(props: {
           {props.pawapay.ok
             ? `Live ${props.pawapay.country} balance from PawaPay wallet-balances.`
             : props.pawapay.reason}
-        </p>
-        <div className="mt-6 flex items-center justify-between text-xs text-niko-muted font-mono border-t border-niko-border/10 pt-4">
-          <span>RWF paid from intents</span>
-          <span className="text-foreground">{formatRwf(props.paidRwf)}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MomoPoolCard(props: { momo: MomoPoolSnapshot; paidRwf: number }) {
-  const available =
-    props.momo.ok && props.momo.currency.toUpperCase() === "RWF"
-      ? props.momo.availableBalance
-      : null;
-  const isLow = available !== null && available < 1_000_000;
-
-  return (
-    <div className="space-y-6">
-      {isLow ? (
-        <div className="p-4 rounded-md border border-[var(--niko-warning-border)] bg-[var(--niko-warning-bg)] text-xs text-[var(--niko-warning-text)] leading-relaxed">
-          <strong className="font-semibold block mb-0.5">
-            Low MoMo RWF balance
-          </strong>
-          <p>
-            The disbursement account is below RWF 1,000,000. Large payouts may
-            fail until the pool is funded on-chain with MTN.
-          </p>
-        </div>
-      ) : null}
-
-      <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
-        <p className="text-xs font-mono uppercase tracking-widest text-niko-muted">
-          MTN disbursement balance
-        </p>
-        <h3 className="text-2xl font-bold font-mono text-foreground mt-3">
-          {props.momo.ok
-            ? formatMomoBalance(
-                props.momo.availableBalance,
-                props.momo.currency,
-              )
-            : "Unavailable"}
-        </h3>
-        <p className="text-xs text-niko-muted mt-1 font-sans">
-          {props.momo.ok
-            ? "Live balance from the MTN MoMo disbursement API."
-            : props.momo.reason}
         </p>
         <div className="mt-6 flex items-center justify-between text-xs text-niko-muted font-mono border-t border-niko-border/10 pt-4">
           <span>RWF paid from intents</span>
@@ -229,7 +179,7 @@ function VaultCard(props: {
   );
 }
 
-function formatMomoBalance(amount: number, currency: string): string {
+function formatPoolBalance(amount: number, currency: string): string {
   if (currency.toUpperCase() === "RWF") {
     return formatRwf(amount);
   }

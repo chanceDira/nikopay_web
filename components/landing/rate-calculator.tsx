@@ -122,7 +122,7 @@ export function RateCalculator() {
   const inputLabel = sendingUsdt ? "You send" : "Recipient receives";
   const inputCurrency = sendingUsdt ? "USDT" : "RWF";
   const resultLabel = sendingUsdt ? "Recipient receives" : "You send";
-  const resultHint = sendingUsdt ? "via MTN Mobile Money" : "from your wallet";
+  const resultHint = sendingUsdt ? "via mobile money" : "from your wallet";
 
   return (
     <div className="niko-glow w-full max-w-md rounded-md border border-niko-border bg-niko-surface p-5 sm:p-6">
@@ -160,9 +160,7 @@ export function RateCalculator() {
           onClick={swapDirection}
           className="flex h-8 w-8 items-center justify-center rounded-full border border-niko-border bg-niko-navy text-niko-teal transition-colors hover:border-niko-teal/50 hover:bg-niko-surface"
           aria-label={
-            sendingUsdt
-              ? "Switch to RWF to USDT"
-              : "Switch to USDT to RWF"
+            sendingUsdt ? "Switch to RWF to USDT" : "Switch to USDT to RWF"
           }
         >
           <svg
@@ -197,7 +195,7 @@ export function RateCalculator() {
             "-"
           )}
         </p>
-        <p className="mt-1 text-xs text-niko-muted">via mobile money</p>
+        <p className="mt-1 text-xs text-niko-muted">{resultHint}</p>
       </div>
 
       {payout && (

@@ -186,7 +186,29 @@ async function loadIntentPayout(
   intentId: string,
 ): Promise<IntentPayout | undefined> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+
+  const pawapay = await supabase
+    .from("payout_transfers")
+    .select("status, payout_id, provider_ref, provider_reason, updated_at")
+    .eq("intent_id", intentId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!pawapay.error && pawapay.data) {
+    const status = toIntentPayoutStatus(pawapay.data.status);
+    if (status) {
+      return {
+        status,
+        referenceId: pawapay.data.payout_id,
+        providerRef: pawapay.data.provider_ref ?? undefined,
+        providerReason: pawapay.data.provider_reason ?? undefined,
+        updatedAt: pawapay.data.updated_at,
+      };
+    }
+  }
+
+  const momo = await supabase
     .from("momo_transfers")
     .select("status, reference_id, provider_ref, provider_reason, updated_at")
     .eq("intent_id", intentId)
@@ -194,17 +216,29 @@ async function loadIntentPayout(
     .limit(1)
     .maybeSingle();
 
-  if (error || !data || !isMomoPayoutStatus(data.status)) {
+  if (momo.error || !momo.data || !isMomoPayoutStatus(momo.data.status)) {
     return undefined;
   }
 
   return {
-    status: data.status,
-    referenceId: data.reference_id,
-    providerRef: data.provider_ref ?? undefined,
-    providerReason: data.provider_reason ?? undefined,
-    updatedAt: data.updated_at,
+    status: momo.data.status,
+    referenceId: momo.data.reference_id,
+    providerRef: momo.data.provider_ref ?? undefined,
+    providerReason: momo.data.provider_reason ?? undefined,
+    updatedAt: momo.data.updated_at,
   };
+}
+
+function toIntentPayoutStatus(
+  status: string,
+): IntentPayout["status"] | undefined {
+  if (status === "successful" || status === "failed") {
+    return status;
+  }
+  if (status === "pending" || status === "enqueued") {
+    return "pending";
+  }
+  return undefined;
 }
 
 export async function listPaymentIntents(

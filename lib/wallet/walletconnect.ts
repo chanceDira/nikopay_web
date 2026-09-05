@@ -149,7 +149,7 @@ async function createWalletConnectClient(): Promise<
       events: ["chainChanged", "accountsChanged"],
       metadata: {
         name: "NikoPay",
-        description: "USDT to MTN Mobile Money",
+        description: "USDT to mobile money",
         url: origin,
         icons: [`${origin}/nikopay-logo.png`],
       },
