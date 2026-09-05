@@ -58,7 +58,7 @@ export function buildOfframpTypedData(
     },
     message: {
       intentId: intent.id,
-      action: "USDT to MTN MoMo RWF offramp",
+      action: "USDT to mobile money RWF offramp",
       chain: chain.name,
       token: chain.usdtAddress,
       treasury: intent.treasuryAddress,
@@ -67,7 +67,7 @@ export function buildOfframpTypedData(
       recipientMomo: intent.msisdn,
       expiresAt: intent.expiresAt,
       notice:
-        "This signature does not move funds. A second wallet prompt sends the exact USDT amount to the NikoPay treasury. RWF is paid to the MoMo number above after the deposit is confirmed!",
+        "This signature does not move funds. A second wallet prompt sends the exact USDT amount to the NikoPay treasury. RWF is paid to the mobile money number above after the deposit is confirmed!",
     },
   };
 }

@@ -1,5 +1,3 @@
-export type PayoutProvider = "momo" | "pawapay";
-
 export type PawapayConfig = {
   baseUrl: string;
   apiToken: string;
@@ -9,14 +7,6 @@ export type PawapayConfig = {
 
 const SANDBOX_BASE_URL = "https://api.sandbox.pawapay.io";
 const DEFAULT_CALLBACK_PATH = "/api/pawapay/callback";
-
-export function getPayoutProvider(): PayoutProvider {
-  const value = process.env.PAYOUT_PROVIDER?.trim().toLowerCase();
-  if (value === "pawapay") {
-    return "pawapay";
-  }
-  return "momo";
-}
 
 export function isPawapayConfigured(): boolean {
   return getPawapayConfig().ok;

@@ -7,17 +7,11 @@ export type TreasuryWalletSnapshot = {
   error: string | null;
 };
 
-export type MomoPoolSnapshot =
-  | { ok: true; availableBalance: number; currency: string }
-  | { ok: false; reason: string };
-
 export type PawapayPoolSnapshot =
   | { ok: true; availableBalance: number; currency: string; country: string }
   | { ok: false; reason: string };
 
 export type AdminTreasurySnapshot = {
   wallets: TreasuryWalletSnapshot[];
-  payoutProvider: "momo" | "pawapay";
-  momo: MomoPoolSnapshot | null;
   pawapay: PawapayPoolSnapshot | null;
 };

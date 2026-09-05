@@ -1,18 +1,11 @@
 import { fetchErc20Balance } from "@/lib/erc20-balance";
-import { getAccountBalance } from "@/lib/momo/client";
-import { getMomoConfig } from "@/lib/momo/config";
 import { getWalletBalances } from "@/lib/pawapay/client";
-import {
-  getPawapayConfig,
-  getPayoutProvider,
-  isPawapayConfigured,
-} from "@/lib/pawapay/config";
+import { getPawapayConfig, isPawapayConfigured } from "@/lib/pawapay/config";
 import { toNumber } from "@/lib/numbers";
 import { CHAIN_IDS, type ChainId } from "@/lib/settlement/types";
 import { loadActiveTreasury, loadActiveUsdtToken } from "@/lib/treasury";
 import type {
   AdminTreasurySnapshot,
-  MomoPoolSnapshot,
   PawapayPoolSnapshot,
   TreasuryWalletSnapshot,
 } from "@/lib/admin-treasury-types";
@@ -50,15 +43,6 @@ async function loadWallet(chain: ChainId): Promise<TreasuryWalletSnapshot> {
     usdtBalance: balance.amount,
     error: null,
   };
-}
-
-async function loadMomoPool(): Promise<MomoPoolSnapshot | null> {
-  const config = getMomoConfig();
-  if (!config.ok) {
-    return null;
-  }
-
-  return getAccountBalance(config.config);
 }
 
 async function loadPawapayPool(): Promise<PawapayPoolSnapshot | null> {
@@ -99,12 +83,10 @@ async function loadPawapayPool(): Promise<PawapayPoolSnapshot | null> {
 }
 
 export async function loadAdminTreasurySnapshot(): Promise<AdminTreasurySnapshot> {
-  const payoutProvider = getPayoutProvider();
-  const [wallets, momo, pawapay] = await Promise.all([
+  const [wallets, pawapay] = await Promise.all([
     Promise.all(CHAIN_IDS.map((chain) => loadWallet(chain))),
-    loadMomoPool(),
     loadPawapayPool(),
   ]);
 
-  return { wallets, payoutProvider, momo, pawapay };
+  return { wallets, pawapay };
 }
