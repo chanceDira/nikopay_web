@@ -13,6 +13,8 @@ import { getPublicChain } from "@/lib/chain-config";
 import {
   composeMsisdnDigits,
   formatMsisdnDisplay,
+  matchLongestDialPrefix,
+  nationalNumberDigits,
   normalizeMsisdn,
   normalizeOptionalEmail,
 } from "@/lib/identity";
@@ -79,6 +81,7 @@ export function PayWizard() {
   const [amountUsdt, setAmountUsdt] = useState<string>("");
   const [msisdn, setMsisdn] = useState<string>("");
   const [formattedMsisdn, setFormattedMsisdn] = useState<string>("");
+  const [verifiedMsisdn, setVerifiedMsisdn] = useState<string>("");
   const [corridorCountries, setCorridorCountries] = useState<
     CorridorCountryOption[]
   >([]);
@@ -324,21 +327,16 @@ export function PayWizard() {
     if (!parsed.ok) {
       return {
         ok: false as const,
-        reason:
-          "Enter a valid mobile number (local or +country code, e.g. 078… or +250…)",
+        reason: "Enter a valid mobile number for the selected country",
       };
     }
-    return { ok: true as const, msisdn: parsed.msisdn };
-  };
-
-  const validateMsisdn = () => {
-    const resolved = resolveMsisdn();
-    if (!resolved.ok) {
-      setMsisdnError(resolved.reason);
-      return false;
+    if (!verifiedMsisdn || verifiedMsisdn !== parsed.msisdn) {
+      return {
+        ok: false as const,
+        reason: "Confirm the number so we can validate country and provider",
+      };
     }
-    setMsisdnError("");
-    return true;
+    return { ok: true as const, msisdn: verifiedMsisdn };
   };
 
   const validateCorridor = () => {
@@ -407,20 +405,30 @@ export function PayWizard() {
     return result.data;
   };
 
-  const applyPredictedProvider = async (phone: string) => {
+  const applyPredictedProvider = async (
+    phone: string,
+  ): Promise<string | null> => {
     const predicted = await predictCorridorProvider(phone);
     if (!predicted.ok) {
-      return;
+      setVerifiedMsisdn("");
+      setFormattedMsisdn("");
+      setMsisdnError(
+        predicted.reason ||
+          "This number is not valid for mobile money in a supported country",
+      );
+      return null;
     }
 
     const match = corridorCountries.find(
       (row) => row.country === predicted.data.country,
     );
     const displayPrefix = match?.prefix ?? dialPrefix;
-    setMsisdn(predicted.data.phoneNumber);
+    setVerifiedMsisdn(predicted.data.phoneNumber);
+    setMsisdn(nationalNumberDigits(predicted.data.phoneNumber, displayPrefix));
     setFormattedMsisdn(
       formatMsisdnDisplay(predicted.data.phoneNumber, displayPrefix),
     );
+    setMsisdnError("");
 
     if (predicted.data.country !== corridorCountry) {
       await loadProvidersForCountry(
@@ -448,10 +456,13 @@ export function PayWizard() {
         ];
       });
     }
+    return predicted.data.phoneNumber;
   };
 
   const handleCountryChange = (country: string) => {
     setCorridorError("");
+    setVerifiedMsisdn("");
+    setFormattedMsisdn("");
     void (async () => {
       const loaded = await loadProvidersForCountry(country);
       if (!loaded) {
@@ -461,40 +472,60 @@ export function PayWizard() {
       if (!next || !msisdn.trim()) {
         return;
       }
-      const composed = composeMsisdnDigits(msisdn, next.prefix, knownPrefixes);
+      const national = nationalNumberDigits(msisdn, next.prefix);
+      setMsisdn(national);
+      const composed = composeMsisdnDigits(
+        national,
+        next.prefix,
+        knownPrefixes,
+      );
       const parsed = normalizeMsisdn(composed);
       if (!parsed.ok) {
         return;
       }
-      setFormattedMsisdn(formatMsisdnDisplay(parsed.msisdn, next.prefix));
       await applyPredictedProvider(parsed.msisdn);
     })();
   };
 
   const handleMsisdnChange = (value: string) => {
+    setVerifiedMsisdn("");
+    setFormattedMsisdn("");
+    if (msisdnError) setMsisdnError("");
+
+    const matchedPrefix = matchLongestDialPrefix(value, knownPrefixes);
+    if (matchedPrefix) {
+      const matchedCountry = corridorCountries.find(
+        (row) => row.prefix === matchedPrefix,
+      );
+      const national = nationalNumberDigits(value, matchedPrefix);
+      setMsisdn(national);
+      if (matchedCountry && matchedCountry.country !== corridorCountry) {
+        void loadProvidersForCountry(matchedCountry.country);
+      }
+      return;
+    }
+
     setMsisdn(value);
-    if (!dialPrefix) {
-      setFormattedMsisdn(value.trim());
-      return;
-    }
-    const composed = composeMsisdnDigits(value, dialPrefix, knownPrefixes);
-    const parsed = normalizeMsisdn(composed);
-    if (parsed.ok) {
-      setFormattedMsisdn(formatMsisdnDisplay(parsed.msisdn, dialPrefix));
-      return;
-    }
-    setFormattedMsisdn(value.trim());
   };
 
   const handleMsisdnBlur = () => {
-    const resolved = resolveMsisdn();
-    if (!resolved.ok) {
-      setMsisdnError(resolved.reason);
+    if (!msisdn.trim()) {
+      setMsisdnError("Mobile Money number is required");
       return;
     }
-    setMsisdnError("");
-    setFormattedMsisdn(formatMsisdnDisplay(resolved.msisdn, dialPrefix));
-    void applyPredictedProvider(resolved.msisdn);
+    if (!dialPrefix) {
+      setMsisdnError("Select a destination country first");
+      return;
+    }
+    const composed = composeMsisdnDigits(msisdn, dialPrefix, knownPrefixes);
+    const parsed = normalizeMsisdn(composed);
+    if (!parsed.ok) {
+      setVerifiedMsisdn("");
+      setFormattedMsisdn("");
+      setMsisdnError("Enter a valid mobile number for the selected country");
+      return;
+    }
+    void applyPredictedProvider(parsed.msisdn);
   };
 
   const handleNextStep = () => {
@@ -514,11 +545,36 @@ export function PayWizard() {
       }
       setStep(2);
     } else if (step === 2) {
-      if (validateMsisdn() && validateCorridor() && validateEmail()) {
-        setLiveIntent(null);
-        setIntentError("");
-        setStep(3);
-      }
+      void (async () => {
+        if (!msisdn.trim()) {
+          setMsisdnError("Mobile Money number is required");
+          return;
+        }
+        if (!dialPrefix) {
+          setMsisdnError("Select a destination country first");
+          return;
+        }
+        const composed = composeMsisdnDigits(msisdn, dialPrefix, knownPrefixes);
+        const parsed = normalizeMsisdn(composed);
+        if (!parsed.ok) {
+          setMsisdnError(
+            "Enter a valid mobile number for the selected country",
+          );
+          return;
+        }
+        if (verifiedMsisdn !== parsed.msisdn) {
+          const phone = await applyPredictedProvider(parsed.msisdn);
+          if (!phone) {
+            return;
+          }
+        }
+        if (validateCorridor() && validateEmail()) {
+          setMsisdnError("");
+          setLiveIntent(null);
+          setIntentError("");
+          setStep(3);
+        }
+      })();
     }
   };
 
@@ -957,10 +1013,15 @@ export function PayWizard() {
               Recipient mobile money number
             </label>
             <p className="text-xs text-niko-muted mt-1">
-              Local number or full international (+…). We detect country and
-              suggest a provider from the phone number.
+              Enter the local number without the country code. Pasting +… can
+              switch country. We validate with PawaPay before continuing.
             </p>
             <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
+              {dialPrefix ? (
+                <span className="mr-2 font-mono text-sm font-semibold text-niko-muted shrink-0">
+                  +{dialPrefix}
+                </span>
+              ) : null}
               <input
                 id="msisdn-input"
                 type="text"
@@ -970,29 +1031,26 @@ export function PayWizard() {
                   const val = e.target.value;
                   if (/^[+\d\s-]*$/.test(val)) {
                     handleMsisdnChange(val);
-                    if (msisdnError) setMsisdnError("");
                   }
                 }}
                 onBlur={handleMsisdnBlur}
                 className="w-full bg-transparent font-mono text-lg font-semibold text-foreground outline-none placeholder:text-niko-muted/40"
-                placeholder={
-                  dialPrefix
-                    ? `e.g. local or +${dialPrefix}…`
-                    : "e.g. +250783456789"
-                }
+                placeholder={dialPrefix ? "e.g. 0783456789" : "mobile number"}
               />
               <span className="ml-3 font-semibold text-niko-teal text-xs tracking-wider uppercase shrink-0">
-                {selectedCorridor?.displayName ?? "MMO"}
+                {verifiedMsisdn
+                  ? (selectedCorridor?.displayName ?? "MMO")
+                  : "—"}
               </span>
             </div>
             {msisdnError && (
               <p className="mt-2 text-xs text-red-400">{msisdnError}</p>
             )}
 
-            {formattedMsisdn && !msisdnError && (
+            {formattedMsisdn && verifiedMsisdn && !msisdnError && (
               <div className="mt-3 p-3 rounded-lg bg-niko-surface/80 border border-niko-border/40 flex justify-between items-center">
                 <span className="text-xs text-niko-muted">
-                  Formatted number
+                  Validated number
                 </span>
                 <span className="text-xs font-mono font-bold text-niko-teal-bright">
                   {formattedMsisdn}

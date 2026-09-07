@@ -75,6 +75,33 @@ export function composeMsisdnDigits(
   return selected ? `${selected}${local}` : local;
 }
 
+export function matchLongestDialPrefix(
+  raw: string,
+  knownPrefixes: readonly string[],
+): string | null {
+  const digits = stripPhoneDigits(raw);
+  const prefixes = uniquePrefixes(knownPrefixes.map(stripPhoneDigits)).sort(
+    (a, b) => b.length - a.length,
+  );
+
+  for (const prefix of prefixes) {
+    if (prefix && digits.startsWith(prefix) && digits.length > prefix.length) {
+      return prefix;
+    }
+  }
+
+  return null;
+}
+
+export function nationalNumberDigits(raw: string, dialPrefix: string): string {
+  const digits = stripPhoneDigits(raw);
+  const prefix = stripPhoneDigits(dialPrefix);
+  if (prefix && digits.startsWith(prefix)) {
+    return digits.slice(prefix.length);
+  }
+  return digits;
+}
+
 export function formatMsisdnDisplay(
   msisdnDigits: string,
   dialPrefix?: string,
