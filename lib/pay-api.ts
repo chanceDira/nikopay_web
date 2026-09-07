@@ -227,6 +227,12 @@ export type CorridorProviderOption = {
   maxAmount: string;
 };
 
+export type CorridorCountryOption = {
+  country: string;
+  prefix: string;
+  displayName: string;
+};
+
 export type CorridorPredictResult = {
   country: string;
   provider: string;
@@ -236,6 +242,32 @@ export type CorridorPredictResult = {
   minAmount: string;
   maxAmount: string;
 };
+
+function isCorridorCountriesPayload(
+  value: unknown,
+): value is { countries: CorridorCountryOption[] } {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const row = value as Record<string, unknown>;
+  return (
+    Array.isArray(row.countries) && row.countries.every(isCorridorCountryOption)
+  );
+}
+
+function isCorridorCountryOption(
+  value: unknown,
+): value is CorridorCountryOption {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.country === "string" &&
+    typeof row.prefix === "string" &&
+    typeof row.displayName === "string"
+  );
+}
 
 function isCorridorProvidersPayload(
   value: unknown,
@@ -289,8 +321,14 @@ function isCorridorPredictPayload(
   );
 }
 
+export async function fetchCorridorCountries(
+  signal?: AbortSignal,
+): Promise<ApiResult<{ countries: CorridorCountryOption[] }>> {
+  return requestJson("/api/corridors", isCorridorCountriesPayload, { signal });
+}
+
 export async function fetchCorridorProviders(
-  country = "RWA",
+  country: string,
   signal?: AbortSignal,
 ): Promise<
   ApiResult<{ country: string; providers: CorridorProviderOption[] }>

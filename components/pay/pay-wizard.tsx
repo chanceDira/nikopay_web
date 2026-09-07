@@ -10,12 +10,19 @@ import {
 import { useWalletSession } from "@/components/pay/use-wallet-session";
 import { WalletPicker } from "@/components/shared/wallet-picker";
 import { getPublicChain } from "@/lib/chain-config";
-import { normalizeMsisdn, normalizeOptionalEmail } from "@/lib/identity";
+import {
+  composeMsisdnDigits,
+  formatMsisdnDisplay,
+  normalizeMsisdn,
+  normalizeOptionalEmail,
+} from "@/lib/identity";
 import {
   createLiveIntent,
+  fetchCorridorCountries,
   fetchCorridorProviders,
   predictCorridorProvider,
   reportIntentDepositWhenReady,
+  type CorridorCountryOption,
   type CorridorProviderOption,
 } from "@/lib/pay-api";
 import { readLocal } from "@/lib/read-local";
@@ -31,7 +38,7 @@ import { sameWalletAddress, shortAddress } from "@/lib/wallet-session";
 
 type Step = 1 | 2 | 3 | 4;
 
-const DEFAULT_CORRIDOR_COUNTRY = "RWA";
+const FALLBACK_CORRIDOR_COUNTRY = "RWA";
 
 const CheckIcon = () => (
   <svg
@@ -72,8 +79,11 @@ export function PayWizard() {
   const [amountUsdt, setAmountUsdt] = useState<string>("");
   const [msisdn, setMsisdn] = useState<string>("");
   const [formattedMsisdn, setFormattedMsisdn] = useState<string>("");
+  const [corridorCountries, setCorridorCountries] = useState<
+    CorridorCountryOption[]
+  >([]);
   const [corridorCountry, setCorridorCountry] = useState(
-    DEFAULT_CORRIDOR_COUNTRY,
+    FALLBACK_CORRIDOR_COUNTRY,
   );
   const [corridorCurrency, setCorridorCurrency] = useState("RWF");
   const [corridorProvider, setCorridorProvider] = useState("");
@@ -132,21 +142,55 @@ export function PayWizard() {
     const load = async () => {
       setCorridorLoading(true);
       setCorridorError("");
-      const result = await fetchCorridorProviders(DEFAULT_CORRIDOR_COUNTRY);
+
+      const countriesResult = await fetchCorridorCountries();
+      if (cancelled) {
+        return;
+      }
+      if (!countriesResult.ok) {
+        setCorridorLoading(false);
+        setCorridorError(countriesResult.reason);
+        return;
+      }
+
+      const countries = countriesResult.data.countries;
+      setCorridorCountries(countries);
+
+      const preferred =
+        countries.find((row) => row.country === corridorCountry) ??
+        countries.find((row) => row.country === FALLBACK_CORRIDOR_COUNTRY) ??
+        countries[0];
+      if (!preferred) {
+        setCorridorLoading(false);
+        setCorridorError("no payout countries configured");
+        return;
+      }
+
+      const providersResult = await fetchCorridorProviders(preferred.country);
       if (cancelled) {
         return;
       }
       setCorridorLoading(false);
-      if (!result.ok) {
-        setCorridorError(result.reason);
+      if (!providersResult.ok) {
+        setCorridorError(providersResult.reason);
         return;
       }
-      setCorridorProviders(result.data.providers);
-      setCorridorCountry(result.data.country);
-      if (!corridorProvider && result.data.providers[0]) {
-        const first = result.data.providers[0];
-        setCorridorProvider(first.provider);
-        setCorridorCurrency(first.currency);
+
+      setCorridorCountry(providersResult.data.country);
+      setCorridorProviders(providersResult.data.providers);
+      const keepCurrent = providersResult.data.providers.some(
+        (row) => row.provider === corridorProvider,
+      );
+      const nextProvider = keepCurrent
+        ? corridorProvider
+        : (providersResult.data.providers[0]?.provider ?? "");
+      const selected =
+        providersResult.data.providers.find(
+          (row) => row.provider === nextProvider,
+        ) ?? null;
+      setCorridorProvider(nextProvider);
+      if (selected) {
+        setCorridorCurrency(selected.currency);
       }
     };
 
@@ -156,6 +200,11 @@ export function PayWizard() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once when entering step 2
   }, [step]);
+
+  const selectedCountry =
+    corridorCountries.find((row) => row.country === corridorCountry) ?? null;
+  const dialPrefix = selectedCountry?.prefix ?? "";
+  const knownPrefixes = corridorCountries.map((row) => row.prefix);
 
   const selectedCorridor =
     corridorProviders.find((row) => row.provider === corridorProvider) ?? null;
@@ -260,16 +309,32 @@ export function PayWizard() {
     return true;
   };
 
-  const validateMsisdn = () => {
+  const resolveMsisdn = () => {
     if (!msisdn.trim()) {
-      setMsisdnError("Mobile Money number is required");
-      return false;
+      return { ok: false as const, reason: "Mobile Money number is required" };
     }
-    const parsed = normalizeMsisdn(msisdn);
+    if (!dialPrefix) {
+      return {
+        ok: false as const,
+        reason: "Select a destination country first",
+      };
+    }
+    const composed = composeMsisdnDigits(msisdn, dialPrefix, knownPrefixes);
+    const parsed = normalizeMsisdn(composed);
     if (!parsed.ok) {
-      setMsisdnError(
-        "Enter a valid mobile number (e.g. 078XXXXXXX or +2507XXXXXXXX)",
-      );
+      return {
+        ok: false as const,
+        reason:
+          "Enter a valid mobile number (local or +country code, e.g. 078… or +250…)",
+      };
+    }
+    return { ok: true as const, msisdn: parsed.msisdn };
+  };
+
+  const validateMsisdn = () => {
+    const resolved = resolveMsisdn();
+    if (!resolved.ok) {
+      setMsisdnError(resolved.reason);
       return false;
     }
     setMsisdnError("");
@@ -311,58 +376,125 @@ export function PayWizard() {
     return true;
   };
 
+  const loadProvidersForCountry = async (
+    country: string,
+    preferredProvider?: string,
+  ) => {
+    setCorridorLoading(true);
+    setCorridorError("");
+    const result = await fetchCorridorProviders(country);
+    setCorridorLoading(false);
+    if (!result.ok) {
+      setCorridorError(result.reason);
+      return null;
+    }
+
+    setCorridorCountry(result.data.country);
+    setCorridorProviders(result.data.providers);
+    const nextProvider =
+      (preferredProvider &&
+        result.data.providers.find((row) => row.provider === preferredProvider)
+          ?.provider) ||
+      result.data.providers[0]?.provider ||
+      "";
+    const selected =
+      result.data.providers.find((row) => row.provider === nextProvider) ??
+      null;
+    setCorridorProvider(nextProvider);
+    if (selected) {
+      setCorridorCurrency(selected.currency);
+    }
+    return result.data;
+  };
+
   const applyPredictedProvider = async (phone: string) => {
     const predicted = await predictCorridorProvider(phone);
     if (!predicted.ok) {
       return;
     }
-    setCorridorCountry(predicted.data.country);
-    setCorridorCurrency(predicted.data.currency);
-    setCorridorProvider(predicted.data.provider);
-    setCorridorProviders((prev) => {
-      if (prev.some((row) => row.provider === predicted.data.provider)) {
-        return prev;
+
+    const match = corridorCountries.find(
+      (row) => row.country === predicted.data.country,
+    );
+    const displayPrefix = match?.prefix ?? dialPrefix;
+    setMsisdn(predicted.data.phoneNumber);
+    setFormattedMsisdn(
+      formatMsisdnDisplay(predicted.data.phoneNumber, displayPrefix),
+    );
+
+    if (predicted.data.country !== corridorCountry) {
+      await loadProvidersForCountry(
+        predicted.data.country,
+        predicted.data.provider,
+      );
+    } else {
+      setCorridorProvider(predicted.data.provider);
+      setCorridorCurrency(predicted.data.currency);
+      setCorridorProviders((prev) => {
+        if (prev.some((row) => row.provider === predicted.data.provider)) {
+          return prev;
+        }
+        return [
+          ...prev,
+          {
+            country: predicted.data.country,
+            provider: predicted.data.provider,
+            displayName: predicted.data.provider,
+            currency: predicted.data.currency,
+            decimalsInAmount: predicted.data.decimalsInAmount,
+            minAmount: predicted.data.minAmount,
+            maxAmount: predicted.data.maxAmount,
+          },
+        ];
+      });
+    }
+  };
+
+  const handleCountryChange = (country: string) => {
+    setCorridorError("");
+    void (async () => {
+      const loaded = await loadProvidersForCountry(country);
+      if (!loaded) {
+        return;
       }
-      return [
-        ...prev,
-        {
-          country: predicted.data.country,
-          provider: predicted.data.provider,
-          displayName: predicted.data.provider,
-          currency: predicted.data.currency,
-          decimalsInAmount: predicted.data.decimalsInAmount,
-          minAmount: predicted.data.minAmount,
-          maxAmount: predicted.data.maxAmount,
-        },
-      ];
-    });
+      const next = corridorCountries.find((row) => row.country === country);
+      if (!next || !msisdn.trim()) {
+        return;
+      }
+      const composed = composeMsisdnDigits(msisdn, next.prefix, knownPrefixes);
+      const parsed = normalizeMsisdn(composed);
+      if (!parsed.ok) {
+        return;
+      }
+      setFormattedMsisdn(formatMsisdnDisplay(parsed.msisdn, next.prefix));
+      await applyPredictedProvider(parsed.msisdn);
+    })();
   };
 
   const handleMsisdnChange = (value: string) => {
     setMsisdn(value);
-    const parsed = normalizeMsisdn(value);
+    if (!dialPrefix) {
+      setFormattedMsisdn(value.trim());
+      return;
+    }
+    const composed = composeMsisdnDigits(value, dialPrefix, knownPrefixes);
+    const parsed = normalizeMsisdn(composed);
     if (parsed.ok) {
-      const digits = parsed.msisdn;
-      if (digits.startsWith("250") && digits.length === 12) {
-        setFormattedMsisdn(
-          `+250 ${digits.slice(3, 6)} ${digits.slice(6, 9)} ${digits.slice(9)}`,
-        );
-      } else {
-        setFormattedMsisdn(`+${digits}`);
-      }
+      setFormattedMsisdn(formatMsisdnDisplay(parsed.msisdn, dialPrefix));
       return;
     }
     setFormattedMsisdn(value.trim());
   };
 
   const handleMsisdnBlur = () => {
-    if (!validateMsisdn()) {
+    const resolved = resolveMsisdn();
+    if (!resolved.ok) {
+      setMsisdnError(resolved.reason);
       return;
     }
-    const parsed = normalizeMsisdn(msisdn);
-    if (parsed.ok) {
-      void applyPredictedProvider(parsed.msisdn);
-    }
+    setMsisdnError("");
+    setFormattedMsisdn(formatMsisdnDisplay(resolved.msisdn, dialPrefix));
+    void applyPredictedProvider(resolved.msisdn);
   };
 
   const handleNextStep = () => {
@@ -414,9 +546,9 @@ export function PayWizard() {
   };
 
   const intentMatchesQuote = (intent: PaymentIntent, active: string) => {
-    const parsedMsisdn = normalizeMsisdn(msisdn);
+    const resolved = resolveMsisdn();
     const parsedEmail = normalizeOptionalEmail(notifyEmail);
-    if (!quote || !parsedMsisdn.ok || !parsedEmail.ok) {
+    if (!quote || !resolved.ok || !parsedEmail.ok) {
       return false;
     }
     const intentEmail = intent.notifyEmail ?? null;
@@ -424,7 +556,7 @@ export function PayWizard() {
       intent.usdtAmount === quote.usdtAmount &&
       intent.chain === chain &&
       sameWalletAddress(intent.walletAddress, active) &&
-      intent.msisdn === parsedMsisdn.msisdn &&
+      intent.msisdn === resolved.msisdn &&
       intent.country === corridorCountry &&
       intent.currency === corridorCurrency &&
       intent.provider === corridorProvider &&
@@ -448,9 +580,9 @@ export function PayWizard() {
       return;
     }
 
-    const parsedMsisdn = normalizeMsisdn(msisdn);
-    if (!parsedMsisdn.ok) {
-      setIntentError(parsedMsisdn.reason);
+    const resolved = resolveMsisdn();
+    if (!resolved.ok) {
+      setIntentError(resolved.reason);
       return;
     }
 
@@ -481,7 +613,7 @@ export function PayWizard() {
     const result = await createLiveIntent({
       usdtAmount: quote.usdtAmount,
       chain,
-      msisdn: parsedMsisdn.msisdn,
+      msisdn: resolved.msisdn,
       walletAddress: activeAddress,
       country: corridorCountry,
       currency: corridorCurrency,
@@ -789,14 +921,44 @@ export function PayWizard() {
         <div className="space-y-6">
           <div>
             <label
+              htmlFor="country-select"
+              className="text-sm font-medium text-foreground"
+            >
+              Destination country
+            </label>
+            <p className="text-xs text-niko-muted mt-1">
+              Used for the local dial code. Entering an international number can
+              switch this automatically.
+            </p>
+            <select
+              id="country-select"
+              value={corridorCountry}
+              disabled={corridorLoading || corridorCountries.length === 0}
+              onChange={(e) => handleCountryChange(e.target.value)}
+              className="mt-3 w-full rounded-md border border-niko-border bg-background px-4 py-3.5 text-sm text-foreground outline-none focus:border-niko-teal/50 disabled:opacity-50"
+            >
+              {corridorCountries.length === 0 ? (
+                <option value="">No countries available</option>
+              ) : (
+                corridorCountries.map((row) => (
+                  <option key={row.country} value={row.country}>
+                    {row.displayName} (+{row.prefix})
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div>
+            <label
               htmlFor="msisdn-input"
               className="text-sm font-medium text-foreground"
             >
               Recipient mobile money number
             </label>
             <p className="text-xs text-niko-muted mt-1">
-              Rwanda numbers (078…) or E.164. We suggest a provider from the
-              phone number; you can change it below.
+              Local number or full international (+…). We detect country and
+              suggest a provider from the phone number.
             </p>
             <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
               <input
@@ -813,7 +975,11 @@ export function PayWizard() {
                 }}
                 onBlur={handleMsisdnBlur}
                 className="w-full bg-transparent font-mono text-lg font-semibold text-foreground outline-none placeholder:text-niko-muted/40"
-                placeholder="e.g. 0787259588 or +250783456789"
+                placeholder={
+                  dialPrefix
+                    ? `e.g. local or +${dialPrefix}…`
+                    : "e.g. +250783456789"
+                }
               />
               <span className="ml-3 font-semibold text-niko-teal text-xs tracking-wider uppercase shrink-0">
                 {selectedCorridor?.displayName ?? "MMO"}
@@ -826,7 +992,7 @@ export function PayWizard() {
             {formattedMsisdn && !msisdnError && (
               <div className="mt-3 p-3 rounded-lg bg-niko-surface/80 border border-niko-border/40 flex justify-between items-center">
                 <span className="text-xs text-niko-muted">
-                  Formatted address
+                  Formatted number
                 </span>
                 <span className="text-xs font-mono font-bold text-niko-teal-bright">
                   {formattedMsisdn}
@@ -845,7 +1011,7 @@ export function PayWizard() {
             <p className="text-xs text-niko-muted mt-1">
               {corridorLoading
                 ? "Loading providers from PawaPay…"
-                : `${corridorCountry} · amounts in ${corridorCurrency}`}
+                : `${selectedCountry?.displayName ?? corridorCountry} · amounts in ${corridorCurrency}`}
             </p>
             <select
               id="provider-select"
