@@ -382,7 +382,7 @@ function parseGetPayoutResponse(value: unknown): GetPayoutResponse | null {
       amount: asNonEmptyString(data?.amount) ?? undefined,
       currency: asNonEmptyString(data?.currency) ?? undefined,
       country: asNonEmptyString(data?.country) ?? undefined,
-      provider: payoutProvider(data ?? {}),
+      provider: payoutProvider(data ?? {}) ?? undefined,
       created: asNonEmptyString(data?.created) ?? undefined,
       providerTransactionId:
         asNonEmptyString(data?.providerTransactionId) ?? undefined,
