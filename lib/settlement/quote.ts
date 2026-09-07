@@ -108,3 +108,20 @@ export function netRwfForUsdt(
   const feeRwf = grossRwf * (feePercent / 100);
   return Number((grossRwf - feeRwf).toFixed(2));
 }
+
+export function feeUsdtForAmount(
+  usdtAmount: number,
+  feePercent: number,
+): number | null {
+  if (
+    !Number.isFinite(usdtAmount) ||
+    usdtAmount <= 0 ||
+    !Number.isFinite(feePercent) ||
+    feePercent < 0 ||
+    feePercent >= 100
+  ) {
+    return null;
+  }
+
+  return Number(((usdtAmount * feePercent) / 100).toFixed(6));
+}

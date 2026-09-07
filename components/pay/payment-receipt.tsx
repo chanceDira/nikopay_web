@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useIntentView } from "@/components/pay/use-intent-view";
 import { CONTACT } from "@/lib/contact";
 import { formatRwf, formatUsdt } from "@/lib/rates";
+import { feeUsdtForAmount } from "@/lib/settlement/quote";
 
 type PaymentReceiptProps = {
   id?: string;
@@ -184,10 +185,14 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
           </div>
           <div className="flex justify-between text-xs">
             <span className="text-niko-muted print:text-neutral-500">
-              Service Fee ({intent.feePercent}%)
+              NikoPay fee ({intent.feePercent}% of USDT)
             </span>
             <span className="font-mono text-red-400 print:text-neutral-700">
-              -{formatRwf(intent.feeRwf)}
+              -
+              {formatUsdt(
+                feeUsdtForAmount(intent.usdtAmount, intent.feePercent) ?? 0,
+              )}{" "}
+              ({formatRwf(intent.feeRwf)})
             </span>
           </div>
           <div className="h-px bg-niko-border/60 print:bg-neutral-200 my-1" />

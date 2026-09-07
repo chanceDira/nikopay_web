@@ -31,7 +31,11 @@ import {
 } from "@/lib/pay-api";
 import { readLocal } from "@/lib/read-local";
 import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
-import { netRwfForUsdt, usdtForTargetRwf } from "@/lib/settlement/quote";
+import {
+  netRwfForUsdt,
+  usdtForTargetRwf,
+  feeUsdtForAmount,
+} from "@/lib/settlement/quote";
 import { formatRwf, formatUsdt } from "@/lib/rates";
 import { asWalletKind, type WalletKind } from "@/lib/wallet/browser";
 import {
@@ -966,10 +970,12 @@ export function PayWizard() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-niko-muted">
-                Service Fee ({displayFeePercent}%)
+                NikoPay fee ({displayFeePercent}% of USDT)
               </span>
               <span className="font-mono text-niko-muted">
-                {hasAmount ? `+${formatRwf(feeRwf)}` : "-"}
+                {hasAmount
+                  ? `${formatUsdt(feeUsdtForAmount(usdtAmount, displayFeePercent) ?? 0)} (${formatRwf(feeRwf)})`
+                  : "-"}
               </span>
             </div>
             <div className="h-px bg-niko-border/40 my-1" />
@@ -1302,10 +1308,13 @@ export function PayWizard() {
               </div>
 
               <div className="text-niko-muted">
-                Processing Fee ({displayFeePercent}%)
+                NikoPay fee ({displayFeePercent}% of USDT)
               </div>
               <div className="text-right font-mono text-niko-muted">
-                +{formatRwf(feeRwf)}
+                {formatUsdt(
+                  feeUsdtForAmount(usdtAmount, displayFeePercent) ?? 0,
+                )}{" "}
+                ({formatRwf(feeRwf)})
               </div>
 
               <div className="col-span-2 h-px bg-niko-border/60 my-1" />

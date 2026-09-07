@@ -6,7 +6,7 @@ export default function AdminPayoutsPage() {
   return (
     <PageHeader
       title="Payouts"
-      description="Payout amounts sent to recipient numbers"
+      description="Payout amounts debited from the PawaPay wallet"
     >
       <Suspense
         fallback={

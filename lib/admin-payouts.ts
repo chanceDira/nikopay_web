@@ -36,6 +36,9 @@ export type AdminPayout = {
   referenceId: string;
   amountRwf: number;
   msisdn: string;
+  country: string;
+  currency: string;
+  provider: string | null;
   status: AdminPayoutStatus;
   rail: "momo" | "pawapay";
   providerRef: string | null;
@@ -74,6 +77,9 @@ export function toAdminPayout(row: MomoTransferRow): AdminPayout | null {
     referenceId: row.reference_id,
     amountRwf,
     msisdn: row.msisdn,
+    country: "RWA",
+    currency: "RWF",
+    provider: null,
     status: row.status,
     rail: "momo",
     providerRef: row.provider_ref,
@@ -99,6 +105,9 @@ function toAdminPawapayPayout(row: PayoutTransferRow): AdminPayout | null {
     referenceId: row.payout_id,
     amountRwf,
     msisdn: row.msisdn,
+    country: row.country,
+    currency: row.currency,
+    provider: row.provider,
     status: row.status,
     rail: "pawapay",
     providerRef: row.provider_ref,

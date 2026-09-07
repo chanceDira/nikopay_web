@@ -36,3 +36,13 @@ export function getPawapayConfig():
     },
   };
 }
+
+export function pawapayDashboardUrl(baseUrl: string): string {
+  return baseUrl.includes("sandbox.pawapay.io")
+    ? "https://dashboard.sandbox.pawapay.io"
+    : "https://dashboard.pawapay.io";
+}
+
+export function pawapayEnvironment(baseUrl: string): "sandbox" | "production" {
+  return baseUrl.includes("sandbox.pawapay.io") ? "sandbox" : "production";
+}

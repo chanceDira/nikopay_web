@@ -3,7 +3,10 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import type { PaymentIntent, PaymentStatus } from "@/lib/settlement/types";
+import { feeUsdtForAmount } from "@/lib/settlement/quote";
+import { formatUsdt } from "@/lib/rates";
 import { PageHeader } from "@/components/shared/page-header";
+import type { PayoutLookupData } from "@/lib/pawapay/types";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -20,6 +23,25 @@ export default function AdminTransactionDetailPage({ params }: Props) {
   const [editMomoRef, setEditMomoRef] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [livePayout, setLivePayout] = useState<PayoutLookupData | null>(null);
+  const [livePayoutError, setLivePayoutError] = useState("");
+  const [livePayoutLoading, setLivePayoutLoading] = useState(false);
+
+  const loadLivePayout = async (payoutId: string) => {
+    setLivePayoutLoading(true);
+    setLivePayoutError("");
+    const res = await fetch(`/api/admin/pawapay/payouts/${payoutId}`);
+    const json = (await res.json()) as {
+      data?: PayoutLookupData | null;
+      error?: string;
+    };
+    setLivePayoutLoading(false);
+    if (!res.ok) {
+      setLivePayoutError(json.error ?? "Unable to load live PawaPay status.");
+      return;
+    }
+    setLivePayout(json.data ?? null);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -37,6 +59,22 @@ export default function AdminTransactionDetailPage({ params }: Props) {
       setEditTxHash(data.depositTx ?? "");
       setEditMomoRef(data.momoRef ?? "");
       setPageState("ready");
+      const payoutId = data.payout?.referenceId;
+      if (payoutId) {
+        const liveRes = await fetch(`/api/admin/pawapay/payouts/${payoutId}`);
+        if (cancelled) return;
+        const liveJson = (await liveRes.json()) as {
+          data?: PayoutLookupData | null;
+          error?: string;
+        };
+        if (!liveRes.ok) {
+          setLivePayoutError(
+            liveJson.error ?? "Unable to load live PawaPay status.",
+          );
+        } else {
+          setLivePayout(liveJson.data ?? null);
+        }
+      }
     }, 0);
     return () => {
       cancelled = true;
@@ -185,7 +223,20 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                     Service fee
                   </span>
                   <span className="text-foreground">
-                    {intent.feePercent}% ({formatRwf(intent.feeRwf)})
+                    {intent.feePercent}% ({formatRwf(intent.feeRwf)}
+                    {feeUsdtForAmount(intent.usdtAmount, intent.feePercent) !=
+                    null
+                      ? ` · ${formatUsdt(feeUsdtForAmount(intent.usdtAmount, intent.feePercent) ?? 0)} from USDT`
+                      : ""}
+                    )
+                  </span>
+                </div>
+                <div>
+                  <span className="text-xs text-niko-muted block">
+                    Corridor
+                  </span>
+                  <span className="text-foreground">
+                    {intent.country} · {intent.provider} · {intent.currency}
                   </span>
                 </div>
                 <div>
@@ -259,6 +310,88 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                 </div>
               </form>
             </div>
+
+            {intent.payout ? (
+              <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md space-y-4">
+                <div className="flex items-center justify-between">
+                  <h5 className="text-xs font-semibold uppercase tracking-wider text-niko-teal font-mono">
+                    PawaPay payout
+                  </h5>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void loadLivePayout(intent.payout!.referenceId)
+                    }
+                    className="text-[11px] font-semibold text-niko-teal hover:underline"
+                  >
+                    {livePayoutLoading ? "Refreshing…" : "Refresh live status"}
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm font-mono">
+                  <div>
+                    <span className="text-xs text-niko-muted block">
+                      Wallet debit
+                    </span>
+                    <span className="text-foreground font-bold">
+                      {formatRwf(intent.netRwf)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-niko-muted block">
+                      Local status
+                    </span>
+                    <span className="text-foreground">
+                      {intent.payout.status}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-niko-muted block">
+                      Payout id
+                    </span>
+                    <span className="text-foreground break-all">
+                      {intent.payout.referenceId}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-niko-muted block">
+                      Provider ref
+                    </span>
+                    <span className="text-foreground break-all">
+                      {intent.payout.providerRef ?? "—"}
+                    </span>
+                  </div>
+                </div>
+                {livePayoutError ? (
+                  <p className="text-xs text-red-400">{livePayoutError}</p>
+                ) : livePayout ? (
+                  <div className="text-xs font-mono text-niko-muted space-y-1 border-t border-niko-border/20 pt-3">
+                    <p>
+                      Live: {livePayout.status}
+                      {livePayout.amount
+                        ? ` · ${livePayout.amount} ${livePayout.currency ?? ""}`
+                        : ""}
+                    </p>
+                    {livePayout.provider ? <p>{livePayout.provider}</p> : null}
+                    {livePayout.failureReason ? (
+                      <p className="text-red-400">
+                        {livePayout.failureReason.failureCode}:{" "}
+                        {livePayout.failureReason.failureMessage}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="text-xs text-niko-muted">
+                    No live PawaPay record found for this payout id.
+                  </p>
+                )}
+                <p className="text-[11px] text-niko-muted">
+                  Wallet debit is the amount PawaPay takes from the merchant
+                  wallet and sends to the recipient. NikoPay platform fee is
+                  already taken from the user USDT and is not a PawaPay API
+                  charge.
+                </p>
+              </div>
+            ) : null}
           </div>
 
           <div className="lg:col-span-1">

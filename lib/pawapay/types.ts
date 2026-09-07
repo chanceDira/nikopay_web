@@ -47,6 +47,8 @@ export type PayoutLookupData = {
   amount?: string;
   currency?: string;
   country?: string;
+  provider?: string;
+  created?: string;
   providerTransactionId?: string;
   failureReason?: PawapayFailureReason;
 };
