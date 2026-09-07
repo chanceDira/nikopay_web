@@ -100,8 +100,9 @@ On the Vercel project for `nikopay.to`:
 3. Set `PAWAPAY_CALLBACK_PATH=/api/pawapay/callback` (or rely on default)
 4. Register callback URL in PawaPay dashboard: `https://nikopay.to/api/pawapay/callback`
 5. Set `PAWAPAY_VERIFY_CALLBACKS=true` when signed callbacks are enabled
-6. Remove all `MOMO_*` and `PAYOUT_PROVIDER` env vars
-7. Redeploy production
+6. Remove `PAYOUT_PROVIDER` if it is still set. Payouts are PawaPay-only.
+7. For Rwanda MTN name preview, set production `MOMO_*` lookup credentials (`MOMO_BASE_URL`, `MOMO_TARGET_ENVIRONMENT=mtnrwanda`, `MOMO_DISBURSEMENT_SUBSCRIPTION_KEY`, `MOMO_API_USER`, `MOMO_API_KEY`). These are not used for payouts.
+8. Redeploy production
 
 Preview may use sandbox `PAWAPAY_*` values. Do not put the production token on Preview.
 

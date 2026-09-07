@@ -340,6 +340,27 @@ export async function fetchCorridorProviders(
   );
 }
 
+export type RecipientNamePreview = {
+  status: "found" | "not_found" | "unavailable";
+  displayName: string | null;
+  source: "mtn" | null;
+};
+
+function isRecipientNamePreview(value: unknown): value is RecipientNamePreview {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const row = value as Record<string, unknown>;
+  const statusOk =
+    row.status === "found" ||
+    row.status === "not_found" ||
+    row.status === "unavailable";
+  const nameOk =
+    row.displayName === null || typeof row.displayName === "string";
+  const sourceOk = row.source === null || row.source === "mtn";
+  return statusOk && nameOk && sourceOk;
+}
+
 export async function predictCorridorProvider(
   msisdn: string,
   signal?: AbortSignal,
@@ -348,6 +369,18 @@ export async function predictCorridorProvider(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ msisdn }),
+    signal,
+  });
+}
+
+export async function fetchRecipientNamePreview(
+  input: { msisdn: string; country: string; provider: string },
+  signal?: AbortSignal,
+): Promise<ApiResult<RecipientNamePreview>> {
+  return requestJson("/api/corridors/recipient-name", isRecipientNamePreview, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
     signal,
   });
 }

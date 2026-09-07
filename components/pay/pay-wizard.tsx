@@ -9,6 +9,7 @@ import {
 } from "@/components/pay/use-live-quote";
 import { useWalletSession } from "@/components/pay/use-wallet-session";
 import { WalletPicker } from "@/components/shared/wallet-picker";
+import { RecipientNamePreviewCard } from "@/components/pay/recipient-name-preview";
 import { getPublicChain } from "@/lib/chain-config";
 import {
   composeMsisdnDigits,
@@ -22,6 +23,7 @@ import {
   createLiveIntent,
   fetchCorridorCountries,
   fetchCorridorProviders,
+  fetchRecipientNamePreview,
   predictCorridorProvider,
   reportIntentDepositWhenReady,
   type CorridorCountryOption,
@@ -82,6 +84,10 @@ export function PayWizard() {
   const [msisdn, setMsisdn] = useState<string>("");
   const [formattedMsisdn, setFormattedMsisdn] = useState<string>("");
   const [verifiedMsisdn, setVerifiedMsisdn] = useState<string>("");
+  const [recipientName, setRecipientName] = useState<string | null>(null);
+  const [recipientNameStatus, setRecipientNameStatus] = useState<
+    "idle" | "loading" | "found" | "not_found" | "unavailable"
+  >("idle");
   const [corridorCountries, setCorridorCountries] = useState<
     CorridorCountryOption[]
   >([]);
@@ -211,6 +217,27 @@ export function PayWizard() {
 
   const selectedCorridor =
     corridorProviders.find((row) => row.provider === corridorProvider) ?? null;
+
+  const clearRecipientName = () => {
+    setRecipientName(null);
+    setRecipientNameStatus("idle");
+  };
+
+  const loadRecipientName = async (input: {
+    msisdn: string;
+    country: string;
+    provider: string;
+  }) => {
+    setRecipientNameStatus("loading");
+    setRecipientName(null);
+    const result = await fetchRecipientNamePreview(input);
+    if (!result.ok) {
+      setRecipientNameStatus("unavailable");
+      return;
+    }
+    setRecipientName(result.data.displayName);
+    setRecipientNameStatus(result.data.status);
+  };
 
   const walletDrifted =
     Boolean(liveIntent) &&
@@ -412,6 +439,7 @@ export function PayWizard() {
     if (!predicted.ok) {
       setVerifiedMsisdn("");
       setFormattedMsisdn("");
+      clearRecipientName();
       setMsisdnError(
         predicted.reason ||
           "This number is not valid for mobile money in a supported country",
@@ -456,6 +484,11 @@ export function PayWizard() {
         ];
       });
     }
+    void loadRecipientName({
+      msisdn: predicted.data.phoneNumber,
+      country: predicted.data.country,
+      provider: predicted.data.provider,
+    });
     return predicted.data.phoneNumber;
   };
 
@@ -463,6 +496,7 @@ export function PayWizard() {
     setCorridorError("");
     setVerifiedMsisdn("");
     setFormattedMsisdn("");
+    clearRecipientName();
     void (async () => {
       const loaded = await loadProvidersForCountry(country);
       if (!loaded) {
@@ -490,6 +524,7 @@ export function PayWizard() {
   const handleMsisdnChange = (value: string) => {
     setVerifiedMsisdn("");
     setFormattedMsisdn("");
+    clearRecipientName();
     if (msisdnError) setMsisdnError("");
 
     const matchedPrefix = matchLongestDialPrefix(value, knownPrefixes);
@@ -522,6 +557,7 @@ export function PayWizard() {
     if (!parsed.ok) {
       setVerifiedMsisdn("");
       setFormattedMsisdn("");
+      clearRecipientName();
       setMsisdnError("Enter a valid mobile number for the selected country");
       return;
     }
@@ -1057,6 +1093,13 @@ export function PayWizard() {
                 </span>
               </div>
             )}
+            <RecipientNamePreviewCard
+              status={recipientNameStatus}
+              displayName={recipientName}
+              providerLabel={
+                selectedCorridor?.displayName ?? "the mobile money provider"
+              }
+            />
           </div>
 
           <div>
@@ -1083,6 +1126,13 @@ export function PayWizard() {
                 if (next) {
                   setCorridorCountry(next.country);
                   setCorridorCurrency(next.currency);
+                  if (verifiedMsisdn) {
+                    void loadRecipientName({
+                      msisdn: verifiedMsisdn,
+                      country: next.country,
+                      provider: next.provider,
+                    });
+                  }
                 }
                 setCorridorError("");
               }}
@@ -1159,10 +1209,10 @@ export function PayWizard() {
               />
             </svg>
             <span>
-              <strong>Double-check the wallet/phone details:</strong> If you
-              enter an incorrect Mobile Money number, the transaction will fail
-              or, in worst cases, deposit money to the wrong user. We cannot
-              reverse completed payouts.
+              <strong>Double-check the number before you pay.</strong> If the
+              name does not match the person you intend, stop and correct the
+              number. A wrong Mobile Money number can fail, or send money to
+              someone else. Completed payouts cannot be reversed.
             </span>
           </div>
 
@@ -1272,6 +1322,15 @@ export function PayWizard() {
                 {formattedMsisdn}
               </div>
 
+              {recipientNameStatus === "found" && recipientName ? (
+                <>
+                  <div className="text-niko-muted">Recipient name</div>
+                  <div className="font-semibold text-right text-foreground">
+                    {recipientName}
+                  </div>
+                </>
+              ) : null}
+
               <div className="text-niko-muted">Provider</div>
               <div className="font-mono font-bold text-right text-foreground">
                 {selectedCorridor?.displayName ?? corridorProvider}
@@ -1358,6 +1417,12 @@ export function PayWizard() {
                 : intentError}
             </p>
           )}
+
+          <div className="p-4 rounded-md border border-[var(--niko-warning-border)] bg-[var(--niko-warning-bg)] text-xs text-[var(--niko-warning-text)] leading-relaxed">
+            {recipientNameStatus === "found" && recipientName
+              ? `Paying ${recipientName}. If that is not the right person, go back and change the number. Completed payouts cannot be reversed.`
+              : "Double-check the mobile money number. If it is wrong, the payout can fail or go to someone else. Completed payouts cannot be reversed."}
+          </div>
 
           <div className="flex gap-4">
             <button
