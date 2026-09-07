@@ -97,8 +97,9 @@ export function AdminPayoutsTable() {
             <thead>
               <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs font-mono uppercase tracking-wider text-niko-muted">
                 <th className="px-6 py-4">Sent</th>
+                <th className="px-6 py-4">Corridor</th>
                 <th className="px-6 py-4">Recipient</th>
-                <th className="px-6 py-4">Amount</th>
+                <th className="px-6 py-4">Wallet debit</th>
                 <th className="px-6 py-4">Payout status</th>
                 <th className="px-6 py-4">Provider ref</th>
                 <th className="px-6 py-4">Reason</th>
@@ -109,7 +110,7 @@ export function AdminPayoutsTable() {
               {loading && filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-6 py-12 text-center text-niko-muted"
                   >
                     Loading...
@@ -118,7 +119,7 @@ export function AdminPayoutsTable() {
               ) : filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-6 py-12 text-center text-niko-muted"
                   >
                     No payout transfers yet. Run payouts after a deposit is
@@ -131,11 +132,17 @@ export function AdminPayoutsTable() {
                     <td className="px-6 py-4 text-foreground/80 font-sans text-xs">
                       {formatDate(row.createdAt)}
                     </td>
+                    <td className="px-6 py-4 font-mono text-xs text-foreground">
+                      {row.country}
+                      {row.provider ? ` · ${row.provider}` : ""}
+                    </td>
                     <td className="px-6 py-4 font-mono text-foreground">
                       {row.msisdn}
                     </td>
                     <td className="px-6 py-4 font-mono font-semibold text-niko-teal-bright">
-                      {formatRwf(row.amountRwf)}
+                      {row.currency === "RWF"
+                        ? formatRwf(row.amountRwf)
+                        : `${row.amountRwf} ${row.currency}`}
                     </td>
                     <td className="px-6 py-4">{statusBadge(row.status)}</td>
                     <td className="px-6 py-4 font-mono text-xs text-foreground">

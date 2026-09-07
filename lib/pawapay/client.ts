@@ -382,11 +382,19 @@ function parseGetPayoutResponse(value: unknown): GetPayoutResponse | null {
       amount: asNonEmptyString(data?.amount) ?? undefined,
       currency: asNonEmptyString(data?.currency) ?? undefined,
       country: asNonEmptyString(data?.country) ?? undefined,
+      provider: payoutProvider(data ?? {}) ?? undefined,
+      created: asNonEmptyString(data?.created) ?? undefined,
       providerTransactionId:
         asNonEmptyString(data?.providerTransactionId) ?? undefined,
       failureReason: parseFailureReason(data?.failureReason) ?? undefined,
     },
   };
+}
+
+function payoutProvider(data: Record<string, unknown>): string | null {
+  const recipient = asRecord(data.recipient);
+  const account = asRecord(recipient?.accountDetails);
+  return asNonEmptyString(account?.provider);
 }
 
 function parseAvailability(value: unknown): AvailabilityCountry[] | null {
