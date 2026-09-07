@@ -114,6 +114,12 @@ export async function predictProvider(
     if (response.timedOut) {
       return { ok: false, reason: "pawapay predict-provider timed out" };
     }
+    const failure = asRecord(response.json);
+    const detail = asRecord(failure?.failureReason);
+    const message = asNonEmptyString(detail?.failureMessage);
+    if (message) {
+      return { ok: false, reason: message };
+    }
     return {
       ok: false,
       reason: `pawapay predict-provider failed (${response.status})`,
@@ -125,7 +131,12 @@ export async function predictProvider(
   const provider = asNonEmptyString(record?.provider);
   const sanitized = asNonEmptyString(record?.phoneNumber);
   if (!country || !provider || !sanitized) {
-    return { ok: false, reason: "pawapay predict-provider response invalid" };
+    const failure = asRecord(record?.failureReason);
+    const message = asNonEmptyString(failure?.failureMessage);
+    if (message) {
+      return { ok: false, reason: message };
+    }
+    return { ok: false, reason: "phone number is not valid for mobile money" };
   }
 
   return {
