@@ -7,7 +7,10 @@ import {
 } from "@/lib/ip-rate-limit";
 import { getActiveConf } from "@/lib/pawapay/client";
 import { getPawapayConfig } from "@/lib/pawapay/config";
-import { listPayoutProviders } from "@/lib/pawapay/corridor";
+import {
+  listPayoutCountries,
+  listPayoutProviders,
+} from "@/lib/pawapay/corridor";
 
 const corridorListLimit = createIpRateLimiter({
   windowMs: 10 * 60 * 1000,
@@ -24,8 +27,24 @@ export async function GET(request: Request) {
     return jsonError(configured.reason, 503);
   }
 
-  const rawCountry =
-    new URL(request.url).searchParams.get("country")?.trim() || "RWA";
+  const rawCountry = new URL(request.url).searchParams.get("country")?.trim();
+
+  if (!rawCountry) {
+    const conf = await getActiveConf(configured.config, {
+      operationType: "PAYOUT",
+    });
+    if (!conf.ok) {
+      return jsonError(conf.reason, 503);
+    }
+
+    const countries = listPayoutCountries(conf.data);
+    if (countries.length === 0) {
+      return jsonError("no payout countries configured", 404);
+    }
+
+    return jsonData({ countries });
+  }
+
   const country = normalizeCorridorCountry(rawCountry);
   if (!country.ok) {
     return jsonError(country.reason, 400);

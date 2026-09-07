@@ -1,7 +1,6 @@
 const ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
 const TX_HASH_REGEX = /^0x[a-fA-F0-9]{64}$/;
-const MSISDN_DIGITS = /^[0-9]{10,15}$/;
-const RWANDA_MSISDN = /^250[7-9][0-9]{8}$/;
+const MSISDN_DIGITS = /^[1-9][0-9]{9,14}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -50,6 +49,51 @@ export function normalizeTxHash(
   return { ok: true, txHash: txHash.toLowerCase() };
 }
 
+export function stripPhoneDigits(value: string): string {
+  return value.trim().replace(/[^\d]/g, "");
+}
+
+export function composeMsisdnDigits(
+  raw: string,
+  selectedPrefix: string,
+  knownPrefixes: readonly string[] = [],
+): string {
+  const digits = stripPhoneDigits(raw);
+  const selected = stripPhoneDigits(selectedPrefix);
+  const prefixes = uniquePrefixes([
+    ...knownPrefixes.map(stripPhoneDigits),
+    selected,
+  ]).sort((a, b) => b.length - a.length);
+
+  for (const prefix of prefixes) {
+    if (prefix && digits.startsWith(prefix)) {
+      return digits;
+    }
+  }
+
+  const local = digits.replace(/^0+/, "");
+  return selected ? `${selected}${local}` : local;
+}
+
+export function formatMsisdnDisplay(
+  msisdnDigits: string,
+  dialPrefix?: string,
+): string {
+  const digits = stripPhoneDigits(msisdnDigits);
+  if (!digits) {
+    return "";
+  }
+
+  const prefix = dialPrefix ? stripPhoneDigits(dialPrefix) : "";
+  if (prefix && digits.startsWith(prefix) && digits.length > prefix.length) {
+    const rest = digits.slice(prefix.length);
+    const grouped = rest.replace(/(\d{3})(?=\d)/g, "$1 ").trim();
+    return `+${prefix} ${grouped}`.trim();
+  }
+
+  return `+${digits}`;
+}
+
 export function normalizeMsisdn(
   value: unknown,
 ): { ok: true; msisdn: string } | { ok: false; reason: string } {
@@ -57,28 +101,28 @@ export function normalizeMsisdn(
     return { ok: false, reason: "msisdn is required" };
   }
 
-  const stripped = value.trim().replace(/[+\s-]/g, "");
-  // Local Rwanda 07… → E.164 2507…
-  const local = /^0[7-9][0-9]{8}$/.test(stripped)
-    ? `250${stripped.slice(1)}`
-    : stripped;
-
-  if (!MSISDN_DIGITS.test(local)) {
+  const digits = stripPhoneDigits(value);
+  if (!MSISDN_DIGITS.test(digits)) {
     return {
       ok: false,
       reason: "msisdn must be a valid mobile number (10-15 digits)",
     };
   }
 
-  // Rwanda MTN/Airtel shape, or any other E.164 (sandbox test MSISDNs, East Africa later)
-  if (RWANDA_MSISDN.test(local) || /^[1-9][0-9]{9,14}$/.test(local)) {
-    return { ok: true, msisdn: local };
-  }
+  return { ok: true, msisdn: digits };
+}
 
-  return {
-    ok: false,
-    reason: "msisdn must be a valid mobile number (10-15 digits)",
-  };
+function uniquePrefixes(values: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const value of values) {
+    if (!value || seen.has(value)) {
+      continue;
+    }
+    seen.add(value);
+    out.push(value);
+  }
+  return out;
 }
 
 /** Optional email for notifications. Empty/undefined → null (skip notify). */

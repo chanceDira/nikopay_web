@@ -20,6 +20,53 @@ export type CorridorProviderOption = {
   maxAmount: string;
 };
 
+export type CorridorCountryOption = {
+  country: string;
+  prefix: string;
+  displayName: string;
+};
+
+export function listPayoutCountries(conf: unknown): CorridorCountryOption[] {
+  const countries = asRecord(conf)?.countries;
+  if (!Array.isArray(countries)) {
+    return [];
+  }
+
+  const options: CorridorCountryOption[] = [];
+  for (const item of countries) {
+    const row = asRecord(item);
+    const country = asNonEmptyString(row?.country)?.toUpperCase();
+    const prefix = asNonEmptyString(row?.prefix)?.replace(/^\+/, "");
+    if (!country || !prefix || !/^\d{1,4}$/.test(prefix)) {
+      continue;
+    }
+    const providers = row?.providers;
+    if (!Array.isArray(providers) || providers.length === 0) {
+      continue;
+    }
+    options.push({
+      country,
+      prefix,
+      displayName: countryDisplayName(row?.displayName) ?? country,
+    });
+  }
+
+  return options.sort((a, b) => a.displayName.localeCompare(b.displayName));
+}
+
+function countryDisplayName(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+  const row = asRecord(value);
+  const en = asNonEmptyString(row?.en);
+  if (en) {
+    return en;
+  }
+  const fr = asNonEmptyString(row?.fr);
+  return fr;
+}
+
 export function listPayoutProviders(
   conf: unknown,
   country: string,
