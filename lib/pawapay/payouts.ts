@@ -10,6 +10,10 @@ import {
   pickPayoutCorridor,
   type PayoutCorridor,
 } from "@/lib/pawapay/corridor";
+import {
+  reusablePayoutId,
+  shouldStartPayout,
+} from "@/lib/pawapay/payout-guard";
 import { reconcilePayout } from "@/lib/pawapay/poll";
 import { resolvePayoutProvider } from "@/lib/pawapay/sandbox";
 import { settlePayout } from "@/lib/pawapay/settle";
@@ -87,7 +91,17 @@ async function payoutOne(
     return loaded;
   }
 
-  if (loaded.intent.status === "credited") {
+  const latest = await loadLatestPayoutTransfer(intentId);
+  if (!latest.ok) {
+    return { ok: false, reason: latest.reason, status: 503 };
+  }
+
+  if (
+    shouldStartPayout({
+      intentStatus: loaded.intent.status,
+      latestPayoutStatus: latest.row?.status ?? null,
+    })
+  ) {
     const started = await startPayout(loaded.intent, config, fetchImpl);
     if (!started.ok) {
       return started;
@@ -173,40 +187,49 @@ async function startPayout(
   config: PawapayConfig,
   fetchImpl: FetchLike,
 ): Promise<{ ok: true } | { ok: false; reason: string; status: number }> {
-  const allowed = transitionStatus("credited", "payout_pending");
-  if (!allowed.ok) {
-    return { ok: false, reason: allowed.reason, status: 503 };
-  }
-
   const corridorResult = await resolveCorridor(intent, config, fetchImpl);
   if (!corridorResult.ok) {
     return corridorResult;
   }
 
   const { corridor, amount, phoneNumber } = corridorResult;
-  const supabase = createAdminClient();
   const existing = await loadLatestPayoutTransfer(intent.id);
   if (!existing.ok) {
     return { ok: false, reason: existing.reason, status: 503 };
   }
-
-  const payoutId = existing.row?.payout_id ?? randomUUID();
-  const claimed = await supabase
-    .from("payment_intents")
-    .update({ status: "payout_pending" })
-    .eq("id", intent.id)
-    .eq("status", "credited")
-    .select("id")
-    .maybeSingle();
-
-  if (claimed.error) {
-    return { ok: false, reason: "unable to start payout", status: 503 };
-  }
-  if (!claimed.data && !existing.row) {
+  if (existing.row?.status === "successful") {
     return { ok: true };
   }
 
-  if (!existing.row) {
+  const reusableId = reusablePayoutId(existing.row);
+  const payoutId = reusableId ?? randomUUID();
+
+  if (intent.status === "credited") {
+    const allowed = transitionStatus("credited", "payout_pending");
+    if (!allowed.ok) {
+      return { ok: false, reason: allowed.reason, status: 503 };
+    }
+
+    const supabase = createAdminClient();
+    const claimed = await supabase
+      .from("payment_intents")
+      .update({ status: "payout_pending" })
+      .eq("id", intent.id)
+      .eq("status", "credited")
+      .select("id")
+      .maybeSingle();
+
+    if (claimed.error) {
+      return { ok: false, reason: "unable to start payout", status: 503 };
+    }
+    if (!claimed.data && !reusableId) {
+      return { ok: true };
+    }
+  } else if (intent.status !== "payout_pending") {
+    return { ok: true };
+  }
+
+  if (!reusableId) {
     const inserted = await insertPayoutTransfer({
       intentId: intent.id,
       payoutId,
@@ -240,7 +263,6 @@ async function startPayout(
   );
 
   if (!initiated.ok) {
-    await failOpenPayout(payoutId, initiated.reason, intent.id);
     return { ok: true };
   }
 
@@ -250,7 +272,6 @@ async function startPayout(
       initiated.data.failureReason?.failureCode ?? "rejected",
       intent.id,
     );
-    return { ok: true };
   }
 
   return { ok: true };
@@ -291,7 +312,6 @@ async function retryInitiate(
   );
 
   if (!initiated.ok) {
-    await failOpenPayout(row.payout_id, initiated.reason, intent.id);
     return { ok: true };
   }
 
@@ -394,10 +414,13 @@ async function failOpenPayout(
   reason: string,
   intentId: string,
 ): Promise<void> {
-  await updatePayoutTransfer(payoutId, {
+  const updated = await updatePayoutTransfer(payoutId, {
     status: "failed",
     providerReason: reason.slice(0, 240),
   });
+  if (!updated.ok || !updated.applied) {
+    return;
+  }
 
   const allowed = transitionStatus("payout_pending", "manual_review");
   if (!allowed.ok) {

@@ -1,5 +1,9 @@
 import { jsonData, jsonError, isUuid } from "@/lib/http";
 import { getPaymentIntent } from "@/lib/intents";
+import { getPawapayConfig } from "@/lib/pawapay/config";
+import { isOpenPayoutStatus } from "@/lib/pawapay/payout-guard";
+import { reconcilePayout } from "@/lib/pawapay/poll";
+import { loadLatestPayoutTransfer } from "@/lib/pawapay/transfers";
 import { runPayouts } from "@/lib/payouts";
 import { scanDeposits } from "@/lib/scan-deposits";
 
@@ -25,11 +29,10 @@ export async function POST(_request: Request, context: RouteContext) {
     return jsonError(afterScan.reason, afterScan.status);
   }
 
-  if (
-    afterScan.intent.status === "credited" ||
-    afterScan.intent.status === "payout_pending"
-  ) {
+  if (afterScan.intent.status === "credited") {
     await runPayouts(id);
+  } else if (afterScan.intent.status === "payout_pending") {
+    await reconcileOpenPayout(id);
   }
 
   const latest = await getPaymentIntent(id);
@@ -38,4 +41,27 @@ export async function POST(_request: Request, context: RouteContext) {
   }
 
   return jsonData(latest.intent);
+}
+
+async function reconcileOpenPayout(intentId: string): Promise<void> {
+  const configured = getPawapayConfig();
+  if (!configured.ok) {
+    return;
+  }
+
+  const transfer = await loadLatestPayoutTransfer(intentId);
+  if (!transfer.ok || !transfer.row) {
+    return;
+  }
+  if (transfer.row.status === "failed") {
+    return;
+  }
+  if (
+    !isOpenPayoutStatus(transfer.row.status) &&
+    transfer.row.status !== "successful"
+  ) {
+    return;
+  }
+
+  await reconcilePayout(transfer.row.payout_id, configured.config);
 }

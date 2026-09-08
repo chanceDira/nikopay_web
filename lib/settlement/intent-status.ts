@@ -7,6 +7,12 @@ import type {
 import { PAYMENT_STATUSES } from "@/lib/settlement/types";
 
 const TERMINAL_STATUSES = new Set<PaymentStatus>(["paid", "failed", "expired"]);
+const USER_CLOSED_STATUSES = new Set<PaymentStatus>([
+  "paid",
+  "failed",
+  "expired",
+  "manual_review",
+]);
 
 export function isPaymentStatus(value: unknown): value is PaymentStatus {
   return (
@@ -17,6 +23,10 @@ export function isPaymentStatus(value: unknown): value is PaymentStatus {
 
 export function isTerminalStatus(status: PaymentStatus): boolean {
   return TERMINAL_STATUSES.has(status);
+}
+
+export function isUserClosedStatus(status: PaymentStatus): boolean {
+  return USER_CLOSED_STATUSES.has(status);
 }
 
 export function transitionStatus(

@@ -236,7 +236,7 @@ export function AdminPawapayDashboard() {
             Payout history
           </h4>
           <p className="text-[11px] font-mono text-niko-muted">
-            Wallet debit (paid): {formatRwf(paidDebit)}
+            Recipient paid: {formatRwf(paidDebit)}
           </p>
         </div>
         <div className="rounded-md border border-niko-border/40 overflow-hidden">
@@ -245,7 +245,7 @@ export function AdminPawapayDashboard() {
               <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs font-mono uppercase tracking-wider text-niko-muted">
                 <th className="px-4 py-3">Sent</th>
                 <th className="px-4 py-3">Corridor</th>
-                <th className="px-4 py-3">Wallet debit</th>
+                <th className="px-4 py-3">Recipient amount</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Payout id</th>
                 <th className="px-4 py-3 text-right">Intent</th>

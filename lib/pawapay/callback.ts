@@ -60,6 +60,21 @@ export function parsePayoutCallback(body: unknown): ParsedCallback | null {
   };
 }
 
+export function parsePayoutStatusBody(body: unknown): ParsedCallback | null {
+  const record = asRecord(body);
+  if (!record) {
+    return null;
+  }
+
+  const search =
+    typeof record.status === "string" ? record.status.trim().toUpperCase() : "";
+  if (search === "FOUND") {
+    return parsePayoutCallback(record.data);
+  }
+
+  return parsePayoutCallback(record);
+}
+
 export async function applyPayoutCallback(
   body: unknown,
   callbackStore?: CallbackStore,
@@ -71,7 +86,7 @@ export async function applyPayoutCallback(
     updateTransfer: updatePayoutTransfer,
   };
 
-  const parsed = parsePayoutCallback(body);
+  const parsed = parsePayoutStatusBody(body);
   if (!parsed) {
     return { ok: false, reason: "callback payload is invalid" };
   }
@@ -84,7 +99,6 @@ export async function applyPayoutCallback(
     return { ok: false, reason: "payout not found" };
   }
 
-  // A resent or replayed callback must not rewrite a settled row.
   if (TERMINAL.has(existing.row.status)) {
     return {
       ok: true,
@@ -109,8 +123,8 @@ export async function applyPayoutCallback(
     ok: true,
     outcome: {
       payoutId: parsed.payoutId,
-      status: parsed.status,
-      applied: true,
+      status: updated.applied ? parsed.status : existing.row.status,
+      applied: updated.applied,
     },
   };
 }

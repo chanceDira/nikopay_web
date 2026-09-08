@@ -21,9 +21,9 @@ const ADMIN_TRANSITIONS: Readonly<
   credited: [],
   payout_pending: [],
   paid: [],
-  failed: ["payout_pending", "manual_review"],
+  failed: ["manual_review"],
   expired: ["manual_review"],
-  manual_review: ["credited", "payout_pending", "failed", "expired"],
+  manual_review: ["credited", "failed", "expired"],
 };
 
 export function allowedTransitions(

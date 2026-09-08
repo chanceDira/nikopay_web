@@ -99,7 +99,7 @@ export function AdminPayoutsTable() {
                 <th className="px-6 py-4">Sent</th>
                 <th className="px-6 py-4">Corridor</th>
                 <th className="px-6 py-4">Recipient</th>
-                <th className="px-6 py-4">Wallet debit</th>
+                <th className="px-6 py-4">Recipient amount</th>
                 <th className="px-6 py-4">Payout status</th>
                 <th className="px-6 py-4">Provider ref</th>
                 <th className="px-6 py-4">Reason</th>
@@ -169,6 +169,11 @@ export function AdminPayoutsTable() {
           </table>
         </div>
       </div>
+
+      <p className="text-[11px] text-niko-muted">
+        Recipient amount is the PawaPay wallet debit sent to the user. PawaPay
+        does not return a per-payout provider fee on the API.
+      </p>
 
       {filtered.length > 0 ? (
         <div className="flex items-center justify-between">

@@ -72,7 +72,7 @@ export async function reconcilePayout(
     return null;
   }
 
-  const applied = await store.apply(lookup.data.data);
+  const applied = await store.apply(lookup.data);
   if (!applied.ok) {
     return null;
   }
