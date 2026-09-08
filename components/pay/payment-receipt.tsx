@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useIntentView } from "@/components/pay/use-intent-view";
 import { CONTACT } from "@/lib/contact";
-import { formatRwf, formatUsdt } from "@/lib/rates";
+import { formatLocalAmount, formatUsdt } from "@/lib/rates";
 import { feeUsdtForAmount } from "@/lib/settlement/quote";
 
 type PaymentReceiptProps = {
@@ -180,7 +180,10 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
               Gross Payout
             </span>
             <span className="font-mono text-foreground print:text-black">
-              {formatRwf(intent.usdtAmount * intent.rate)}
+              {formatLocalAmount(
+                intent.usdtAmount * intent.rate,
+                intent.currency,
+              )}
             </span>
           </div>
           <div className="flex justify-between text-xs">
@@ -192,16 +195,16 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
               {formatUsdt(
                 feeUsdtForAmount(intent.usdtAmount, intent.feePercent) ?? 0,
               )}{" "}
-              ({formatRwf(intent.feeRwf)})
+              ({formatLocalAmount(intent.feeRwf, intent.currency)})
             </span>
           </div>
           <div className="h-px bg-niko-border/60 print:bg-neutral-200 my-1" />
           <div className="flex justify-between items-baseline">
             <span className="text-xs font-bold text-foreground print:text-black">
-              Amount Credited (RWF)
+              Amount Credited ({intent.currency})
             </span>
             <span className="text-base font-extrabold text-niko-teal print:text-black font-mono">
-              {formatRwf(intent.netRwf)}
+              {formatLocalAmount(intent.netRwf, intent.currency)}
             </span>
           </div>
         </div>

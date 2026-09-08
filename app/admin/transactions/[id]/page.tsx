@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { PaymentIntent, PaymentStatus } from "@/lib/settlement/types";
 import { canTransition } from "@/lib/settlement/transitions";
 import { feeUsdtForAmount } from "@/lib/settlement/quote";
-import { formatUsdt } from "@/lib/rates";
+import { formatLocalAmount, formatUsdt } from "@/lib/rates";
 import { PageHeader } from "@/components/shared/page-header";
 import type { PayoutLookupData } from "@/lib/pawapay/types";
 
@@ -111,14 +111,8 @@ export default function AdminTransactionDetailPage({ params }: Props) {
     void patch({ depositTx: editTxHash || null, momoRef: editMomoRef || null });
   };
 
-  const formatRwf = (val: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "RWF",
-      maximumFractionDigits: 0,
-    })
-      .format(val)
-      .replace("RWF", "RWF ");
+  const formatMoney = (val: number, currency = intent?.currency ?? "RWF") =>
+    formatLocalAmount(val, currency);
 
   const statusBadge = (status: PaymentStatus) => {
     const map: Record<PaymentStatus, string> = {
@@ -208,7 +202,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                     RWF payout (net)
                   </span>
                   <span className="text-niko-teal-bright font-bold">
-                    {formatRwf(intent.netRwf)}
+                    {formatMoney(intent.netRwf)}
                   </span>
                 </div>
                 <div>
@@ -216,7 +210,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                     Exchange rate
                   </span>
                   <span className="text-foreground">
-                    1 USDT = {intent.rate} RWF
+                    1 USDT = {intent.rate} {intent.currency}
                   </span>
                 </div>
                 <div>
@@ -224,7 +218,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                     Service fee
                   </span>
                   <span className="text-foreground">
-                    {intent.feePercent}% ({formatRwf(intent.feeRwf)}
+                    {intent.feePercent}% ({formatMoney(intent.feeRwf)}
                     {feeUsdtForAmount(intent.usdtAmount, intent.feePercent) !=
                     null
                       ? ` · ${formatUsdt(feeUsdtForAmount(intent.usdtAmount, intent.feePercent) ?? 0)} from USDT`
@@ -334,7 +328,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                       Recipient amount
                     </span>
                     <span className="text-foreground font-bold">
-                      {formatRwf(intent.netRwf)}
+                      {formatMoney(intent.netRwf)}
                     </span>
                   </div>
                   <div>

@@ -23,6 +23,9 @@ export function isChainId(value: unknown): value is ChainId {
 }
 
 export type FxConfig = {
+  currency: string;
+  usdtToLocal: number;
+  /** @deprecated use usdtToLocal; kept for RWF call sites */
   usdtToRwf: number;
   feePercent: number;
   minUsdt: number;
@@ -32,6 +35,9 @@ export type Quote = {
   usdtAmount: number;
   rate: number;
   feePercent: number;
+  currency: string;
+  feeLocal: number;
+  netLocal: number;
   feeRwf: number;
   netRwf: number;
   chain: ChainId;

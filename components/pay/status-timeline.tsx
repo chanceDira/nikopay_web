@@ -1,6 +1,6 @@
 "use client";
 
-import { formatRwf, formatUsdt } from "@/lib/rates";
+import { formatLocalAmount, formatUsdt } from "@/lib/rates";
 import { useIntentView } from "@/components/pay/use-intent-view";
 import type { IntentPayout } from "@/lib/settlement/types";
 import Link from "next/link";
@@ -471,21 +471,21 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
 
             <dt className="text-niko-muted">Rate Applied</dt>
             <dd className="font-mono text-right text-foreground">
-              1 USDT = {intent.rate.toLocaleString()} RWF
+              1 USDT = {intent.rate.toLocaleString()} {intent.currency}
             </dd>
 
             <dt className="text-niko-muted">
               Network Fee ({intent.feePercent}%)
             </dt>
             <dd className="font-mono text-right text-red-400">
-              -{formatRwf(intent.feeRwf)}
+              -{formatLocalAmount(intent.feeRwf, intent.currency)}
             </dd>
 
             <dt className="text-foreground font-semibold">
               Recipient Receives
             </dt>
             <dd className="font-mono font-bold text-right text-niko-teal-bright">
-              {formatRwf(intent.netRwf)}
+              {formatLocalAmount(intent.netRwf, intent.currency)}
             </dd>
           </dl>
         </div>

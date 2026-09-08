@@ -391,10 +391,10 @@ async function resolveCorridor(
 }
 
 function formatCorridorAmount(
-  netRwf: number,
+  netLocal: number,
   corridor: PayoutCorridor,
 ): string | null {
-  const amount = formatPayoutAmount(netRwf, corridor.decimalsInAmount);
+  const amount = formatPayoutAmount(netLocal, corridor.decimalsInAmount);
   if (!amount) {
     return null;
   }

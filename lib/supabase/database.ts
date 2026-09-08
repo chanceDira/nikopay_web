@@ -129,6 +129,7 @@ export type Database = {
       fx_rates: {
         Row: {
           id: string;
+          currency: string;
           usdt_to_rwf: number;
           fee_percent: number;
           min_usdt: number;
@@ -138,6 +139,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
+          currency?: string;
           usdt_to_rwf: number;
           fee_percent: number;
           min_usdt: number;
@@ -147,6 +149,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          currency?: string;
           usdt_to_rwf?: number;
           fee_percent?: number;
           min_usdt?: number;

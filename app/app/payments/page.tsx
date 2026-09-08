@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { fetchLiveIntentsByWallet, isAborted } from "@/lib/pay-api";
 import type { PaymentIntentSummary } from "@/lib/settlement/types";
-import { formatRwf, formatUsdt } from "@/lib/rates";
+import { formatLocalAmount, formatUsdt } from "@/lib/rates";
 import { PageHeader } from "@/components/shared/page-header";
 import { useWalletSession } from "@/components/pay/use-wallet-session";
 
@@ -192,7 +192,7 @@ export default function PaymentsHistoryPage() {
                     </td>
                     <td className="px-4 py-4 sm:px-6 space-y-0.5">
                       <p className="font-mono text-foreground font-bold">
-                        {formatRwf(intent.netRwf)}
+                        {formatLocalAmount(intent.netRwf, intent.currency)}
                       </p>
                     </td>
                     <td className="px-4 py-4 sm:px-6">

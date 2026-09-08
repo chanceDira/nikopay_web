@@ -46,6 +46,11 @@ export function isQuotePayload(value: unknown): value is Quote {
     Number.isFinite(quote.rate) &&
     typeof quote.feePercent === "number" &&
     Number.isFinite(quote.feePercent) &&
+    typeof quote.currency === "string" &&
+    typeof quote.feeLocal === "number" &&
+    Number.isFinite(quote.feeLocal) &&
+    typeof quote.netLocal === "number" &&
+    Number.isFinite(quote.netLocal) &&
     typeof quote.feeRwf === "number" &&
     Number.isFinite(quote.feeRwf) &&
     typeof quote.netRwf === "number" &&
@@ -191,11 +196,12 @@ export async function requestQuote(
   usdtAmount: number,
   chain: Quote["chain"],
   signal?: AbortSignal,
+  currency = "RWF",
 ): Promise<ApiResult<Quote>> {
   return requestJson("/api/quotes", isQuotePayload, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ usdtAmount, chain }),
+    body: JSON.stringify({ usdtAmount, chain, currency }),
     signal,
   });
 }

@@ -99,9 +99,21 @@ export async function createPaymentIntent(input: {
     return { ok: false, reason: notifyEmail.reason, status: 400 };
   }
 
-  const quoted = await createServerQuote(input.usdtAmount, input.chain);
+  const quoted = await createServerQuote(
+    input.usdtAmount,
+    input.chain,
+    currency.currency,
+  );
   if (!quoted.ok) {
     return quoted;
+  }
+
+  if (quoted.quote.currency !== currency.currency) {
+    return {
+      ok: false,
+      reason: "quote currency does not match corridor",
+      status: 409,
+    };
   }
 
   const treasury = await loadActiveTreasury(quoted.quote.chain);

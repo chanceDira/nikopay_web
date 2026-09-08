@@ -1,5 +1,6 @@
 import { jsonData, jsonError, readJsonBody, asRecord } from "@/lib/http";
 import { authorizeAdmin } from "@/lib/admin-auth";
+import { normalizeCorridorCurrency } from "@/lib/corridor";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toNumber } from "@/lib/numbers";
 
@@ -10,13 +11,16 @@ export async function GET(request: Request) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("fx_rates")
-    .select("usdt_to_rwf, fee_percent, min_usdt, effective_from, created_at")
+    .select(
+      "currency, usdt_to_rwf, fee_percent, min_usdt, effective_from, created_at",
+    )
     .order("effective_from", { ascending: false })
-    .limit(20);
+    .limit(40);
 
   if (error) return jsonError("unable to load rates", 503);
 
   const rows = (data ?? []).map((r) => ({
+    currency: r.currency,
     rate: toNumber(r.usdt_to_rwf),
     feePercent: toNumber(r.fee_percent),
     minUsdt: toNumber(r.min_usdt),
@@ -36,6 +40,9 @@ export async function POST(request: Request) {
 
   const body = asRecord(parsed.body);
   if (!body) return jsonError("invalid request body", 400);
+
+  const currencyResult = normalizeCorridorCurrency(body.currency ?? "RWF");
+  if (!currencyResult.ok) return jsonError(currencyResult.reason, 400);
 
   const rate = typeof body.rate === "number" ? body.rate : Number(body.rate);
   const feePercent =
@@ -58,9 +65,11 @@ export async function POST(request: Request) {
   await supabase
     .from("fx_rates")
     .update({ effective_to: now })
+    .eq("currency", currencyResult.currency)
     .is("effective_to", null);
 
   const { error } = await supabase.from("fx_rates").insert({
+    currency: currencyResult.currency,
     usdt_to_rwf: rate,
     fee_percent: feePercent,
     min_usdt: minUsdt,

@@ -2,24 +2,29 @@
 
 import { useEffect, useState } from "react";
 import { isAborted, requestQuote } from "@/lib/pay-api";
-import { usdtForTargetRwf } from "@/lib/settlement/quote";
+import { usdtForTargetLocal } from "@/lib/settlement/quote";
 import type { ChainId, Quote } from "@/lib/settlement/types";
 
 const QUOTE_PROBE_USDT = 10;
 const QUOTE_DEBOUNCE_MS = 300;
 
-export type AmountEntry = "rwf" | "usdt";
+export type AmountEntry = "local" | "usdt";
+
+/** @deprecated use AmountEntry "local" */
+export type LegacyAmountEntry = "rwf" | "usdt";
 
 type QuoteStatus = "idle" | "loading" | "ready" | "error";
 
 type LiveFx = {
   rate: number;
   feePercent: number;
+  currency: string;
 };
 
 type Snapshot = {
   key: string;
   chain: ChainId;
+  currency: string;
   quote: Quote | null;
   fx: LiveFx | null;
   status: QuoteStatus;
@@ -28,23 +33,32 @@ type Snapshot = {
 
 export function useLiveQuote(input: {
   chain: ChainId;
-  entry: AmountEntry;
-  rwfPayout: number;
+  currency: string;
+  entry: AmountEntry | LegacyAmountEntry;
+  localPayout: number;
   usdtSell: number;
+  /** @deprecated use localPayout */
+  rwfPayout?: number;
 }) {
-  const { chain, entry, rwfPayout, usdtSell } = input;
+  const currency = input.currency.trim().toUpperCase() || "RWF";
+  const entry: AmountEntry =
+    input.entry === "rwf" ? "local" : (input.entry as AmountEntry);
+  const localPayout =
+    input.localPayout > 0 ? input.localPayout : (input.rwfPayout ?? 0);
+  const { chain, usdtSell } = input;
   const activeAmount =
-    entry === "rwf"
-      ? rwfPayout > 0
-        ? rwfPayout
+    entry === "local"
+      ? localPayout > 0
+        ? localPayout
         : 0
       : usdtSell > 0
         ? usdtSell
         : 0;
-  const requestKey = `${chain}:${entry}:${activeAmount}`;
+  const requestKey = `${chain}:${currency}:${entry}:${activeAmount}`;
   const [snapshot, setSnapshot] = useState<Snapshot>({
     key: "",
     chain,
+    currency,
     quote: null,
     fx: null,
     status: "idle",
@@ -60,6 +74,7 @@ export function useLiveQuote(input: {
         QUOTE_PROBE_USDT,
         chain,
         controller.signal,
+        currency,
       );
       if (controller.signal.aborted || isAborted(probe)) {
         return;
@@ -68,6 +83,7 @@ export function useLiveQuote(input: {
         setSnapshot({
           key: requestKey,
           chain,
+          currency,
           quote: null,
           fx: null,
           status: "error",
@@ -79,12 +95,14 @@ export function useLiveQuote(input: {
       const liveFx = {
         rate: probe.data.rate,
         feePercent: probe.data.feePercent,
+        currency: probe.data.currency,
       };
 
       if (activeAmount <= 0) {
         setSnapshot({
           key: requestKey,
           chain,
+          currency,
           quote: null,
           fx: liveFx,
           status: "ready",
@@ -94,9 +112,9 @@ export function useLiveQuote(input: {
       }
 
       let usdt = usdtSell;
-      if (entry === "rwf") {
-        const derived = usdtForTargetRwf(
-          rwfPayout,
+      if (entry === "local") {
+        const derived = usdtForTargetLocal(
+          localPayout,
           liveFx.rate,
           liveFx.feePercent,
         );
@@ -106,7 +124,12 @@ export function useLiveQuote(input: {
         usdt = derived;
       }
 
-      const quoted = await requestQuote(usdt, chain, controller.signal);
+      const quoted = await requestQuote(
+        usdt,
+        chain,
+        controller.signal,
+        currency,
+      );
       if (controller.signal.aborted || isAborted(quoted)) {
         return;
       }
@@ -114,6 +137,7 @@ export function useLiveQuote(input: {
         setSnapshot({
           key: requestKey,
           chain,
+          currency,
           quote: null,
           fx: liveFx,
           status: "error",
@@ -125,10 +149,12 @@ export function useLiveQuote(input: {
       setSnapshot({
         key: requestKey,
         chain,
+        currency,
         quote: quoted.data,
         fx: {
           rate: quoted.data.rate,
           feePercent: quoted.data.feePercent,
+          currency: quoted.data.currency,
         },
         status: "ready",
         error: "",
@@ -139,10 +165,13 @@ export function useLiveQuote(input: {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [requestKey, chain, entry, rwfPayout, usdtSell, activeAmount]);
+  }, [requestKey, chain, currency, entry, localPayout, usdtSell, activeAmount]);
 
   const stale = snapshot.key !== requestKey;
-  const fx = snapshot.chain === chain ? snapshot.fx : null;
+  const fx =
+    snapshot.chain === chain && snapshot.currency === currency
+      ? snapshot.fx
+      : null;
 
   return {
     quote: stale ? null : snapshot.quote,

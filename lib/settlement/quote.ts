@@ -21,6 +21,7 @@ export type CreateQuoteResult = CreateQuoteSuccess | CreateQuoteFailure;
 
 export function createQuote(input: CreateQuoteInput): CreateQuoteResult {
   const { usdtAmount, chain, fx } = input;
+  const rate = fx.usdtToLocal || fx.usdtToRwf;
 
   if (!Number.isFinite(usdtAmount) || usdtAmount <= 0) {
     return { ok: false, reason: "usdt amount must be a positive number" };
@@ -33,12 +34,17 @@ export function createQuote(input: CreateQuoteInput): CreateQuoteResult {
     };
   }
 
-  if (!Number.isFinite(fx.usdtToRwf) || fx.usdtToRwf <= 0) {
+  if (!Number.isFinite(rate) || rate <= 0) {
     return { ok: false, reason: "exchange rate must be a positive number" };
   }
 
   if (!Number.isFinite(fx.feePercent) || fx.feePercent < 0) {
     return { ok: false, reason: "fee percent must be zero or positive" };
+  }
+
+  const currency = fx.currency?.trim().toUpperCase() || "RWF";
+  if (!/^[A-Z]{3}$/.test(currency)) {
+    return { ok: false, reason: "currency must be a 3-letter ISO code" };
   }
 
   const expiresAt =
@@ -50,44 +56,56 @@ export function createQuote(input: CreateQuoteInput): CreateQuoteResult {
     return { ok: false, reason: "expiresAt must be a valid timestamp" };
   }
 
-  const grossRwf = usdtAmount * fx.usdtToRwf;
-  const feeRwf = grossRwf * (fx.feePercent / 100);
-  const netRwf = grossRwf - feeRwf;
+  const grossLocal = usdtAmount * rate;
+  const feeLocal = grossLocal * (fx.feePercent / 100);
+  const netLocal = grossLocal - feeLocal;
 
   return {
     ok: true,
     quote: {
       usdtAmount,
       chain,
-      rate: fx.usdtToRwf,
+      rate,
       feePercent: fx.feePercent,
-      feeRwf,
-      netRwf,
+      currency,
+      feeLocal,
+      netLocal,
+      feeRwf: feeLocal,
+      netRwf: netLocal,
       expiresAt,
     },
   };
 }
 
-export function usdtForTargetRwf(
-  rwfPayout: number,
+export function usdtForTargetLocal(
+  localPayout: number,
   rate: number,
   feePercent: number,
 ): number | null {
   const factor = rate * (1 - feePercent / 100);
   if (
-    !Number.isFinite(rwfPayout) ||
-    rwfPayout <= 0 ||
+    !Number.isFinite(localPayout) ||
+    localPayout <= 0 ||
     !Number.isFinite(factor) ||
     factor <= 0
   ) {
     return null;
   }
 
-  return Number((rwfPayout / factor).toFixed(6));
+  return Number((localPayout / factor).toFixed(6));
 }
 
-/** Net RWF the recipient receives for a given USDT sell amount. */
-export function netRwfForUsdt(
+/** @deprecated use usdtForTargetLocal */
+export function usdtForTargetRwf(
+  rwfPayout: number,
+  rate: number,
+  feePercent: number,
+): number | null {
+  return usdtForTargetLocal(rwfPayout, rate, feePercent);
+}
+
+/** Net local currency the recipient receives for a given USDT sell amount. */
+export function netLocalForUsdt(
   usdtAmount: number,
   rate: number,
   feePercent: number,
@@ -104,9 +122,18 @@ export function netRwfForUsdt(
     return null;
   }
 
-  const grossRwf = usdtAmount * rate;
-  const feeRwf = grossRwf * (feePercent / 100);
-  return Number((grossRwf - feeRwf).toFixed(2));
+  const grossLocal = usdtAmount * rate;
+  const feeLocal = grossLocal * (feePercent / 100);
+  return Number((grossLocal - feeLocal).toFixed(2));
+}
+
+/** @deprecated use netLocalForUsdt */
+export function netRwfForUsdt(
+  usdtAmount: number,
+  rate: number,
+  feePercent: number,
+): number | null {
+  return netLocalForUsdt(usdtAmount, rate, feePercent);
 }
 
 export function feeUsdtForAmount(

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAdminIntents } from "@/components/admin/use-admin-intents";
 import { getPublicChain } from "@/lib/chain-config";
 import { paginate } from "@/lib/paginate";
-import { formatRwf, formatUsdt } from "@/lib/rates";
+import { formatLocalAmount, formatUsdt } from "@/lib/rates";
 import { canTransition } from "@/lib/settlement/transitions";
 import type {
   ChainId,
@@ -188,12 +188,16 @@ function ReviewCard(props: {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 text-xs font-mono">
         <Field label="USDT" value={formatUsdt(item.usdtAmount)} />
-        <Field label="Payout (net)" value={formatRwf(item.netRwf)} emphasis />
+        <Field
+          label="Payout (net)"
+          value={formatLocalAmount(item.netRwf, item.currency)}
+          emphasis
+        />
         <Field
           label="Fee"
-          value={`${item.feePercent}% (${formatRwf(item.feeRwf)})`}
+          value={`${item.feePercent}% (${formatLocalAmount(item.feeRwf, item.currency)})`}
         />
-        <Field label="Rate" value={`1 USDT = ${item.rate} RWF`} />
+        <Field label="Rate" value={`1 USDT = ${item.rate} ${item.currency}`} />
         <Field label="Recipient" value={item.msisdn} />
         <Field label="Payer wallet" value={shortHex(item.walletAddress)} />
         <Field label="Treasury" value={shortHex(item.treasuryAddress)} />

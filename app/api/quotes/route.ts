@@ -23,7 +23,11 @@ export async function POST(request: Request) {
     return jsonError(amount.reason, 400);
   }
 
-  const result = await createServerQuote(amount.amount, body.chain);
+  const result = await createServerQuote(
+    amount.amount,
+    body.chain,
+    body.currency ?? "RWF",
+  );
   if (!result.ok) {
     return jsonError(result.reason, result.status);
   }
