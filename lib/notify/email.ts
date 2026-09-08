@@ -2,12 +2,13 @@ import nodemailer from "nodemailer";
 
 import { getPublicChain } from "@/lib/chain-config";
 import { CONTACT } from "@/lib/contact";
-import { formatRwf, formatUsdt } from "@/lib/rates";
+import { formatLocalAmount, formatUsdt } from "@/lib/rates";
 import type { ChainId } from "@/lib/settlement/types";
 import { resolvePublicSiteUrl } from "@/lib/site-url";
 
 export type PayoutEmailProofs = {
   chain: ChainId;
+  currency?: string;
   depositTx?: string;
   depositExplorerUrl?: string;
   momoReferenceId?: string;
@@ -90,7 +91,8 @@ export function buildPaidEmailContent(
 ): { subject: string; text: string; html: string } {
   const statusUrl = `${siteUrl}/app/payments/${input.intentId}`;
   const subject = "NikoPay payout confirmed";
-  const amount = formatRwf(input.netRwf);
+  const currency = input.currency || "RWF";
+  const amount = formatLocalAmount(input.netRwf, currency);
   const usdt = formatUsdt(input.usdtAmount);
   const chainName = getPublicChain(input.chain).name;
   const momoFinancial = input.momoFinancialId ?? input.momoRef ?? "confirmed";
@@ -102,8 +104,12 @@ export function buildPaidEmailContent(
     `Payment ID: ${input.intentId}`,
     `USDT deposited: ${usdt}`,
     `Amount paid: ${amount}`,
-    ...(input.rate !== undefined ? [`Rate: ${input.rate} RWF per USDT`] : []),
-    ...(input.feeRwf !== undefined ? [`Fee: ${formatRwf(input.feeRwf)}`] : []),
+    ...(input.rate !== undefined
+      ? [`Rate: ${input.rate} ${currency} per USDT`]
+      : []),
+    ...(input.feeRwf !== undefined
+      ? [`Fee: ${formatLocalAmount(input.feeRwf, currency)}`]
+      : []),
     `Recipient (mobile money): ${input.msisdn}`,
     ...(input.walletAddress ? [`Sender wallet: ${input.walletAddress}`] : []),
     `Chain: ${chainName}`,
@@ -132,10 +138,10 @@ export function buildPaidEmailContent(
     detailItem("USDT deposited", usdt),
     detailItem("Amount paid", amount),
     ...(input.rate !== undefined
-      ? [detailItem("Rate", `${input.rate} RWF per USDT`)]
+      ? [detailItem("Rate", `${input.rate} ${currency} per USDT`)]
       : []),
     ...(input.feeRwf !== undefined
-      ? [detailItem("Fee", formatRwf(input.feeRwf))]
+      ? [detailItem("Fee", formatLocalAmount(input.feeRwf, currency))]
       : []),
     detailItem("Recipient (mobile money)", input.msisdn),
     ...(input.walletAddress
@@ -179,7 +185,8 @@ export function buildFailedEmailContent(
 ): { subject: string; text: string; html: string } {
   const statusUrl = `${siteUrl}/app/payments/${input.intentId}`;
   const subject = "NikoPay payout did not complete";
-  const amount = formatRwf(input.netRwf);
+  const currency = input.currency || "RWF";
+  const amount = formatLocalAmount(input.netRwf, currency);
   const usdt = formatUsdt(input.usdtAmount);
   const chainName = getPublicChain(input.chain).name;
   const momoLabel = input.momoStatus === "timeout" ? "timed out" : "failed";
@@ -192,8 +199,12 @@ export function buildFailedEmailContent(
     `Payment ID: ${input.intentId}`,
     `USDT deposited: ${usdt}`,
     `Intended payout amount: ${amount}`,
-    ...(input.rate !== undefined ? [`Rate: ${input.rate} RWF per USDT`] : []),
-    ...(input.feeRwf !== undefined ? [`Fee: ${formatRwf(input.feeRwf)}`] : []),
+    ...(input.rate !== undefined
+      ? [`Rate: ${input.rate} ${currency} per USDT`]
+      : []),
+    ...(input.feeRwf !== undefined
+      ? [`Fee: ${formatLocalAmount(input.feeRwf, currency)}`]
+      : []),
     `Recipient (mobile money): ${input.msisdn}`,
     ...(input.walletAddress ? [`Sender wallet: ${input.walletAddress}`] : []),
     `Chain: ${chainName}`,
@@ -231,10 +242,14 @@ export function buildFailedEmailContent(
       ${detailItem("Intended payout amount", amount)}
       ${
         input.rate !== undefined
-          ? detailItem("Rate", `${input.rate} RWF per USDT`)
+          ? detailItem("Rate", `${input.rate} ${currency} per USDT`)
           : ""
       }
-      ${input.feeRwf !== undefined ? detailItem("Fee", formatRwf(input.feeRwf)) : ""}
+      ${
+        input.feeRwf !== undefined
+          ? detailItem("Fee", formatLocalAmount(input.feeRwf, currency))
+          : ""
+      }
       ${detailItem("Recipient (mobile money)", input.msisdn)}
       ${
         input.walletAddress

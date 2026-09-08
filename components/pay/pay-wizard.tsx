@@ -32,11 +32,11 @@ import {
 import { readLocal } from "@/lib/read-local";
 import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
 import {
-  netRwfForUsdt,
-  usdtForTargetRwf,
+  netLocalForUsdt,
+  usdtForTargetLocal,
   feeUsdtForAmount,
 } from "@/lib/settlement/quote";
-import { formatRwf, formatUsdt } from "@/lib/rates";
+import { formatLocalAmount, formatUsdt } from "@/lib/rates";
 import { asWalletKind, type WalletKind } from "@/lib/wallet/browser";
 import {
   connectInjectedWallet,
@@ -82,7 +82,7 @@ export function PayWizard() {
 
   const [step, setStep] = useState<Step>(1);
   const [chain, setChain] = useState<ChainId>("base");
-  const [amountEntry, setAmountEntry] = useState<AmountEntry>("rwf");
+  const [amountEntry, setAmountEntry] = useState<AmountEntry>("local");
   const [amountRwf, setAmountRwf] = useState<string>("");
   const [amountUsdt, setAmountUsdt] = useState<string>("");
   const [msisdn, setMsisdn] = useState<string>("");
@@ -122,8 +122,9 @@ export function PayWizard() {
     error: quoteError,
   } = useLiveQuote({
     chain,
+    currency: corridorCurrency,
     entry: amountEntry,
-    rwfPayout,
+    localPayout: rwfPayout,
     usdtSell,
   });
 
@@ -267,15 +268,20 @@ export function PayWizard() {
     setStep(2);
   };
 
+  const displayCurrency =
+    (quote?.currency ?? fx?.currency ?? corridorCurrency) || "RWF";
+  const formatPayout = (amount: number) =>
+    formatLocalAmount(amount, displayCurrency);
+
   const displayRate = quote?.rate ?? fx?.rate ?? rate;
   const displayFeePercent = quote?.feePercent ?? fx?.feePercent ?? feePercent;
-  const hasAmount = amountEntry === "rwf" ? rwfPayout > 0 : usdtSell > 0;
+  const hasAmount = amountEntry === "local" ? rwfPayout > 0 : usdtSell > 0;
   const estimatedUsdt =
     amountEntry === "usdt"
       ? usdtSell
       : rwfPayout / (displayRate * (1 - displayFeePercent / 100));
   const estimatedNetRwf =
-    amountEntry === "rwf"
+    amountEntry === "local"
       ? rwfPayout
       : usdtSell * displayRate * (1 - displayFeePercent / 100);
   const amountQuoteReady =
@@ -299,7 +305,7 @@ export function PayWizard() {
     if (!/^\d*$/.test(value)) {
       return;
     }
-    setAmountEntry("rwf");
+    setAmountEntry("local");
     setAmountRwf(value);
     if (amountError) setAmountError("");
 
@@ -308,7 +314,7 @@ export function PayWizard() {
       setAmountUsdt("");
       return;
     }
-    const usdt = usdtForTargetRwf(parsed, previewRate, previewFee);
+    const usdt = usdtForTargetLocal(parsed, previewRate, previewFee);
     setAmountUsdt(usdt != null ? formatUsdtInput(usdt) : "");
   };
 
@@ -325,14 +331,14 @@ export function PayWizard() {
       setAmountRwf("");
       return;
     }
-    const rwf = netRwfForUsdt(parsed, previewRate, previewFee);
-    setAmountRwf(rwf != null ? String(Math.round(rwf)) : "");
+    const local = netLocalForUsdt(parsed, previewRate, previewFee);
+    setAmountRwf(local != null ? String(Math.round(local)) : "");
   };
 
   const validateAmount = () => {
-    if (amountEntry === "rwf") {
+    if (amountEntry === "local") {
       if (!amountRwf || isNaN(rwfPayout) || rwfPayout <= 0) {
-        setAmountError("Enter a valid RWF payout amount");
+        setAmountError(`Enter a valid ${corridorCurrency} payout amount`);
         return false;
       }
     } else if (!amountUsdt || isNaN(usdtSell) || usdtSell <= 0) {
@@ -886,11 +892,11 @@ export function PayWizard() {
                 htmlFor="rwf-input"
                 className="text-sm font-medium text-foreground"
               >
-                Recipient receives (RWF)
+                Recipient receives ({displayCurrency})
               </label>
               <div
                 className={`relative mt-2 flex items-center rounded-md border bg-background px-4 py-3.5 transition-colors ${
-                  amountEntry === "rwf"
+                  amountEntry === "local"
                     ? "border-niko-teal/50"
                     : "border-niko-border focus-within:border-niko-teal/50"
                 }`}
@@ -906,7 +912,7 @@ export function PayWizard() {
                   placeholder="0"
                 />
                 <span className="ml-3 font-semibold text-niko-teal text-sm">
-                  RWF
+                  {displayCurrency}
                 </span>
               </div>
             </div>
@@ -955,7 +961,7 @@ export function PayWizard() {
             )}
             <p className="text-xs text-niko-muted flex items-center gap-1.5">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-niko-teal" />
-              1 USDT = {displayRate.toLocaleString()} RWF
+              1 USDT = {displayRate.toLocaleString()} {displayCurrency}
               {quote ? " (live rate)" : " (loading rate)"}
               {quoteStatus === "loading" && hasAmount ? " · updating" : ""}
             </p>
@@ -965,7 +971,7 @@ export function PayWizard() {
             <div className="flex justify-between text-sm">
               <span className="text-niko-muted">Recipient Receives</span>
               <span className="font-mono text-foreground font-semibold">
-                {hasAmount ? formatRwf(netRwf) : "-"}
+                {hasAmount ? formatPayout(netRwf) : "-"}
               </span>
             </div>
             <div className="flex justify-between text-sm">
@@ -974,7 +980,7 @@ export function PayWizard() {
               </span>
               <span className="font-mono text-niko-muted">
                 {hasAmount
-                  ? `${formatUsdt(feeUsdtForAmount(usdtAmount, displayFeePercent) ?? 0)} (${formatRwf(feeRwf)})`
+                  ? `${formatUsdt(feeUsdtForAmount(usdtAmount, displayFeePercent) ?? 0)} (${formatPayout(feeRwf)})`
                   : "-"}
               </span>
             </div>
@@ -1299,12 +1305,12 @@ export function PayWizard() {
 
               <div className="text-niko-muted">Recipient Receives</div>
               <div className="font-semibold text-right text-foreground font-mono">
-                {formatRwf(netRwf)}
+                {formatPayout(netRwf)}
               </div>
 
               <div className="text-niko-muted">Exchange Rate</div>
               <div className="text-right font-mono text-foreground">
-                1 USDT = {displayRate.toLocaleString()} RWF
+                1 USDT = {displayRate.toLocaleString()} {displayCurrency}
               </div>
 
               <div className="text-niko-muted">
@@ -1314,7 +1320,7 @@ export function PayWizard() {
                 {formatUsdt(
                   feeUsdtForAmount(usdtAmount, displayFeePercent) ?? 0,
                 )}{" "}
-                ({formatRwf(feeRwf)})
+                ({formatPayout(feeRwf)})
               </div>
 
               <div className="col-span-2 h-px bg-niko-border/60 my-1" />

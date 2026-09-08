@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 type RateRow = {
+  currency: string;
   rate: number;
   feePercent: number;
   minUsdt: number;
@@ -16,9 +17,10 @@ const HEADERS = { "Content-Type": "application/json" };
 
 export function AdminFxForm() {
   const [history, setHistory] = useState<RateRow[]>([]);
+  const [currency, setCurrency] = useState("RWF");
   const [rate, setRate] = useState(1350);
   const [feePercent, setFeePercent] = useState(1.5);
-  const [minUsdt, setMinUsdt] = useState(10);
+  const [minUsdt, setMinUsdt] = useState(0.1);
   const [formState, setFormState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -29,6 +31,7 @@ export function AdminFxForm() {
     const rows = json.data ?? [];
     setHistory(rows);
     if (rows.length > 0) {
+      setCurrency(rows[0].currency || "RWF");
       setRate(rows[0].rate);
       setFeePercent(rows[0].feePercent);
       setMinUsdt(rows[0].minUsdt);
@@ -50,7 +53,7 @@ export function AdminFxForm() {
     const res = await fetch("/api/admin/fx", {
       method: "POST",
       headers: HEADERS,
-      body: JSON.stringify({ rate, feePercent, minUsdt }),
+      body: JSON.stringify({ currency, rate, feePercent, minUsdt }),
     });
 
     if (!res.ok) {
@@ -84,7 +87,24 @@ export function AdminFxForm() {
         <form onSubmit={handleSave} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-foreground mb-1.5">
-              USDT to RWF base rate
+              Local currency
+            </label>
+            <div className="relative rounded-md border border-niko-border bg-background px-3 py-2 focus-within:border-niko-teal/50 transition-colors">
+              <input
+                type="text"
+                required
+                maxLength={3}
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                className="w-full bg-transparent font-mono text-sm text-foreground outline-none uppercase"
+                placeholder="RWF"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-foreground mb-1.5">
+              USDT to {currency || "local"} rate
             </label>
             <div className="relative rounded-md border border-niko-border bg-background px-3 py-2 focus-within:border-niko-teal/50 transition-colors">
               <input
@@ -96,7 +116,7 @@ export function AdminFxForm() {
                 className="w-full bg-transparent font-mono text-sm text-foreground outline-none"
               />
               <span className="absolute right-3 top-2.5 font-mono text-xs text-niko-muted font-bold">
-                RWF
+                {currency || "RWF"}
               </span>
             </div>
           </div>
@@ -175,6 +195,7 @@ export function AdminFxForm() {
             <thead>
               <tr className="border-b border-niko-border/30 bg-niko-surface/20 font-mono uppercase text-niko-muted">
                 <th className="px-4 py-3">Effective from</th>
+                <th className="px-4 py-3">Currency</th>
                 <th className="px-4 py-3">Base rate</th>
                 <th className="px-4 py-3">Fee</th>
                 <th className="px-4 py-3">Min USDT</th>
@@ -184,7 +205,7 @@ export function AdminFxForm() {
               {history.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="px-4 py-6 text-center text-niko-muted font-sans text-xs"
                   >
                     No rates configured yet.
@@ -199,8 +220,9 @@ export function AdminFxForm() {
                     <td className="px-4 py-3 text-foreground/80 font-sans">
                       {formatDate(row.effectiveFrom)}
                     </td>
+                    <td className="px-4 py-3">{row.currency || "RWF"}</td>
                     <td className="px-4 py-3 font-semibold text-foreground">
-                      1 USDT = {row.rate} RWF
+                      1 USDT = {row.rate} {row.currency || "RWF"}
                     </td>
                     <td className="px-4 py-3 font-semibold text-niko-teal-bright">
                       {row.feePercent}%

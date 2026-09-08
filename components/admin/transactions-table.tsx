@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAdminIntents } from "@/components/admin/use-admin-intents";
+import { formatLocalAmount } from "@/lib/rates";
 import type { PaymentStatus } from "@/lib/settlement/types";
 
 export function AdminTransactionsTable() {
@@ -87,16 +88,6 @@ export function AdminTransactionsTable() {
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
-
-  const formatRwf = (val: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "RWF",
-      maximumFractionDigits: 0,
-    })
-      .format(val)
-      .replace("RWF", "RWF ");
   };
 
   return (
@@ -193,7 +184,7 @@ export function AdminTransactionsTable() {
                       {intent.usdtAmount.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 font-mono font-semibold text-niko-teal-bright">
-                      {formatRwf(intent.netRwf)}
+                      {formatLocalAmount(intent.netRwf, intent.currency)}
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center gap-1.5 text-xs text-foreground/80 font-mono capitalize">

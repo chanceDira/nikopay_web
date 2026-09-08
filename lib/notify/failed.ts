@@ -10,7 +10,7 @@ export async function notifyIntentFailed(intentId: string): Promise<void> {
   const loaded = await supabase
     .from("payment_intents")
     .select(
-      "id, status, notify_email, failed_notified_at, net_rwf, usdt_amount, fee_rwf, rate, msisdn, deposit_tx, chain_id, wallet_address",
+      "id, status, notify_email, failed_notified_at, net_rwf, usdt_amount, fee_rwf, rate, msisdn, deposit_tx, chain_id, wallet_address, currency",
     )
     .eq("id", intentId)
     .maybeSingle();
@@ -52,6 +52,7 @@ export async function notifyIntentFailed(intentId: string): Promise<void> {
     msisdn: row.msisdn,
     walletAddress: row.wallet_address,
     chain: row.chain_id,
+    currency: row.currency,
     depositTx,
     depositExplorerUrl: depositTx
       ? (txExplorerUrl(row.chain_id, depositTx) ?? undefined)

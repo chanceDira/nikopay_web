@@ -6,8 +6,8 @@ values
   ('base', 'Base Sepolia', true, true, 1)
 on conflict (id) do nothing;
 
-insert into public.fx_rates (usdt_to_rwf, fee_percent, min_usdt, effective_from)
-values (1450.000000, 1.5000, 5.00000000, timezone('utc', now()));
+insert into public.fx_rates (currency, usdt_to_rwf, fee_percent, min_usdt, effective_from)
+values ('RWF', 1450.000000, 1.5000, 0.10000000, timezone('utc', now()));
 
 -- Placeholder USDT contracts (replace with P3 addresses)
 insert into public.tokens (chain_id, symbol, contract_address, decimals, is_active)
