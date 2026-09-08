@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { isUuid } from "@/lib/identity";
 import { fetchLiveIntent, isAborted, syncLiveIntent } from "@/lib/pay-api";
-import { isTerminalStatus } from "@/lib/settlement/intent-status";
+import { isUserClosedStatus } from "@/lib/settlement/intent-status";
 import type { PaymentIntent } from "@/lib/settlement/types";
 
 const POLL_MS = 1500;
@@ -80,7 +80,7 @@ export function useIntentView(id: string | undefined, poll = false) {
           return;
         }
         setSnapshot({ id, intent: synced.data, ready: true });
-        if (isTerminalStatus(synced.data.status)) {
+        if (isUserClosedStatus(synced.data.status)) {
           clearTimers();
           return;
         }
@@ -89,13 +89,13 @@ export function useIntentView(id: string | undefined, poll = false) {
     };
 
     void load().then((data) => {
-      if (cancelled || !poll || (data && isTerminalStatus(data.status))) {
+      if (cancelled || !poll || (data && isUserClosedStatus(data.status))) {
         return;
       }
       syncOnce();
       interval = window.setInterval(() => {
         void load().then((next) => {
-          if (next && isTerminalStatus(next.status)) {
+          if (next && isUserClosedStatus(next.status)) {
             clearTimers();
           }
         });

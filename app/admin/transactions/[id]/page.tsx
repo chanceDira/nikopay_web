@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import type { PaymentIntent, PaymentStatus } from "@/lib/settlement/types";
+import { canTransition } from "@/lib/settlement/transitions";
 import { feeUsdtForAmount } from "@/lib/settlement/quote";
 import { formatUsdt } from "@/lib/rates";
 import { PageHeader } from "@/components/shared/page-header";
@@ -330,7 +331,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                 <div className="grid grid-cols-2 gap-4 text-sm font-mono">
                   <div>
                     <span className="text-xs text-niko-muted block">
-                      Wallet debit
+                      Recipient amount
                     </span>
                     <span className="text-foreground font-bold">
                       {formatRwf(intent.netRwf)}
@@ -385,10 +386,10 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                   </p>
                 )}
                 <p className="text-[11px] text-niko-muted">
-                  Wallet debit is the amount PawaPay takes from the merchant
-                  wallet and sends to the recipient. NikoPay platform fee is
-                  already taken from the user USDT and is not a PawaPay API
-                  charge.
+                  Recipient amount is what we send through PawaPay (merchant
+                  wallet debit). NikoPay fee is already taken from the user
+                  USDT. PawaPay does not return a per-payout provider fee on the
+                  API. Commercial charges, if any, are on PawaPay statements.
                 </p>
               </div>
             ) : null}
@@ -400,45 +401,56 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                 Ops override controls
               </h4>
               <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={() => handleStatusChange("paid")}
-                  className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-bold rounded-md text-xs transition-all cursor-pointer"
-                >
-                  Force complete (paid)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleStatusChange("manual_review")}
-                  className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 font-bold rounded-md text-xs transition-all cursor-pointer"
-                >
-                  Move to manual review
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleStatusChange("awaiting_payment")}
-                  className="w-full py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold rounded-md text-xs transition-all cursor-pointer"
-                >
-                  Reset to awaiting
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleStatusChange("failed")}
-                  className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold rounded-md text-xs transition-all cursor-pointer"
-                >
-                  Mark failed
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleStatusChange("expired")}
-                  className="w-full py-2.5 bg-neutral-600/20 hover:bg-neutral-600/30 text-neutral-400 border border-neutral-600/40 font-bold rounded-md text-xs transition-all cursor-pointer"
-                >
-                  Force expired
-                </button>
+                {canTransition(intent.status, "paid", "admin") ? (
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange("paid")}
+                    className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-bold rounded-md text-xs transition-all cursor-pointer"
+                  >
+                    Mark paid
+                  </button>
+                ) : null}
+                {canTransition(intent.status, "credited", "admin") ? (
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange("credited")}
+                    className="w-full py-2.5 bg-niko-teal/10 hover:bg-niko-teal/20 text-niko-teal border border-niko-teal/30 font-bold rounded-md text-xs transition-all cursor-pointer"
+                  >
+                    Retry payout
+                  </button>
+                ) : null}
+                {canTransition(intent.status, "manual_review", "admin") ? (
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange("manual_review")}
+                    className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 font-bold rounded-md text-xs transition-all cursor-pointer"
+                  >
+                    Move to manual review
+                  </button>
+                ) : null}
+                {canTransition(intent.status, "failed", "admin") ? (
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange("failed")}
+                    className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold rounded-md text-xs transition-all cursor-pointer"
+                  >
+                    Mark failed
+                  </button>
+                ) : null}
+                {canTransition(intent.status, "expired", "admin") ? (
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange("expired")}
+                    className="w-full py-2.5 bg-neutral-600/20 hover:bg-neutral-600/30 text-neutral-400 border border-neutral-600/40 font-bold rounded-md text-xs transition-all cursor-pointer"
+                  >
+                    Mark expired
+                  </button>
+                ) : null}
               </div>
               <p className="p-3 rounded bg-background/50 border border-niko-border/20 text-[10px] text-niko-muted leading-relaxed">
-                Ops overrides bypass wallet and provider confirmations. Use
-                during audits or sandbox testing only.
+                Overrides follow the payment state machine. Retry payout starts
+                a new PawaPay payout id. Mark paid is only allowed from payout
+                pending. Reset to awaiting is not allowed.
               </p>
             </div>
           </div>

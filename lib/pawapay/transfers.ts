@@ -122,7 +122,7 @@ export async function insertPayoutTransfer(
 export async function updatePayoutTransfer(
   payoutId: string,
   patch: PayoutTransferPatch,
-): Promise<{ ok: true } | { ok: false; reason: string }> {
+): Promise<{ ok: true; applied: boolean } | { ok: false; reason: string }> {
   const supabase = createAdminClient();
   const updated = await supabase
     .from("payout_transfers")
@@ -131,11 +131,14 @@ export async function updatePayoutTransfer(
       provider_ref: patch.providerRef ?? null,
       provider_reason: patch.providerReason ?? null,
     })
-    .eq("payout_id", payoutId);
+    .eq("payout_id", payoutId)
+    .in("status", ["pending", "enqueued"])
+    .select("payout_id")
+    .maybeSingle();
 
   if (updated.error) {
     return { ok: false, reason: "unable to update payout" };
   }
 
-  return { ok: true };
+  return { ok: true, applied: Boolean(updated.data) };
 }

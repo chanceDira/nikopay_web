@@ -7,7 +7,10 @@ import {
 } from "@/lib/http";
 import { authorizeAdmin } from "@/lib/admin-auth";
 import { getPaymentIntent, toPaymentIntent } from "@/lib/intents";
-import { isPaymentStatus } from "@/lib/settlement/intent-status";
+import {
+  isPaymentStatus,
+  transitionStatus,
+} from "@/lib/settlement/intent-status";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeTxHash } from "@/lib/identity";
 import type { PaymentStatus } from "@/lib/settlement/types";
@@ -76,13 +79,24 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (Object.keys(patch).length === 0)
     return jsonError("nothing to update", 400);
 
+  const current = await getPaymentIntent(id);
+  if (!current.ok) return jsonError(current.reason, current.status);
+
+  if (patch.status !== undefined) {
+    const allowed = transitionStatus(
+      current.intent.status,
+      patch.status,
+      "admin",
+    );
+    if (!allowed.ok) return jsonError(allowed.reason, 409);
+  }
+
   const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("payment_intents")
-    .update(patch)
-    .eq("id", id)
-    .select()
-    .maybeSingle();
+  let query = supabase.from("payment_intents").update(patch).eq("id", id);
+  if (patch.status !== undefined) {
+    query = query.eq("status", current.intent.status);
+  }
+  const { data, error } = await query.select().maybeSingle();
 
   if (error) return jsonError("unable to update intent", 503);
   if (!data) return jsonError("not found", 404);

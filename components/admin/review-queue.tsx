@@ -6,6 +6,7 @@ import { useAdminIntents } from "@/components/admin/use-admin-intents";
 import { getPublicChain } from "@/lib/chain-config";
 import { paginate } from "@/lib/paginate";
 import { formatRwf, formatUsdt } from "@/lib/rates";
+import { canTransition } from "@/lib/settlement/transitions";
 import type {
   ChainId,
   PaymentIntent,
@@ -92,12 +93,13 @@ export function AdminReviewQueue() {
               <ReviewCard
                 key={item.id}
                 item={item}
-                onConfirm={() =>
-                  void patchStatus(
-                    item,
-                    item.status === "manual_review" ? "credited" : "paid",
-                  )
+                confirmTarget={reviewConfirmTarget(item.status)}
+                failTarget={
+                  canTransition(item.status, "failed", "admin")
+                    ? "failed"
+                    : null
                 }
+                onConfirm={(status) => void patchStatus(item, status)}
                 onFail={() => void patchStatus(item, "failed")}
               />
             ))}
@@ -115,14 +117,26 @@ export function AdminReviewQueue() {
   );
 }
 
+function reviewConfirmTarget(status: PaymentStatus): PaymentStatus | null {
+  if (canTransition(status, "credited", "admin")) {
+    return "credited";
+  }
+  if (canTransition(status, "paid", "admin")) {
+    return "paid";
+  }
+  return null;
+}
+
 function ReviewCard(props: {
   item: PaymentIntent;
-  onConfirm: () => void;
+  confirmTarget: PaymentStatus | null;
+  failTarget: PaymentStatus | null;
+  onConfirm: (status: PaymentStatus) => void;
   onFail: () => void;
 }) {
-  const { item } = props;
+  const { item, confirmTarget, failTarget } = props;
   const confirmLabel =
-    item.status === "manual_review" ? "Release transfer" : "Confirm funds";
+    confirmTarget === "credited" ? "Retry payout" : "Mark paid";
 
   return (
     <div className="p-5 rounded-md border border-niko-border/20 bg-background/50 flex flex-col gap-4 hover:border-niko-border/40 transition-all">
@@ -151,20 +165,24 @@ function ReviewCard(props: {
         </div>
 
         <div className="flex gap-2 w-full md:w-auto">
-          <button
-            type="button"
-            onClick={props.onConfirm}
-            className="flex-1 md:flex-none px-4 py-2 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy text-xs font-bold rounded-md transition-all cursor-pointer"
-          >
-            {confirmLabel}
-          </button>
-          <button
-            type="button"
-            onClick={props.onFail}
-            className="px-3 py-2 border border-red-500/30 hover:bg-red-500/10 text-red-400 text-xs font-semibold rounded-md transition-all cursor-pointer"
-          >
-            Fail
-          </button>
+          {confirmTarget ? (
+            <button
+              type="button"
+              onClick={() => props.onConfirm(confirmTarget)}
+              className="flex-1 md:flex-none px-4 py-2 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy text-xs font-bold rounded-md transition-all cursor-pointer"
+            >
+              {confirmLabel}
+            </button>
+          ) : null}
+          {failTarget ? (
+            <button
+              type="button"
+              onClick={props.onFail}
+              className="px-3 py-2 border border-red-500/30 hover:bg-red-500/10 text-red-400 text-xs font-semibold rounded-md transition-all cursor-pointer"
+            >
+              Fail
+            </button>
+          ) : null}
         </div>
       </div>
 
