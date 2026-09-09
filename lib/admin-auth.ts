@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { NextResponse } from "next/server";
 
 import { recoverPersonalSigner } from "@/lib/eth-personal";
-import { loadActiveTreasuryAddresses } from "@/lib/treasury";
+import { loadAdminWalletAddresses } from "@/lib/admin-wallets";
 
 export const ADMIN_COOKIE = "nikopay_admin";
 
@@ -154,11 +154,11 @@ export async function authorizeAdmin(
     return { ok: false, reason: "unauthorized", status: 401 };
   }
 
-  const treasuries = await loadActiveTreasuryAddresses();
-  if (!treasuries.ok) {
-    return { ok: false, reason: treasuries.reason, status: 503 };
+  const admins = await loadAdminWalletAddresses();
+  if (!admins.ok) {
+    return { ok: false, reason: admins.reason, status: 503 };
   }
-  if (!treasuries.addresses.includes(address)) {
+  if (!admins.addresses.includes(address)) {
     return { ok: false, reason: "unauthorized", status: 401 };
   }
 

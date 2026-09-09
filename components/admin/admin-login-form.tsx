@@ -8,7 +8,7 @@ import { WalletPicker } from "@/components/shared/wallet-picker";
 import { adminAccessMessage, isAdminAccessReason } from "@/lib/admin-access";
 import { persistAdminWalletKind } from "@/lib/admin-wallet-kind";
 import type { WalletKind } from "@/lib/wallet/browser";
-import { proveTreasuryAdmin } from "@/lib/wallet/admin";
+import { proveAdminWallet } from "@/lib/wallet/admin";
 
 type ConnectionState = "idle" | "connecting" | "success";
 
@@ -27,7 +27,7 @@ export function AdminLoginForm() {
     setError("");
     setWalletState("connecting");
 
-    const result = await proveTreasuryAdmin(walletName);
+    const result = await proveAdminWallet(walletName);
     if (!result.ok) {
       setWalletState("idle");
       setError(result.reason);
@@ -64,7 +64,7 @@ export function AdminLoginForm() {
           Ops console
         </h2>
         <p className="mt-2 text-center text-sm text-niko-muted">
-          Connect an active treasury wallet.
+          Connect an admin wallet.
         </p>
       </div>
 
