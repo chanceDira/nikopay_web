@@ -5,7 +5,7 @@ export default function AdminFxPage() {
   return (
     <PageHeader
       title="Exchange rates"
-      description="Configure USDT to RWF rate and fees"
+      description="USDT to local rates and fees"
     >
       <AdminFxForm />
     </PageHeader>
