@@ -52,10 +52,14 @@ export function RecipientNamePreviewCard({
   }
 
   return (
-    <div className="mt-3 p-3 rounded-lg bg-niko-surface/80 border border-niko-border/40">
-      <p className="text-xs text-niko-muted">
-        Name preview is not available for this provider yet. Check the number
-        carefully before you pay.
+    <div className="mt-3 p-3 rounded-lg border border-[var(--niko-warning-border)] bg-[var(--niko-warning-bg)]">
+      <p className="text-xs font-medium text-[var(--niko-warning-text)]">
+        Name preview unavailable for {providerLabel}
+      </p>
+      <p className="mt-1 text-[11px] text-[var(--niko-warning-text)]">
+        We cannot show the account holder name for this provider yet. Check
+        every digit carefully. A wrong number can send money to someone else,
+        and completed payouts cannot be reversed.
       </p>
     </div>
   );

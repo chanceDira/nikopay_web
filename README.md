@@ -101,8 +101,9 @@ On the Vercel project for `nikopay.to`:
 4. Register callback URL in PawaPay dashboard: `https://nikopay.to/api/pawapay/callback`
 5. Set `PAWAPAY_VERIFY_CALLBACKS=true` when signed callbacks are enabled
 6. Remove `PAYOUT_PROVIDER` if it is still set. Payouts are PawaPay-only.
-7. For Rwanda MTN name preview, set production `MOMO_*` lookup credentials (`MOMO_BASE_URL`, `MOMO_TARGET_ENVIRONMENT=mtnrwanda`, `MOMO_DISBURSEMENT_SUBSCRIPTION_KEY`, `MOMO_API_USER`, `MOMO_API_KEY`). These are not used for payouts.
-8. Redeploy production
+7. For Rwanda MTN name preview, set production `MOMO_*` lookup credentials (`MOMO_BASE_URL`, `MOMO_TARGET_ENVIRONMENT=mtnrwanda`, `MOMO_DISBURSEMENT_SUBSCRIPTION_KEY`, `MOMO_API_USER`, `MOMO_API_KEY`). These are not used for payouts. Sandbox MTN names are not real Rwanda users.
+8. Rwanda Airtel name preview: **not integrated**. No Airtel Africa KYC credentials in NikoPay. UI shows an explicit “name preview unavailable” warning; do not add fake lookup.
+9. Redeploy production
 
 Preview may use sandbox `PAWAPAY_*` values. Do not put the production token on Preview.
 
@@ -117,6 +118,7 @@ Apply new SQL on the remote project (dashboard SQL, CLI, or team process). Examp
 - `07_intent_notify_email.sql` — optional notify email + `paid_notified_at`
 - `08_momo_provider_reason.sql` — payout failure reason + `failed_notified_at`
 - `10_intent_corridor.sql` — intent `country` / `currency` / `provider`
+- `11_fx_currency.sql` — `fx_rates.currency` (USDT → local per corridor)
 
 Local Supabase (optional):
 
