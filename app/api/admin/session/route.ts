@@ -8,7 +8,7 @@ import {
   parseAdminChallenge,
   recoverTreasurySigner,
 } from "@/lib/admin-auth";
-import { loadActiveTreasuryAddresses } from "@/lib/treasury";
+import { loadAdminWalletAddresses } from "@/lib/admin-wallets";
 
 export async function GET(request: Request) {
   const admin = await authorizeAdmin(request);
@@ -48,12 +48,12 @@ export async function POST(request: Request) {
     return jsonError(signer.reason, 401);
   }
 
-  const treasuries = await loadActiveTreasuryAddresses();
-  if (!treasuries.ok) {
-    return jsonError(treasuries.reason, 503);
+  const admins = await loadAdminWalletAddresses();
+  if (!admins.ok) {
+    return jsonError(admins.reason, 503);
   }
-  if (!treasuries.addresses.includes(signer.address)) {
-    return jsonError("connected wallet is not the treasury", 403);
+  if (!admins.addresses.includes(signer.address)) {
+    return jsonError("connected wallet is not an admin wallet", 403);
   }
 
   const response = jsonData({ address: signer.address });
