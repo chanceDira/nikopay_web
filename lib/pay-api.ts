@@ -101,6 +101,14 @@ export function isPaymentIntentPayload(value: unknown): value is PaymentIntent {
     return false;
   }
 
+  if (intent.payoutRef !== undefined && typeof intent.payoutRef !== "string") {
+    return false;
+  }
+
+  if (intent.momoRef !== undefined && typeof intent.momoRef !== "string") {
+    return false;
+  }
+
   if (intent.payout === undefined) {
     return true;
   }

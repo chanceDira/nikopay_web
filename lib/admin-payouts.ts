@@ -1,33 +1,16 @@
 import { toNumber } from "@/lib/numbers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { MomoTransferRow, PayoutTransferRow } from "@/lib/supabase/types";
+import type { PayoutTransferRow } from "@/lib/supabase/types";
 
 const ADMIN_LIMIT = 200;
-
-export const MOMO_PAYOUT_STATUSES = [
-  "pending",
-  "successful",
-  "failed",
-  "timeout",
-] as const;
-
-export const PAWAPAY_PAYOUT_STATUSES = [
-  "pending",
-  "enqueued",
-  "successful",
-  "failed",
-] as const;
 
 export const ADMIN_PAYOUT_STATUSES = [
   "pending",
   "enqueued",
   "successful",
   "failed",
-  "timeout",
 ] as const;
 
-export type MomoPayoutStatus = (typeof MOMO_PAYOUT_STATUSES)[number];
-export type PawapayPayoutStatus = (typeof PAWAPAY_PAYOUT_STATUSES)[number];
 export type AdminPayoutStatus = (typeof ADMIN_PAYOUT_STATUSES)[number];
 
 export type AdminPayout = {
@@ -40,21 +23,12 @@ export type AdminPayout = {
   currency: string;
   provider: string | null;
   status: AdminPayoutStatus;
-  rail: "momo" | "pawapay";
+  rail: "pawapay";
   providerRef: string | null;
   providerReason: string | null;
   createdAt: string;
   updatedAt: string;
 };
-
-export function isMomoPayoutStatus(
-  value: string | null,
-): value is MomoPayoutStatus {
-  return (
-    typeof value === "string" &&
-    (MOMO_PAYOUT_STATUSES as readonly string[]).includes(value)
-  );
-}
 
 export function isAdminPayoutStatus(
   value: string | null,
@@ -65,37 +39,13 @@ export function isAdminPayoutStatus(
   );
 }
 
-export function toAdminPayout(row: MomoTransferRow): AdminPayout | null {
-  const amountRwf = toNumber(row.amount_rwf);
-  if (!Number.isFinite(amountRwf) || amountRwf < 0) {
-    return null;
-  }
-
-  return {
-    id: row.id,
-    intentId: row.intent_id,
-    referenceId: row.reference_id,
-    amountRwf,
-    msisdn: row.msisdn,
-    country: "RWA",
-    currency: "RWF",
-    provider: null,
-    status: row.status,
-    rail: "momo",
-    providerRef: row.provider_ref,
-    providerReason: row.provider_reason,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-function toAdminPawapayPayout(row: PayoutTransferRow): AdminPayout | null {
+export function toAdminPayout(row: PayoutTransferRow): AdminPayout | null {
   const amountRwf = toNumber(row.amount);
   if (!Number.isFinite(amountRwf) || amountRwf < 0) {
     return null;
   }
 
-  if (!(PAWAPAY_PAYOUT_STATUSES as readonly string[]).includes(row.status)) {
+  if (!(ADMIN_PAYOUT_STATUSES as readonly string[]).includes(row.status)) {
     return null;
   }
 
@@ -121,41 +71,23 @@ export async function listAdminPayouts(): Promise<
   { ok: true; payouts: AdminPayout[] } | { ok: false; reason: string }
 > {
   const supabase = createAdminClient();
-  const [momoResult, pawapayResult] = await Promise.all([
-    supabase
-      .from("momo_transfers")
-      .select()
-      .order("created_at", { ascending: false })
-      .limit(ADMIN_LIMIT),
-    supabase
-      .from("payout_transfers")
-      .select()
-      .order("created_at", { ascending: false })
-      .limit(ADMIN_LIMIT),
-  ]);
+  const { data, error } = await supabase
+    .from("payout_transfers")
+    .select()
+    .order("created_at", { ascending: false })
+    .limit(ADMIN_LIMIT);
 
-  if (momoResult.error || pawapayResult.error) {
+  if (error) {
     return { ok: false, reason: "unable to load payouts" };
   }
 
   const payouts: AdminPayout[] = [];
-  for (const row of momoResult.data ?? []) {
+  for (const row of data ?? []) {
     const payout = toAdminPayout(row);
     if (payout) {
       payouts.push(payout);
     }
   }
-  for (const row of pawapayResult.data ?? []) {
-    const payout = toAdminPawapayPayout(row);
-    if (payout) {
-      payouts.push(payout);
-    }
-  }
 
-  payouts.sort(
-    (left, right) =>
-      new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
-  );
-
-  return { ok: true, payouts: payouts.slice(0, ADMIN_LIMIT) };
+  return { ok: true, payouts };
 }

@@ -7,6 +7,7 @@ import {
 } from "@/lib/http";
 import { writeAdminAudit } from "@/lib/admin-audit";
 import { authorizeAdmin } from "@/lib/admin-auth";
+import { parsePayoutRefPatch } from "@/lib/payout-ref";
 import { getPaymentIntent, toPaymentIntent } from "@/lib/intents";
 import {
   isPaymentStatus,
@@ -67,14 +68,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
   }
 
-  if (body.momoRef !== undefined) {
-    if (body.momoRef === null || body.momoRef === "") {
-      patch.momo_ref = null;
-    } else {
-      if (typeof body.momoRef !== "string")
-        return jsonError("momo ref must be a string", 400);
-      patch.momo_ref = body.momoRef;
-    }
+  const payoutRef = parsePayoutRefPatch(body);
+  if (!payoutRef.ok) return jsonError(payoutRef.reason, 400);
+  if (!payoutRef.skip) {
+    patch.momo_ref = payoutRef.value;
   }
 
   if (Object.keys(patch).length === 0)

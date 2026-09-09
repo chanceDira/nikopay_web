@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
+import { displayPayoutRef } from "@/lib/payout-ref";
 import type { PaymentIntent, PaymentStatus } from "@/lib/settlement/types";
 import { canTransition } from "@/lib/settlement/transitions";
 import { feeUsdtForAmount } from "@/lib/settlement/quote";
@@ -22,7 +23,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
   const [intent, setIntent] = useState<PaymentIntent | null>(null);
   const [pageState, setPageState] = useState<PageState>("loading");
   const [editTxHash, setEditTxHash] = useState("");
-  const [editMomoRef, setEditMomoRef] = useState("");
+  const [editPayoutRef, setEditPayoutRef] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [livePayout, setLivePayout] = useState<PayoutLookupData | null>(null);
@@ -70,7 +71,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
       const data = json.data;
       setIntent(data);
       setEditTxHash(data.depositTx ?? "");
-      setEditMomoRef(data.momoRef ?? "");
+      setEditPayoutRef(displayPayoutRef(data) ?? "");
       setPageState("ready");
       void loadAudit(data.id);
       const payoutId = data.payout?.referenceId;
@@ -112,7 +113,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
     const json = (await res.json()) as { data: PaymentIntent };
     setIntent(json.data);
     setEditTxHash(json.data.depositTx ?? "");
-    setEditMomoRef(json.data.momoRef ?? "");
+    setEditPayoutRef(displayPayoutRef(json.data) ?? "");
     setSuccessMsg("Updated.");
     void loadAudit(id);
     setTimeout(() => setSuccessMsg(""), 3000);
@@ -122,7 +123,10 @@ export default function AdminTransactionDetailPage({ params }: Props) {
 
   const handleSaveReferences = (e: React.FormEvent) => {
     e.preventDefault();
-    void patch({ depositTx: editTxHash || null, momoRef: editMomoRef || null });
+    void patch({
+      depositTx: editTxHash || null,
+      payoutRef: editPayoutRef || null,
+    });
   };
 
   const cancelEnqueued = async (payoutId: string) => {
@@ -330,8 +334,8 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                     </label>
                     <input
                       type="text"
-                      value={editMomoRef}
-                      onChange={(e) => setEditMomoRef(e.target.value)}
+                      value={editPayoutRef}
+                      onChange={(e) => setEditPayoutRef(e.target.value)}
                       placeholder="UUID or ref..."
                       className="w-full bg-background border border-niko-border text-foreground px-3 py-1.5 text-xs font-mono rounded-md outline-none focus:border-niko-teal/50"
                     />

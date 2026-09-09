@@ -13,23 +13,6 @@ export type FailedRefs = {
 
 export async function loadPaidRefs(intentId: string): Promise<PaidRefs> {
   const supabase = createAdminClient();
-
-  const momo = await supabase
-    .from("momo_transfers")
-    .select("reference_id, provider_ref")
-    .eq("intent_id", intentId)
-    .eq("status", "successful")
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (momo.data) {
-    return {
-      referenceId: momo.data.reference_id,
-      providerRef: momo.data.provider_ref,
-    };
-  }
-
   const payout = await supabase
     .from("payout_transfers")
     .select("payout_id, provider_ref")
@@ -53,25 +36,6 @@ export async function loadFailedRefs(
   intentId: string,
 ): Promise<FailedRefs | null> {
   const supabase = createAdminClient();
-
-  const momo = await supabase
-    .from("momo_transfers")
-    .select("reference_id, status, provider_reason")
-    .eq("intent_id", intentId)
-    .in("status", ["failed", "timeout"])
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const momoStatus = momo.data?.status;
-  if (momo.data && (momoStatus === "failed" || momoStatus === "timeout")) {
-    return {
-      referenceId: momo.data.reference_id,
-      status: momoStatus,
-      providerReason: momo.data.provider_reason,
-    };
-  }
-
   const payout = await supabase
     .from("payout_transfers")
     .select("payout_id, provider_reason")

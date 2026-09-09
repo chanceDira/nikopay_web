@@ -71,6 +71,8 @@ export type PaymentIntent = {
   createdAt: string;
   updatedAt: string;
   depositTx?: string;
+  payoutRef?: string;
+  /** @deprecated alias of payoutRef; maps to payment_intents.momo_ref */
   momoRef?: string;
   notifyEmail?: string;
   payout?: IntentPayout;

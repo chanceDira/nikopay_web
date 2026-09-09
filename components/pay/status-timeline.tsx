@@ -1,6 +1,7 @@
 "use client";
 
 import { formatLocalAmount, formatUsdt } from "@/lib/rates";
+import { displayPayoutRef } from "@/lib/payout-ref";
 import { useIntentView } from "@/components/pay/use-intent-view";
 import type { IntentPayout } from "@/lib/settlement/types";
 import Link from "next/link";
@@ -195,7 +196,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
       return {
         title: "Processing mobile money payout",
         desc: intent.payout
-          ? `Payout status: ${momoStatusLabel(intent.payout.status)}. Sandbox does not send SMS; watch this page until it shows completed.`
+          ? `Payout status: ${payoutStatusLabel(intent.payout.status)}. Sandbox does not send SMS; watch this page until it shows completed.`
           : "The RWF payout has been submitted to mobile money. Sandbox does not send SMS; this page updates when the provider confirms.",
       };
     }
@@ -413,13 +414,13 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
               Payout status
             </h3>
             <span
-              className={`rounded-md px-2.5 py-1 text-xs font-bold ${momoStatusStyles(intent.payout.status)}`}
+              className={`rounded-md px-2.5 py-1 text-xs font-bold ${payoutStatusStyles(intent.payout.status)}`}
             >
-              {momoStatusLabel(intent.payout.status)}
+              {payoutStatusLabel(intent.payout.status)}
             </span>
           </div>
           <p className="text-xs text-niko-muted leading-relaxed">
-            {momoStatusHint(intent.payout.status)}
+            {payoutStatusHint(intent.payout.status)}
           </p>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
             <div>
@@ -550,13 +551,13 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
               </div>
             )}
 
-            {intent.momoRef && (
+            {displayPayoutRef(intent) && (
               <div>
                 <p className="text-niko-muted mb-1 font-sans">
                   Payout reference
                 </p>
                 <p className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground font-bold">
-                  {intent.momoRef}
+                  {displayPayoutRef(intent)}
                 </p>
               </div>
             )}
@@ -567,7 +568,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
   );
 }
 
-function momoStatusLabel(status: IntentPayout["status"]) {
+function payoutStatusLabel(status: IntentPayout["status"]) {
   switch (status) {
     case "successful":
       return "Reached user";
@@ -584,7 +585,7 @@ function momoStatusLabel(status: IntentPayout["status"]) {
   }
 }
 
-function momoStatusStyles(status: IntentPayout["status"]) {
+function payoutStatusStyles(status: IntentPayout["status"]) {
   switch (status) {
     case "successful":
       return "bg-niko-teal/15 text-niko-teal border border-niko-teal/30";
@@ -600,7 +601,7 @@ function momoStatusStyles(status: IntentPayout["status"]) {
   }
 }
 
-function momoStatusHint(status: IntentPayout["status"]) {
+function payoutStatusHint(status: IntentPayout["status"]) {
   switch (status) {
     case "successful":
       return "The provider confirmed the disbursement. Funds were sent to the payee wallet.";
