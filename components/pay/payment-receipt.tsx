@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useIntentView } from "@/components/pay/use-intent-view";
 import { CONTACT } from "@/lib/contact";
+import { displayPayoutRef } from "@/lib/payout-ref";
 import { formatLocalAmount, formatUsdt } from "@/lib/rates";
 import { feeUsdtForAmount } from "@/lib/settlement/quote";
 
@@ -69,6 +70,7 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
     dateStyle: "medium",
     timeStyle: "short",
   });
+  const payoutRef = displayPayoutRef(intent);
 
   return (
     <div className="w-full max-w-lg mx-auto space-y-6">
@@ -246,13 +248,13 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
             </div>
           )}
 
-          {intent.momoRef && (
+          {payoutRef && (
             <div className="flex justify-between border-b border-niko-border/30 pb-2 print:border-neutral-200">
               <span className="text-niko-muted print:text-neutral-500">
                 Payout reference
               </span>
               <span className="font-mono font-bold text-foreground print:text-black">
-                {intent.momoRef}
+                {payoutRef}
               </span>
             </div>
           )}

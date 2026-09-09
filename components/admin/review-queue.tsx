@@ -6,6 +6,7 @@ import { useAdminIntents } from "@/components/admin/use-admin-intents";
 import { getPublicChain } from "@/lib/chain-config";
 import { paginate } from "@/lib/paginate";
 import { formatLocalAmount, formatUsdt } from "@/lib/rates";
+import { displayPayoutRef } from "@/lib/payout-ref";
 import { canTransition } from "@/lib/settlement/transitions";
 import type {
   ChainId,
@@ -214,7 +215,7 @@ function ReviewCard(props: {
             )
           }
         />
-        <Field label="Payout ref" value={item.momoRef || "—"} />
+        <Field label="Payout ref" value={displayPayoutRef(item) || "—"} />
       </div>
     </div>
   );

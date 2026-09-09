@@ -20,7 +20,6 @@ const FILTERS: { value: "all" | AdminPayoutStatus; label: string }[] = [
   { value: "pending", label: "Pending" },
   { value: "enqueued", label: "Enqueued" },
   { value: "failed", label: "Failed" },
-  { value: "timeout", label: "Timeout" },
 ];
 
 export function AdminPayoutsTable() {
@@ -248,7 +247,6 @@ function statusBadge(status: AdminPayoutStatus) {
     pending: "bg-blue-400/10 text-blue-400 border-blue-400/20",
     enqueued: "bg-violet-400/10 text-violet-300 border-violet-400/20",
     failed: "bg-red-500/10 text-red-400 border-red-500/20",
-    timeout: "bg-amber-500/10 text-amber-400 border-amber-500/20",
   };
 
   const labels: Record<AdminPayoutStatus, string> = {
@@ -256,7 +254,6 @@ function statusBadge(status: AdminPayoutStatus) {
     pending: "Pending",
     enqueued: "Enqueued",
     failed: "Failed",
-    timeout: "Timeout",
   };
 
   return (

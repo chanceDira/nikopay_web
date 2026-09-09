@@ -8,8 +8,8 @@ import {
   normalizeCorridorCurrency,
   normalizeCorridorProvider,
 } from "@/lib/corridor";
-import { isMomoPayoutStatus } from "@/lib/admin-payouts";
 import { toNumber } from "@/lib/numbers";
+import { payoutRefAlias } from "@/lib/payout-ref";
 import { assertPayoutProviderOpen } from "@/lib/pawapay/availability-gate";
 import { createServerQuote } from "@/lib/quotes";
 import { isPaymentStatus } from "@/lib/settlement/intent-status";
@@ -51,7 +51,7 @@ export function toPaymentIntent(
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     depositTx: row.deposit_tx ?? undefined,
-    momoRef: row.momo_ref ?? undefined,
+    ...payoutRefAlias(row.momo_ref),
     notifyEmail: row.notify_email ?? undefined,
     payout,
   };
@@ -216,37 +216,21 @@ async function loadIntentPayout(
     .limit(1)
     .maybeSingle();
 
-  if (!pawapay.error && pawapay.data) {
-    const status = toIntentPayoutStatus(pawapay.data.status);
-    if (status) {
-      return {
-        status,
-        referenceId: pawapay.data.payout_id,
-        providerRef: pawapay.data.provider_ref ?? undefined,
-        providerReason: pawapay.data.provider_reason ?? undefined,
-        updatedAt: pawapay.data.updated_at,
-      };
-    }
+  if (pawapay.error || !pawapay.data) {
+    return undefined;
   }
 
-  const momo = await supabase
-    .from("momo_transfers")
-    .select("status, reference_id, provider_ref, provider_reason, updated_at")
-    .eq("intent_id", intentId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (momo.error || !momo.data || !isMomoPayoutStatus(momo.data.status)) {
+  const status = toIntentPayoutStatus(pawapay.data.status);
+  if (!status) {
     return undefined;
   }
 
   return {
-    status: momo.data.status,
-    referenceId: momo.data.reference_id,
-    providerRef: momo.data.provider_ref ?? undefined,
-    providerReason: momo.data.provider_reason ?? undefined,
-    updatedAt: momo.data.updated_at,
+    status,
+    referenceId: pawapay.data.payout_id,
+    providerRef: pawapay.data.provider_ref ?? undefined,
+    providerReason: pawapay.data.provider_reason ?? undefined,
+    updatedAt: pawapay.data.updated_at,
   };
 }
 
