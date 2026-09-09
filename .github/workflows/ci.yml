@@ -1,0 +1,79 @@
+# CI on every PR and push. CD deploys via Vercel on push to main (production)
+# or 0xJ11 / develop (preview) when these GitHub secrets are set:
+# VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# Leave them unset to keep Vercel Git deploys as the ship path.
+
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+      - 0xJ11
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  ci:
+    name: Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder
+      NEXT_PUBLIC_SITE_URL: https://nikopay.to
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run fmt:check
+      - run: npm run lint
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build
+
+  cd:
+    name: Deploy
+    needs: ci
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/0xJ11' || github.ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          PROD: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "Vercel secrets are not set. Skipping CD."
+            echo "Add VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID to enable this job."
+            exit 0
+          fi
+          npm install -g vercel
+          if [ "$PROD" = "true" ]; then
+            vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+            vercel build --prod --token="$VERCEL_TOKEN"
+            vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+          else
+            vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+            vercel build --token="$VERCEL_TOKEN"
+            vercel deploy --prebuilt --token="$VERCEL_TOKEN"
+          fi

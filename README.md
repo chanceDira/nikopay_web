@@ -201,6 +201,12 @@ Sandbox does not always send real mobile money SMS. Watch the status page and ad
 | `npm run lint` / `npm run lint:fix`                       | ESLint                          |
 | `npm run db:start` / `db:stop` / `db:reset` / `db:status` | Local Supabase                  |
 
+## CI/CD
+
+`.github/workflows/ci.yml` runs format, lint, typecheck, tests, and a Next.js build on pull requests and on `main` / `develop` / `0xJ11`.
+
+Push to `main` deploys production. Push to `0xJ11` or `develop` deploys a Vercel preview. That CD job needs GitHub secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`. If they are unset, the job skips and Vercel Git deploys still apply. Do not enable both for the same branch.
+
 ## SEO
 
 Public discovery files:
