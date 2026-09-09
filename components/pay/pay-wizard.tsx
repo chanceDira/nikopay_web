@@ -1344,6 +1344,16 @@ export function PayWizard() {
                     {recipientName}
                   </div>
                 </>
+              ) : recipientNameStatus === "unavailable" ||
+                recipientNameStatus === "not_found" ? (
+                <>
+                  <div className="text-niko-muted">Recipient name</div>
+                  <div className="text-right text-[var(--niko-warning-text)] text-sm">
+                    {recipientNameStatus === "not_found"
+                      ? "No registered name found"
+                      : "Preview unavailable — check the number"}
+                  </div>
+                </>
               ) : null}
 
               <div className="text-niko-muted">Provider</div>
@@ -1436,7 +1446,9 @@ export function PayWizard() {
           <div className="p-4 rounded-md border border-[var(--niko-warning-border)] bg-[var(--niko-warning-bg)] text-xs text-[var(--niko-warning-text)] leading-relaxed">
             {recipientNameStatus === "found" && recipientName
               ? `Paying ${recipientName}. If that is not the right person, go back and change the number. Completed payouts cannot be reversed.`
-              : "Double-check the mobile money number. If it is wrong, the payout can fail or go to someone else. Completed payouts cannot be reversed."}
+              : recipientNameStatus === "not_found"
+                ? "No registered name was found for this number. Double-check every digit before you pay. Completed payouts cannot be reversed."
+                : `Name preview is unavailable for ${selectedCorridor?.displayName ?? "this provider"}. Double-check every digit. A wrong number can fail or pay someone else. Completed payouts cannot be reversed.`}
           </div>
 
           <div className="flex gap-4">
