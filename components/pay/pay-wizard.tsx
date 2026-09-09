@@ -381,6 +381,12 @@ export function PayWizard() {
       setCorridorError("Select a mobile money provider");
       return false;
     }
+    if (selectedCorridor?.payoutStatus === "CLOSED") {
+      setCorridorError(
+        "This provider is closed right now. Try another provider or come back later.",
+      );
+      return false;
+    }
     if (selectedCorridor && quote && Number.isFinite(quote.netRwf)) {
       const min = Number(selectedCorridor.minAmount);
       const max = Number(selectedCorridor.maxAmount);
@@ -1167,6 +1173,17 @@ export function PayWizard() {
                 {selectedCorridor.decimalsInAmount === "NONE"
                   ? " · whole amounts only"
                   : ""}
+              </p>
+            ) : null}
+            {selectedCorridor?.payoutStatus === "DELAYED" ? (
+              <p className="mt-2 text-xs text-[var(--niko-warning-text)]">
+                This provider is delayed. The payout can still go through, but
+                SMS may take longer than usual.
+              </p>
+            ) : null}
+            {selectedCorridor?.payoutStatus === "CLOSED" ? (
+              <p className="mt-2 text-xs text-red-400">
+                This provider is closed right now. Pick another or try later.
               </p>
             ) : null}
             {corridorError ? (

@@ -11,21 +11,17 @@ import {
   pawapayEnvironment,
 } from "@/lib/pawapay/config";
 import {
+  flattenPayoutAvailability,
+  type PayoutAvailabilityRow,
+} from "@/lib/pawapay/availability";
+import {
   listPayoutCountries,
   listPayoutProviders,
   type CorridorProviderOption,
 } from "@/lib/pawapay/corridor";
-import type {
-  AvailabilityCountry,
-  PayoutLookupData,
-  WalletBalance,
-} from "@/lib/pawapay/types";
+import type { PayoutLookupData, WalletBalance } from "@/lib/pawapay/types";
 
-export type PawapayAvailabilityRow = {
-  country: string;
-  provider: string;
-  status: string;
-};
+export type PawapayAvailabilityRow = PayoutAvailabilityRow;
 
 export type AdminPawapaySnapshot = {
   configured: boolean;
@@ -41,6 +37,7 @@ export type AdminPawapaySnapshot = {
   corridors: CorridorProviderOption[];
   corridorsError: string | null;
   payouts: AdminPayout[];
+  stalledPayouts: AdminPayout[];
 };
 
 export async function loadAdminPawapaySnapshot(): Promise<AdminPawapaySnapshot> {
@@ -61,6 +58,7 @@ export async function loadAdminPawapaySnapshot(): Promise<AdminPawapaySnapshot> 
       corridors: [],
       corridorsError: configured.reason,
       payouts,
+      stalledPayouts: stalledAdminPayouts(payouts),
     };
   }
 
@@ -86,6 +84,7 @@ export async function loadAdminPawapaySnapshot(): Promise<AdminPawapaySnapshot> 
     corridors: conf.ok ? flattenPayoutCorridors(conf.data) : [],
     corridorsError: conf.ok ? null : conf.reason,
     payouts,
+    stalledPayouts: stalledAdminPayouts(payouts),
   };
 }
 
@@ -112,27 +111,16 @@ export async function loadLivePawapayPayout(
   return { ok: true, data: lookup.data.data };
 }
 
-function flattenPayoutAvailability(
-  countries: AvailabilityCountry[],
-): PawapayAvailabilityRow[] {
-  const rows: PawapayAvailabilityRow[] = [];
-  for (const country of countries) {
-    for (const provider of country.providers) {
-      for (const op of provider.operationTypes) {
-        if (op.operationType.toUpperCase() !== "PAYOUT") {
-          continue;
-        }
-        rows.push({
-          country: country.country,
-          provider: provider.provider,
-          status: op.status,
-        });
-      }
+const STALL_MS = 15 * 60 * 1000;
+
+function stalledAdminPayouts(payouts: AdminPayout[]): AdminPayout[] {
+  const cutoff = Date.now() - STALL_MS;
+  return payouts.filter((row) => {
+    if (row.status !== "pending" && row.status !== "enqueued") {
+      return false;
     }
-  }
-  return rows.sort((a, b) =>
-    `${a.country}${a.provider}`.localeCompare(`${b.country}${b.provider}`),
-  );
+    return new Date(row.createdAt).getTime() < cutoff;
+  });
 }
 
 function flattenPayoutCorridors(conf: unknown): CorridorProviderOption[] {

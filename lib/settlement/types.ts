@@ -45,7 +45,7 @@ export type Quote = {
 };
 
 export type IntentPayout = {
-  status: "pending" | "successful" | "failed" | "timeout";
+  status: "pending" | "enqueued" | "successful" | "failed" | "timeout";
   referenceId: string;
   providerRef?: string;
   providerReason?: string;

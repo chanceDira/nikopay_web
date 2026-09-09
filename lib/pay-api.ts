@@ -115,6 +115,7 @@ function isIntentPayoutPayload(value: unknown): boolean {
   const payout = value as Record<string, unknown>;
   const statusOk =
     payout.status === "pending" ||
+    payout.status === "enqueued" ||
     payout.status === "successful" ||
     payout.status === "failed" ||
     payout.status === "timeout";
@@ -231,6 +232,7 @@ export type CorridorProviderOption = {
   decimalsInAmount: "NONE" | "TWO_PLACES";
   minAmount: string;
   maxAmount: string;
+  payoutStatus?: "OPERATIONAL" | "DELAYED" | "CLOSED";
 };
 
 export type CorridorCountryOption = {
@@ -296,6 +298,11 @@ function isCorridorProviderOption(
     return false;
   }
   const row = value as Record<string, unknown>;
+  const statusOk =
+    row.payoutStatus === undefined ||
+    row.payoutStatus === "OPERATIONAL" ||
+    row.payoutStatus === "DELAYED" ||
+    row.payoutStatus === "CLOSED";
   return (
     typeof row.country === "string" &&
     typeof row.provider === "string" &&
@@ -304,7 +311,8 @@ function isCorridorProviderOption(
     (row.decimalsInAmount === "NONE" ||
       row.decimalsInAmount === "TWO_PLACES") &&
     typeof row.minAmount === "string" &&
-    typeof row.maxAmount === "string"
+    typeof row.maxAmount === "string" &&
+    statusOk
   );
 }
 

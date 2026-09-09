@@ -444,6 +444,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      admin_audit_log: {
+        Row: {
+          id: string;
+          actor: string;
+          action: "intent_status" | "fail_enqueued";
+          intent_id: string | null;
+          payout_id: string | null;
+          from_status: string | null;
+          to_status: string | null;
+          detail: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor: string;
+          action: "intent_status" | "fail_enqueued";
+          intent_id?: string | null;
+          payout_id?: string | null;
+          from_status?: string | null;
+          to_status?: string | null;
+          detail?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          actor?: string;
+          action?: "intent_status" | "fail_enqueued";
+          intent_id?: string | null;
+          payout_id?: string | null;
+          from_status?: string | null;
+          to_status?: string | null;
+          detail?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

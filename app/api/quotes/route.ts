@@ -5,9 +5,23 @@ import {
   parseUsdtAmount,
   readJsonBody,
 } from "@/lib/http";
+import {
+  allowIpRequest,
+  clientIp,
+  createIpRateLimiter,
+} from "@/lib/ip-rate-limit";
 import { createServerQuote } from "@/lib/quotes";
 
+const quoteLimit = createIpRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  maxHits: 40,
+});
+
 export async function POST(request: Request) {
+  if (!allowIpRequest(quoteLimit, clientIp(request))) {
+    return jsonError("too many quote requests", 429);
+  }
+
   const parsed = await readJsonBody(request);
   if (!parsed.ok) {
     return jsonError("invalid request body", 400);

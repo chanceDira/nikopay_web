@@ -10,6 +10,7 @@ import {
 } from "@/lib/corridor";
 import { isMomoPayoutStatus } from "@/lib/admin-payouts";
 import { toNumber } from "@/lib/numbers";
+import { assertPayoutProviderOpen } from "@/lib/pawapay/availability-gate";
 import { createServerQuote } from "@/lib/quotes";
 import { isPaymentStatus } from "@/lib/settlement/intent-status";
 import {
@@ -114,6 +115,14 @@ export async function createPaymentIntent(input: {
       reason: "quote currency does not match corridor",
       status: 409,
     };
+  }
+
+  const available = await assertPayoutProviderOpen(
+    country.country,
+    provider.provider,
+  );
+  if (!available.ok) {
+    return available;
   }
 
   const treasury = await loadActiveTreasury(quoted.quote.chain);
@@ -244,11 +253,13 @@ async function loadIntentPayout(
 function toIntentPayoutStatus(
   status: string,
 ): IntentPayout["status"] | undefined {
-  if (status === "successful" || status === "failed") {
+  if (
+    status === "successful" ||
+    status === "failed" ||
+    status === "pending" ||
+    status === "enqueued"
+  ) {
     return status;
-  }
-  if (status === "pending" || status === "enqueued") {
-    return "pending";
   }
   return undefined;
 }

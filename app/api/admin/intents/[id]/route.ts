@@ -5,6 +5,7 @@ import {
   isUuid,
   readJsonBody,
 } from "@/lib/http";
+import { writeAdminAudit } from "@/lib/admin-audit";
 import { authorizeAdmin } from "@/lib/admin-auth";
 import { getPaymentIntent, toPaymentIntent } from "@/lib/intents";
 import {
@@ -100,6 +101,16 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   if (error) return jsonError("unable to update intent", 503);
   if (!data) return jsonError("not found", 404);
+
+  if (patch.status !== undefined) {
+    await writeAdminAudit({
+      actor: admin.address,
+      action: "intent_status",
+      intentId: id,
+      fromStatus: current.intent.status,
+      toStatus: patch.status,
+    });
+  }
 
   const intent = toPaymentIntent(data);
   if (!intent) return jsonError("unable to load intent", 503);
