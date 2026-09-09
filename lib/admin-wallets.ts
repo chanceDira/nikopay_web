@@ -35,7 +35,9 @@ function parseAllowlistEnv(env: Record<string, string | undefined>): string[] {
   return out;
 }
 
-function includeTreasuryFromEnv(env: Record<string, string | undefined>): boolean {
+function includeTreasuryFromEnv(
+  env: Record<string, string | undefined>,
+): boolean {
   const raw = env[ADMIN_INCLUDE_TREASURY_ENV]?.trim().toLowerCase();
   if (!raw) return true;
   if (raw === "false" || raw === "0" || raw === "no") return false;
@@ -57,10 +59,7 @@ export async function loadAdminWalletAddresses(
     treasuryAddresses = treasury.addresses.map((a) => a.toLowerCase());
   }
 
-  const addresses = new Set<string>([
-    ...treasuryAddresses,
-    ...allowlist,
-  ]);
+  const addresses = new Set<string>([...treasuryAddresses, ...allowlist]);
 
   if (addresses.size === 0) {
     return { ok: false, reason: "admin wallets not configured" };
@@ -68,4 +67,3 @@ export async function loadAdminWalletAddresses(
 
   return { ok: true, addresses: [...addresses] };
 }
-
