@@ -54,6 +54,42 @@ export async function initiatePayout(
   return { ok: true, data: parsed };
 }
 
+export async function failEnqueuedPayout(
+  config: PawapayConfig,
+  payoutId: string,
+  fetchImpl: FetchLike = fetch,
+): Promise<PawapayHttpResult<InitiatePayoutResponse>> {
+  if (!isUuid(payoutId)) {
+    return { ok: false, reason: "payoutId must be a uuid" };
+  }
+
+  const response = await pawapayFetch(
+    config,
+    `/v2/payouts/fail-enqueued/${payoutId}`,
+    {
+      method: "POST",
+      fetchImpl,
+    },
+  );
+
+  if (!response.ok) {
+    if (response.timedOut) {
+      return { ok: false, reason: "pawapay fail-enqueued timed out" };
+    }
+    return {
+      ok: false,
+      reason: `pawapay fail-enqueued failed (${response.status})`,
+    };
+  }
+
+  const parsed = parseInitiatePayoutResponse(response.json);
+  if (!parsed) {
+    return { ok: false, reason: "pawapay fail-enqueued response invalid" };
+  }
+
+  return { ok: true, data: parsed };
+}
+
 export async function getPayout(
   config: PawapayConfig,
   payoutId: string,

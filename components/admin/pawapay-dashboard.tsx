@@ -177,6 +177,49 @@ export function AdminPawapayDashboard() {
 
       <section className="space-y-3">
         <h4 className="text-sm font-semibold text-foreground">
+          Stalled open payouts
+        </h4>
+        <p className="text-[11px] text-niko-muted">
+          Pending or enqueued for more than 15 minutes. Poll should pick these
+          up; cancel enqueued from the intent if the MMO is degraded.
+        </p>
+        {snapshot.stalledPayouts.length === 0 ? (
+          <p className="text-xs font-mono text-niko-muted">
+            No stalled open payouts.
+          </p>
+        ) : (
+          <div className="rounded-md border border-amber-500/20 overflow-hidden">
+            <ul className="divide-y divide-niko-border/10">
+              {snapshot.stalledPayouts.map((row) => (
+                <li
+                  key={row.id}
+                  className="px-4 py-3 flex items-center justify-between gap-3 text-xs font-mono"
+                >
+                  <span>
+                    {row.status} · {row.country}
+                    {row.provider ? ` · ${row.provider}` : ""} ·{" "}
+                    {new Date(row.createdAt).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  <Link
+                    href={`/admin/transactions/${row.intentId}`}
+                    className="text-niko-teal hover:underline"
+                  >
+                    open
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h4 className="text-sm font-semibold text-foreground">
           Configured corridors
         </h4>
         {snapshot.corridorsError ? (

@@ -8,6 +8,7 @@ import { feeUsdtForAmount } from "@/lib/settlement/quote";
 import { formatLocalAmount, formatUsdt } from "@/lib/rates";
 import { PageHeader } from "@/components/shared/page-header";
 import type { PayoutLookupData } from "@/lib/pawapay/types";
+import type { AdminAuditEntry } from "@/lib/admin-audit";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -27,6 +28,17 @@ export default function AdminTransactionDetailPage({ params }: Props) {
   const [livePayout, setLivePayout] = useState<PayoutLookupData | null>(null);
   const [livePayoutError, setLivePayoutError] = useState("");
   const [livePayoutLoading, setLivePayoutLoading] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [audit, setAudit] = useState<AdminAuditEntry[]>([]);
+
+  const loadAudit = async (intentId: string) => {
+    const res = await fetch(`/api/admin/intents/${intentId}/audit`);
+    if (!res.ok) {
+      return;
+    }
+    const json = (await res.json()) as { data?: AdminAuditEntry[] };
+    setAudit(json.data ?? []);
+  };
 
   const loadLivePayout = async (payoutId: string) => {
     setLivePayoutLoading(true);
@@ -60,6 +72,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
       setEditTxHash(data.depositTx ?? "");
       setEditMomoRef(data.momoRef ?? "");
       setPageState("ready");
+      void loadAudit(data.id);
       const payoutId = data.payout?.referenceId;
       if (payoutId) {
         const liveRes = await fetch(`/api/admin/pawapay/payouts/${payoutId}`);
@@ -101,6 +114,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
     setEditTxHash(json.data.depositTx ?? "");
     setEditMomoRef(json.data.momoRef ?? "");
     setSuccessMsg("Updated.");
+    void loadAudit(id);
     setTimeout(() => setSuccessMsg(""), 3000);
   };
 
@@ -109,6 +123,34 @@ export default function AdminTransactionDetailPage({ params }: Props) {
   const handleSaveReferences = (e: React.FormEvent) => {
     e.preventDefault();
     void patch({ depositTx: editTxHash || null, momoRef: editMomoRef || null });
+  };
+
+  const cancelEnqueued = async (payoutId: string) => {
+    setCancelBusy(true);
+    setSuccessMsg("");
+    setErrorMsg("");
+    const res = await fetch(`/api/admin/payouts/${payoutId}/fail-enqueued`, {
+      method: "POST",
+    });
+    const json = (await res.json()) as {
+      error?: string;
+      data?: { status?: string };
+    };
+    setCancelBusy(false);
+    if (!res.ok) {
+      setErrorMsg(json.error ?? "Unable to cancel enqueued payout.");
+      return;
+    }
+    setSuccessMsg(`Cancel accepted (${json.data?.status ?? "updated"}).`);
+    await loadLivePayout(payoutId);
+    const intentRes = await fetch(`/api/admin/intents/${id}`, {
+      headers: HEADERS,
+    });
+    if (intentRes.ok) {
+      const intentJson = (await intentRes.json()) as { data: PaymentIntent };
+      setIntent(intentJson.data);
+    }
+    void loadAudit(id);
   };
 
   const formatMoney = (val: number, currency = intent?.currency ?? "RWF") =>
@@ -385,6 +427,49 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                   USDT. PawaPay does not return a per-payout provider fee on the
                   API. Commercial charges, if any, are on PawaPay statements.
                 </p>
+                {intent.payout.status === "enqueued" ? (
+                  <button
+                    type="button"
+                    disabled={cancelBusy}
+                    onClick={() =>
+                      void cancelEnqueued(intent.payout!.referenceId)
+                    }
+                    className="w-full py-2.5 bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 border border-violet-400/30 font-bold rounded-md text-xs transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {cancelBusy ? "Cancelling…" : "Cancel enqueued payout"}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
+            {audit.length > 0 ? (
+              <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md space-y-3">
+                <h5 className="text-xs font-semibold uppercase tracking-wider text-niko-teal font-mono">
+                  Admin audit
+                </h5>
+                <ul className="space-y-2">
+                  {audit.map((row) => (
+                    <li
+                      key={row.id}
+                      className="text-[11px] font-mono text-niko-muted border-b border-niko-border/20 pb-2 last:border-0"
+                    >
+                      <span className="text-foreground">{row.action}</span>
+                      {row.fromStatus || row.toStatus
+                        ? ` · ${row.fromStatus ?? "—"} → ${row.toStatus ?? "—"}`
+                        : ""}
+                      {row.detail ? ` · ${row.detail}` : ""}
+                      <span className="block mt-0.5">
+                        {row.actor.slice(0, 10)}… ·{" "}
+                        {new Date(row.createdAt).toLocaleString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ) : null}
           </div>

@@ -573,6 +573,8 @@ function momoStatusLabel(status: IntentPayout["status"]) {
       return "Reached user";
     case "pending":
       return "Pending with provider";
+    case "enqueued":
+      return "Enqueued";
     case "failed":
       return "Failed";
     case "timeout":
@@ -588,6 +590,8 @@ function momoStatusStyles(status: IntentPayout["status"]) {
       return "bg-niko-teal/15 text-niko-teal border border-niko-teal/30";
     case "pending":
       return "bg-niko-surface text-foreground border border-niko-border";
+    case "enqueued":
+      return "bg-violet-400/10 text-violet-300 border border-violet-400/20";
     case "failed":
     case "timeout":
       return "bg-red-500/10 text-red-400 border border-red-500/30";
@@ -602,6 +606,8 @@ function momoStatusHint(status: IntentPayout["status"]) {
       return "The provider confirmed the disbursement. Funds were sent to the payee wallet.";
     case "pending":
       return "Submitted to the mobile money provider. In sandbox there is no SMS. We poll until the provider returns successful or failed.";
+    case "enqueued":
+      return "The provider queued this payout. It is not paid yet. Ops can cancel it from admin if the network is down.";
     case "failed":
       return "The provider rejected or could not complete the disbursement. Ops can retry from admin review.";
     case "timeout":

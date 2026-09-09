@@ -33,17 +33,23 @@ export function AdminPayoutsTable() {
   const [payouts, setPayouts] = useState<AdminPayout[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [cancelId, setCancelId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState("");
+
+  const reload = async () => {
+    const res = await fetch("/api/admin/payouts");
+    if (res.ok) {
+      const json = (await res.json()) as { data: AdminPayout[] };
+      setPayouts(json.data ?? []);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
       try {
-        const res = await fetch("/api/admin/payouts");
-        if (!cancelled && res.ok) {
-          const json = (await res.json()) as { data: AdminPayout[] };
-          setPayouts(json.data ?? []);
-        }
+        await reload();
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -65,8 +71,26 @@ export function AdminPayoutsTable() {
       : payouts.filter((row) => row.status === statusFilter);
   const paged = paginate(filtered, page, PAGE_SIZE);
 
+  const cancelEnqueued = async (payoutId: string) => {
+    setActionError("");
+    setCancelId(payoutId);
+    const res = await fetch(`/api/admin/payouts/${payoutId}/fail-enqueued`, {
+      method: "POST",
+    });
+    const json = (await res.json()) as { error?: string };
+    setCancelId(null);
+    if (!res.ok) {
+      setActionError(json.error ?? "Unable to cancel enqueued payout.");
+      return;
+    }
+    await reload();
+  };
+
   return (
     <div className="space-y-6">
+      {actionError ? (
+        <p className="text-xs text-red-400">{actionError}</p>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((filter) => {
           const href =
@@ -154,13 +178,27 @@ export function AdminPayoutsTable() {
                     >
                       {row.providerReason ?? "—"}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right space-y-1">
                       <Link
                         href={`/admin/transactions/${row.intentId}`}
                         className="font-mono text-xs text-niko-teal hover:underline"
                       >
                         {row.intentId.slice(0, 8)}...
                       </Link>
+                      {row.rail === "pawapay" && row.status === "enqueued" ? (
+                        <div>
+                          <button
+                            type="button"
+                            disabled={cancelId === row.referenceId}
+                            onClick={() => void cancelEnqueued(row.referenceId)}
+                            className="font-mono text-[11px] text-violet-300 hover:underline disabled:opacity-50 cursor-pointer"
+                          >
+                            {cancelId === row.referenceId
+                              ? "cancelling…"
+                              : "cancel enqueued"}
+                          </button>
+                        </div>
+                      ) : null}
                     </td>
                   </tr>
                 ))

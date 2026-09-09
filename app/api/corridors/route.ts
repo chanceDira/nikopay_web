@@ -5,7 +5,11 @@ import {
   clientIp,
   createIpRateLimiter,
 } from "@/lib/ip-rate-limit";
-import { getActiveConf } from "@/lib/pawapay/client";
+import {
+  flattenPayoutAvailability,
+  payoutAvailabilityStatus,
+} from "@/lib/pawapay/availability";
+import { getActiveConf, getAvailability } from "@/lib/pawapay/client";
 import { getPawapayConfig } from "@/lib/pawapay/config";
 import {
   listPayoutCountries,
@@ -50,10 +54,16 @@ export async function GET(request: Request) {
     return jsonError(country.reason, 400);
   }
 
-  const conf = await getActiveConf(configured.config, {
-    country: country.country,
-    operationType: "PAYOUT",
-  });
+  const [conf, availability] = await Promise.all([
+    getActiveConf(configured.config, {
+      country: country.country,
+      operationType: "PAYOUT",
+    }),
+    getAvailability(configured.config, {
+      country: country.country,
+      operationType: "PAYOUT",
+    }),
+  ]);
   if (!conf.ok) {
     return jsonError(conf.reason, 503);
   }
@@ -63,5 +73,20 @@ export async function GET(request: Request) {
     return jsonError("no payout providers for this country", 404);
   }
 
-  return jsonData({ country: country.country, providers });
+  const availabilityRows = availability.ok
+    ? flattenPayoutAvailability(availability.data)
+    : [];
+
+  return jsonData({
+    country: country.country,
+    providers: providers.map((provider) => ({
+      ...provider,
+      payoutStatus:
+        payoutAvailabilityStatus(
+          availabilityRows,
+          provider.country,
+          provider.provider,
+        ) ?? undefined,
+    })),
+  });
 }
