@@ -122,6 +122,16 @@ export function listPayoutProviders(
   return options;
 }
 
+export function listPayoutCurrencies(conf: unknown): string[] {
+  const seen = new Set<string>();
+  for (const country of listPayoutCountries(conf)) {
+    for (const provider of listPayoutProviders(conf, country.country)) {
+      seen.add(provider.currency);
+    }
+  }
+  return [...seen].sort();
+}
+
 export function pickPayoutCorridor(
   conf: unknown,
   query: { country: string; provider: string },

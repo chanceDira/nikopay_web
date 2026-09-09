@@ -1,4 +1,5 @@
 import { normalizeCorridorCurrency } from "@/lib/corridor";
+import { DEFAULT_FX_CURRENCY } from "@/lib/fx-currencies";
 import { toNumber } from "@/lib/numbers";
 import { createQuote } from "@/lib/settlement/quote";
 import {
@@ -11,7 +12,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const QUOTE_TTL_MS = 15 * 60 * 1000;
 export const MAX_USDT = 10_000;
-export const DEFAULT_QUOTE_CURRENCY = "RWF";
+export const DEFAULT_QUOTE_CURRENCY = DEFAULT_FX_CURRENCY;
 
 export async function loadActiveFx(
   currency: string = DEFAULT_QUOTE_CURRENCY,

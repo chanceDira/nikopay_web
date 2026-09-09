@@ -1,6 +1,10 @@
 import { jsonData, jsonError, readJsonBody, asRecord } from "@/lib/http";
 import { authorizeAdmin } from "@/lib/admin-auth";
 import { normalizeCorridorCurrency } from "@/lib/corridor";
+import { mergeFxCurrencies, DEFAULT_FX_CURRENCY } from "@/lib/fx-currencies";
+import { getActiveConf } from "@/lib/pawapay/client";
+import { getPawapayConfig } from "@/lib/pawapay/config";
+import { listPayoutCurrencies } from "@/lib/pawapay/corridor";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toNumber } from "@/lib/numbers";
 
@@ -15,11 +19,11 @@ export async function GET(request: Request) {
       "currency, usdt_to_rwf, fee_percent, min_usdt, effective_from, created_at",
     )
     .order("effective_from", { ascending: false })
-    .limit(40);
+    .limit(80);
 
   if (error) return jsonError("unable to load rates", 503);
 
-  const rows = (data ?? []).map((r) => ({
+  const rates = (data ?? []).map((r) => ({
     currency: r.currency,
     rate: toNumber(r.usdt_to_rwf),
     feePercent: toNumber(r.fee_percent),
@@ -28,7 +32,12 @@ export async function GET(request: Request) {
     createdAt: r.created_at,
   }));
 
-  return jsonData(rows);
+  return jsonData({
+    rates,
+    currencies: mergeFxCurrencies(await loadCorridorCurrencies(), [
+      ...rates.map((row) => row.currency),
+    ]),
+  });
 }
 
 export async function POST(request: Request) {
@@ -41,7 +50,9 @@ export async function POST(request: Request) {
   const body = asRecord(parsed.body);
   if (!body) return jsonError("invalid request body", 400);
 
-  const currencyResult = normalizeCorridorCurrency(body.currency ?? "RWF");
+  const currencyResult = normalizeCorridorCurrency(
+    body.currency ?? DEFAULT_FX_CURRENCY,
+  );
   if (!currencyResult.ok) return jsonError(currencyResult.reason, 400);
 
   const rate = typeof body.rate === "number" ? body.rate : Number(body.rate);
@@ -79,4 +90,20 @@ export async function POST(request: Request) {
   if (error) return jsonError("unable to save rate", 503);
 
   return jsonData({ ok: true }, 201);
+}
+
+async function loadCorridorCurrencies(): Promise<string[]> {
+  const configured = getPawapayConfig();
+  if (!configured.ok) {
+    return [];
+  }
+
+  const conf = await getActiveConf(configured.config, {
+    operationType: "PAYOUT",
+  });
+  if (!conf.ok) {
+    return [];
+  }
+
+  return listPayoutCurrencies(conf.data);
 }
