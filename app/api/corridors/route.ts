@@ -15,6 +15,7 @@ import {
   listPayoutCountries,
   listPayoutProviders,
 } from "@/lib/pawapay/corridor";
+import { listActiveFxCurrencies } from "@/lib/quotes";
 
 const corridorListLimit = createIpRateLimiter({
   windowMs: 10 * 60 * 1000,
@@ -76,6 +77,8 @@ export async function GET(request: Request) {
   const availabilityRows = availability.ok
     ? flattenPayoutAvailability(availability.data)
     : [];
+  const fx = await listActiveFxCurrencies();
+  const priced = fx.ok ? fx.currencies : null;
 
   return jsonData({
     country: country.country,
@@ -87,6 +90,7 @@ export async function GET(request: Request) {
           provider.country,
           provider.provider,
         ) ?? undefined,
+      ...(priced ? { rateConfigured: priced.has(provider.currency) } : {}),
     })),
   });
 }

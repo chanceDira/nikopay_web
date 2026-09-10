@@ -241,6 +241,7 @@ export type CorridorProviderOption = {
   minAmount: string;
   maxAmount: string;
   payoutStatus?: "OPERATIONAL" | "DELAYED" | "CLOSED";
+  rateConfigured?: boolean;
 };
 
 export type CorridorCountryOption = {
@@ -257,6 +258,7 @@ export type CorridorPredictResult = {
   decimalsInAmount: "NONE" | "TWO_PLACES";
   minAmount: string;
   maxAmount: string;
+  rateConfigured?: boolean;
 };
 
 function isCorridorCountriesPayload(
@@ -311,6 +313,8 @@ function isCorridorProviderOption(
     row.payoutStatus === "OPERATIONAL" ||
     row.payoutStatus === "DELAYED" ||
     row.payoutStatus === "CLOSED";
+  const rateOk =
+    row.rateConfigured === undefined || typeof row.rateConfigured === "boolean";
   return (
     typeof row.country === "string" &&
     typeof row.provider === "string" &&
@@ -320,7 +324,8 @@ function isCorridorProviderOption(
       row.decimalsInAmount === "TWO_PLACES") &&
     typeof row.minAmount === "string" &&
     typeof row.maxAmount === "string" &&
-    statusOk
+    statusOk &&
+    rateOk
   );
 }
 
@@ -339,7 +344,9 @@ function isCorridorPredictPayload(
     (row.decimalsInAmount === "NONE" ||
       row.decimalsInAmount === "TWO_PLACES") &&
     typeof row.minAmount === "string" &&
-    typeof row.maxAmount === "string"
+    typeof row.maxAmount === "string" &&
+    (row.rateConfigured === undefined ||
+      typeof row.rateConfigured === "boolean")
   );
 }
 

@@ -29,7 +29,6 @@ import {
   type CorridorCountryOption,
   type CorridorProviderOption,
 } from "@/lib/pay-api";
-import { readLocal } from "@/lib/read-local";
 import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
 import {
   netLocalForUsdt,
@@ -107,12 +106,6 @@ export function PayWizard() {
   const [corridorLoading, setCorridorLoading] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState<string>("");
   const [emailError, setEmailError] = useState<string>("");
-  const [rate] = useState(() =>
-    parseFloat(readLocal("nikopay_fx_rate", "1350")),
-  );
-  const [feePercent] = useState(() =>
-    parseFloat(readLocal("nikopay_fx_fee", "1.5")),
-  );
   const rwfPayout = parseFloat(amountRwf) || 0;
   const usdtSell = parseFloat(amountUsdt) || 0;
   const {
@@ -273,23 +266,34 @@ export function PayWizard() {
   const formatPayout = (amount: number) =>
     formatLocalAmount(amount, displayCurrency);
 
-  const displayRate = quote?.rate ?? fx?.rate ?? rate;
-  const displayFeePercent = quote?.feePercent ?? fx?.feePercent ?? feePercent;
+  const displayRate = quote?.rate ?? fx?.rate;
+  const displayFeePercent = quote?.feePercent ?? fx?.feePercent;
   const hasAmount = amountEntry === "local" ? rwfPayout > 0 : usdtSell > 0;
+  const hasLiveRate =
+    displayRate != null &&
+    Number.isFinite(displayRate) &&
+    displayFeePercent != null &&
+    Number.isFinite(displayFeePercent);
   const estimatedUsdt =
     amountEntry === "usdt"
       ? usdtSell
-      : rwfPayout / (displayRate * (1 - displayFeePercent / 100));
+      : hasLiveRate
+        ? rwfPayout / (displayRate * (1 - displayFeePercent / 100))
+        : 0;
   const estimatedNetRwf =
     amountEntry === "local"
       ? rwfPayout
-      : usdtSell * displayRate * (1 - displayFeePercent / 100);
+      : hasLiveRate
+        ? usdtSell * displayRate * (1 - displayFeePercent / 100)
+        : 0;
   const amountQuoteReady =
     hasAmount && quoteStatus === "ready" && quote != null;
   const usdtAmount = amountQuoteReady ? quote.usdtAmount : estimatedUsdt;
   const feeRwf = amountQuoteReady
     ? quote.feeRwf
-    : estimatedUsdt * displayRate - estimatedNetRwf;
+    : hasLiveRate
+      ? estimatedUsdt * displayRate - estimatedNetRwf
+      : 0;
   const netRwf = amountQuoteReady ? quote.netRwf : estimatedNetRwf;
   const chainConfig = getPublicChain(chain);
   const chainPayReady = chainConfig.tokenReady;
@@ -314,6 +318,10 @@ export function PayWizard() {
       setAmountUsdt("");
       return;
     }
+    if (previewRate == null || previewFee == null) {
+      setAmountUsdt("");
+      return;
+    }
     const usdt = usdtForTargetLocal(parsed, previewRate, previewFee);
     setAmountUsdt(usdt != null ? formatUsdtInput(usdt) : "");
   };
@@ -328,6 +336,10 @@ export function PayWizard() {
 
     const parsed = parseFloat(value);
     if (!value || !Number.isFinite(parsed) || parsed <= 0) {
+      setAmountRwf("");
+      return;
+    }
+    if (previewRate == null || previewFee == null) {
       setAmountRwf("");
       return;
     }
@@ -384,6 +396,12 @@ export function PayWizard() {
     if (selectedCorridor?.payoutStatus === "CLOSED") {
       setCorridorError(
         "This provider is closed right now. Try another provider or come back later.",
+      );
+      return false;
+    }
+    if (selectedCorridor?.rateConfigured === false) {
+      setCorridorError(
+        `No live NikoPay rate for ${selectedCorridor.currency} yet. Pick another corridor or try again later.`,
       );
       return false;
     }
@@ -496,6 +514,7 @@ export function PayWizard() {
             decimalsInAmount: predicted.data.decimalsInAmount,
             minAmount: predicted.data.minAmount,
             maxAmount: predicted.data.maxAmount,
+            rateConfigured: predicted.data.rateConfigured,
           },
         ];
       });
@@ -619,6 +638,12 @@ export function PayWizard() {
           if (!phone) {
             return;
           }
+        }
+        if (!amountQuoteReady) {
+          setCorridorError(
+            quoteError || "Waiting for a live NikoPay rate for this corridor",
+          );
+          return;
         }
         if (validateCorridor() && validateEmail()) {
           setMsisdnError("");
@@ -967,8 +992,10 @@ export function PayWizard() {
             )}
             <p className="text-xs text-niko-muted flex items-center gap-1.5">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-niko-teal" />
-              1 USDT = {displayRate.toLocaleString()} {displayCurrency}
-              {quote ? " (live rate)" : " (loading rate)"}
+              {hasLiveRate
+                ? `1 USDT = ${displayRate.toLocaleString()} ${displayCurrency}`
+                : quoteError || "Waiting for a live rate"}
+              {hasLiveRate && quote ? " (live rate)" : ""}
               {quoteStatus === "loading" && hasAmount ? " · updating" : ""}
             </p>
           </div>
@@ -982,10 +1009,11 @@ export function PayWizard() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-niko-muted">
-                NikoPay fee ({displayFeePercent}% of USDT)
+                NikoPay fee ({hasLiveRate ? `${displayFeePercent}%` : "—"} of
+                USDT)
               </span>
               <span className="font-mono text-niko-muted">
-                {hasAmount
+                {hasAmount && hasLiveRate
                   ? `${formatUsdt(feeUsdtForAmount(usdtAmount, displayFeePercent) ?? 0)} (${formatPayout(feeRwf)})`
                   : "-"}
               </span>
@@ -1186,6 +1214,16 @@ export function PayWizard() {
                 This provider is closed right now. Pick another or try later.
               </p>
             ) : null}
+            {selectedCorridor?.rateConfigured === false ? (
+              <p className="mt-2 text-xs text-red-400">
+                No live NikoPay rate for {selectedCorridor.currency} yet. You
+                can review the number, but payouts for this corridor are paused
+                until ops sets a rate.
+              </p>
+            ) : null}
+            {quoteError && selectedCorridor?.rateConfigured !== false ? (
+              <p className="mt-2 text-xs text-red-400">{quoteError}</p>
+            ) : null}
             {corridorError ? (
               <p className="mt-2 text-xs text-red-400">{corridorError}</p>
             ) : null}
@@ -1256,7 +1294,12 @@ export function PayWizard() {
             <button
               type="button"
               onClick={handleNextStep}
-              className="w-2/3 py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all shadow-[0_0_20px_rgba(0,212,200,0.15)] flex justify-center items-center gap-2"
+              disabled={
+                selectedCorridor?.payoutStatus === "CLOSED" ||
+                selectedCorridor?.rateConfigured === false ||
+                !amountQuoteReady
+              }
+              className="w-2/3 py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all shadow-[0_0_20px_rgba(0,212,200,0.15)] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Review Payment
               <svg
@@ -1322,22 +1365,26 @@ export function PayWizard() {
 
               <div className="text-niko-muted">Recipient Receives</div>
               <div className="font-semibold text-right text-foreground font-mono">
-                {formatPayout(netRwf)}
+                {amountQuoteReady ? formatPayout(netRwf) : "—"}
               </div>
 
               <div className="text-niko-muted">Exchange Rate</div>
               <div className="text-right font-mono text-foreground">
-                1 USDT = {displayRate.toLocaleString()} {displayCurrency}
+                {hasLiveRate
+                  ? `1 USDT = ${displayRate.toLocaleString()} ${displayCurrency}`
+                  : quoteError || "No live rate"}
               </div>
 
               <div className="text-niko-muted">
-                NikoPay fee ({displayFeePercent}% of USDT)
+                NikoPay fee ({hasLiveRate ? `${displayFeePercent}%` : "—"} of
+                USDT)
               </div>
               <div className="text-right font-mono text-niko-muted">
-                {formatUsdt(
-                  feeUsdtForAmount(usdtAmount, displayFeePercent) ?? 0,
-                )}{" "}
-                ({formatPayout(feeRwf)})
+                {amountQuoteReady
+                  ? `${formatUsdt(
+                      feeUsdtForAmount(usdtAmount, displayFeePercent ?? 0) ?? 0,
+                    )} (${formatPayout(feeRwf)})`
+                  : "—"}
               </div>
 
               <div className="col-span-2 h-px bg-niko-border/60 my-1" />
@@ -1346,7 +1393,7 @@ export function PayWizard() {
                 Total USDT to Send
               </div>
               <div className="text-xl font-bold text-niko-teal-bright text-right font-mono animate-pulse-glow">
-                {formatUsdt(usdtAmount)}
+                {amountQuoteReady ? formatUsdt(usdtAmount) : "—"}
               </div>
 
               <div className="text-niko-muted">Mobile money number</div>
@@ -1452,11 +1499,11 @@ export function PayWizard() {
             </div>
           )}
 
-          {(intentError || walletDrifted) && (
+          {(intentError || walletDrifted || quoteError) && (
             <p className="text-xs text-red-400">
               {walletDrifted
                 ? "Active wallet account changed. Confirm again to create a payment for this wallet."
-                : intentError}
+                : intentError || quoteError}
             </p>
           )}
 
