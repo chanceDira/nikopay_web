@@ -7,6 +7,7 @@ import type { PaymentIntent, PaymentStatus } from "@/lib/settlement/types";
 import { canTransition } from "@/lib/settlement/transitions";
 import { formatLocalAmount } from "@/lib/rates";
 import { PageHeader } from "@/components/shared/page-header";
+import { SettlementTimingFields } from "@/components/shared/settlement-timing";
 import type { PayoutLookupData } from "@/lib/pawapay/types";
 import type { AdminAuditEntry } from "@/lib/admin-audit";
 
@@ -298,6 +299,24 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                     {new Date(intent.expiresAt).toLocaleString()}
                   </span>
                 </div>
+              </div>
+
+              <div className="border-t border-niko-border/20 pt-6 space-y-3">
+                <h5 className="text-xs font-semibold text-niko-teal">
+                  Settlement timing
+                </h5>
+                <SettlementTimingFields
+                  timing={{
+                    detectedAt: intent.detectedAt,
+                    creditedAt: intent.creditedAt,
+                    payoutStartedAt: intent.payoutStartedAt,
+                    paidAt: intent.paidAt,
+                  }}
+                />
+                <p className="text-[11px] text-niko-muted">
+                  Target is 1s from USDT seen to paid. Clocks are UTC with
+                  microseconds.
+                </p>
               </div>
 
               <form

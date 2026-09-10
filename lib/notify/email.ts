@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import { getPublicChain } from "@/lib/chain-config";
 import { CONTACT } from "@/lib/contact";
 import { formatLocalAmount, formatUsdt } from "@/lib/rates";
+import { settlementTimingLines } from "@/lib/settlement/timing";
 import type { ChainId } from "@/lib/settlement/types";
 import { resolvePublicSiteUrl } from "@/lib/site-url";
 
@@ -16,6 +17,10 @@ export type PayoutEmailProofs = {
   rate?: number;
   feeRwf?: number;
   walletAddress?: string;
+  detectedAt?: string;
+  creditedAt?: string;
+  payoutStartedAt?: string;
+  paidAt?: string;
 };
 
 export type PaidEmailInput = {
@@ -114,6 +119,7 @@ export function buildPaidEmailContent(
     ...(input.walletAddress ? [`Sender wallet: ${input.walletAddress}`] : []),
     `Chain: ${chainName}`,
     "",
+    ...timingTextBlock(input),
     "Blockchain proof",
     input.depositTx
       ? `Deposit tx: ${input.depositTx}`
@@ -154,6 +160,7 @@ export function buildPaidEmailContent(
     <p>Your NikoPay payout was confirmed on mobile money.</p>
     <h3>Payment details</h3>
     <ul>${htmlItems.join("")}</ul>
+    ${timingHtmlBlock(input)}
     <h3>Blockchain proof</h3>
     <ul>
       ${detailItem("Deposit tx", input.depositTx ?? "recorded on your payment")}
@@ -209,6 +216,7 @@ export function buildFailedEmailContent(
     ...(input.walletAddress ? [`Sender wallet: ${input.walletAddress}`] : []),
     `Chain: ${chainName}`,
     "",
+    ...timingTextBlock(input),
     "Blockchain proof (deposit received)",
     input.depositTx
       ? `Deposit tx: ${input.depositTx}`
@@ -258,6 +266,7 @@ export function buildFailedEmailContent(
       }
       ${detailItem("Chain", chainName)}
     </ul>
+    ${timingHtmlBlock(input)}
     <h3>Blockchain proof (deposit received)</h3>
     <ul>
       ${detailItem("Deposit tx", input.depositTx ?? "recorded on your payment")}
@@ -338,6 +347,39 @@ async function sendMail(
   } catch {
     return { ok: false, reason: "email send failed" };
   }
+}
+
+function timingTextBlock(input: PayoutEmailProofs): string[] {
+  const lines = settlementTimingLines({
+    detectedAt: input.detectedAt,
+    creditedAt: input.creditedAt,
+    payoutStartedAt: input.payoutStartedAt,
+    paidAt: input.paidAt,
+  });
+  if (lines.length === 0) {
+    return [];
+  }
+  return ["Timing", ...lines, ""];
+}
+
+function timingHtmlBlock(input: PayoutEmailProofs): string {
+  const lines = settlementTimingLines({
+    detectedAt: input.detectedAt,
+    creditedAt: input.creditedAt,
+    payoutStartedAt: input.payoutStartedAt,
+    paidAt: input.paidAt,
+  });
+  if (lines.length === 0) {
+    return "";
+  }
+  const items = lines.map((line) => {
+    const split = line.indexOf(": ");
+    if (split < 0) {
+      return detailItem("Timing", line);
+    }
+    return detailItem(line.slice(0, split), line.slice(split + 2));
+  });
+  return `<h3>Timing</h3><ul>${items.join("")}</ul>`;
 }
 
 function detailItem(label: string, value: string): string {

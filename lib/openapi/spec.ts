@@ -126,6 +126,10 @@ const paymentIntentSchema: JsonSchema = {
       description: "Alias of payoutRef (payment_intents.momo_ref)",
     },
     notifyEmail: { type: "string", format: "email" },
+    detectedAt: { type: "string", format: "date-time" },
+    creditedAt: { type: "string", format: "date-time" },
+    payoutStartedAt: { type: "string", format: "date-time" },
+    paidAt: { type: "string", format: "date-time" },
     payout: intentPayoutSchema,
   },
 };

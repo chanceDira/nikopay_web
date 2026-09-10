@@ -2,6 +2,7 @@ import { txExplorerUrl } from "@/lib/chain-config";
 import { sendPaidEmail } from "@/lib/notify/email";
 import { loadPaidRefs } from "@/lib/notify/transfer-refs";
 import { toNumber } from "@/lib/numbers";
+import { logSettlementTiming } from "@/lib/settlement/timing";
 import { isChainId } from "@/lib/settlement/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -10,7 +11,7 @@ export async function notifyIntentPaid(intentId: string): Promise<void> {
   const loaded = await supabase
     .from("payment_intents")
     .select(
-      "id, status, notify_email, paid_notified_at, net_rwf, usdt_amount, fee_rwf, rate, msisdn, momo_ref, deposit_tx, chain_id, wallet_address, currency",
+      "id, status, notify_email, paid_notified_at, net_rwf, usdt_amount, fee_rwf, rate, msisdn, momo_ref, deposit_tx, chain_id, wallet_address, currency, detected_at, credited_at, payout_started_at, paid_at",
     )
     .eq("id", intentId)
     .maybeSingle();
@@ -20,10 +21,22 @@ export async function notifyIntentPaid(intentId: string): Promise<void> {
   }
 
   const row = loaded.data;
-  if (row.status !== "paid" || !row.notify_email || row.paid_notified_at) {
+  if (row.status !== "paid") {
     return;
   }
   if (!isChainId(row.chain_id)) {
+    return;
+  }
+
+  const timing = {
+    detectedAt: row.detected_at ?? undefined,
+    creditedAt: row.credited_at ?? undefined,
+    payoutStartedAt: row.payout_started_at ?? undefined,
+    paidAt: row.paid_at ?? undefined,
+  };
+  logSettlementTiming(row.id, timing);
+
+  if (!row.notify_email || row.paid_notified_at) {
     return;
   }
 
@@ -50,6 +63,10 @@ export async function notifyIntentPaid(intentId: string): Promise<void> {
     momoRef: momoFinancial,
     momoFinancialId: momoFinancial,
     momoReferenceId: refs.referenceId ?? undefined,
+    detectedAt: timing.detectedAt,
+    creditedAt: timing.creditedAt,
+    payoutStartedAt: timing.payoutStartedAt,
+    paidAt: timing.paidAt,
   });
 
   if (!sent.ok) {

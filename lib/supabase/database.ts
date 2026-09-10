@@ -190,6 +190,10 @@ export type Database = {
           notify_email: string | null;
           paid_notified_at: string | null;
           failed_notified_at: string | null;
+          detected_at: string | null;
+          credited_at: string | null;
+          payout_started_at: string | null;
+          paid_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -223,6 +227,10 @@ export type Database = {
           notify_email?: string | null;
           paid_notified_at?: string | null;
           failed_notified_at?: string | null;
+          detected_at?: string | null;
+          credited_at?: string | null;
+          payout_started_at?: string | null;
+          paid_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -256,6 +264,10 @@ export type Database = {
           notify_email?: string | null;
           paid_notified_at?: string | null;
           failed_notified_at?: string | null;
+          detected_at?: string | null;
+          credited_at?: string | null;
+          payout_started_at?: string | null;
+          paid_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

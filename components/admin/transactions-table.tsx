@@ -4,6 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAdminIntents } from "@/components/admin/use-admin-intents";
 import { formatLocalAmount } from "@/lib/rates";
+import {
+  formatDurationMicros,
+  settlementDurations,
+} from "@/lib/settlement/timing";
 import type { PaymentStatus } from "@/lib/settlement/types";
 
 export function AdminTransactionsTable() {
@@ -134,6 +138,7 @@ export function AdminTransactionsTable() {
                 <th className="px-6 py-4 font-medium text-right">USDT</th>
                 <th className="px-6 py-4 font-medium text-right">Payout</th>
                 <th className="px-6 py-4 font-medium">Network</th>
+                <th className="px-6 py-4 font-medium text-right">USDT→paid</th>
                 <th className="px-6 py-4 font-medium">Status</th>
               </tr>
             </thead>
@@ -141,7 +146,7 @@ export function AdminTransactionsTable() {
               {loading && filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-6 py-12 text-center text-niko-muted font-sans"
                   >
                     Loading...
@@ -150,7 +155,7 @@ export function AdminTransactionsTable() {
               ) : filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-6 py-12 text-center text-niko-muted font-sans"
                   >
                     No transactions found.
@@ -190,6 +195,9 @@ export function AdminTransactionsTable() {
                         {intent.chain}
                       </span>
                     </td>
+                    <td className="px-6 py-4 font-mono text-xs text-right tabular-nums text-foreground">
+                      {settleDuration(intent)}
+                    </td>
                     <td className="px-6 py-4">
                       {getStatusBadge(intent.status)}
                     </td>
@@ -202,4 +210,17 @@ export function AdminTransactionsTable() {
       </div>
     </div>
   );
+}
+
+function settleDuration(intent: {
+  detectedAt?: string;
+  creditedAt?: string;
+  paidAt?: string;
+}): string {
+  const micros = settlementDurations({
+    detectedAt: intent.detectedAt,
+    creditedAt: intent.creditedAt,
+    paidAt: intent.paidAt,
+  }).usdtToPaidMicros;
+  return micros == null ? "-" : formatDurationMicros(micros);
 }

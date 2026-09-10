@@ -7,6 +7,7 @@ import { CONTACT } from "@/lib/contact";
 import { displayPayoutRef } from "@/lib/payout-ref";
 import { formatLocalAmount, formatUsdt } from "@/lib/rates";
 import { feeUsdtForAmount } from "@/lib/settlement/quote";
+import { SettlementTimingFields } from "@/components/shared/settlement-timing";
 
 type PaymentReceiptProps = {
   id?: string;
@@ -259,6 +260,23 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
             </div>
           )}
         </div>
+
+        {intent.status === "paid" ? (
+          <div className="pt-2">
+            <p className="text-xs font-semibold text-foreground print:text-black mb-2">
+              Timing
+            </p>
+            <SettlementTimingFields
+              compact
+              timing={{
+                detectedAt: intent.detectedAt,
+                creditedAt: intent.creditedAt,
+                payoutStartedAt: intent.payoutStartedAt,
+                paidAt: intent.paidAt,
+              }}
+            />
+          </div>
+        ) : null}
 
         {/* Receipt Footer */}
         <div className="text-center pt-4 border-t border-niko-border/60 print:border-neutral-200">
