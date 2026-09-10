@@ -9,6 +9,7 @@ import { getActiveConf } from "@/lib/pawapay/client";
 import { getPawapayConfig } from "@/lib/pawapay/config";
 import { pickPayoutCorridor } from "@/lib/pawapay/corridor";
 import { resolvePayoutProvider } from "@/lib/pawapay/sandbox";
+import { listActiveFxCurrencies } from "@/lib/quotes";
 
 const corridorPredictLimit = createIpRateLimiter({
   windowMs: 10 * 60 * 1000,
@@ -64,6 +65,8 @@ export async function POST(request: Request) {
     return jsonError("payout corridor is not configured", 409);
   }
 
+  const fx = await listActiveFxCurrencies();
+
   return jsonData({
     country: corridor.country,
     provider: corridor.provider,
@@ -72,5 +75,6 @@ export async function POST(request: Request) {
     decimalsInAmount: corridor.decimalsInAmount,
     minAmount: corridor.minAmount,
     maxAmount: corridor.maxAmount,
+    ...(fx.ok ? { rateConfigured: fx.currencies.has(corridor.currency) } : {}),
   });
 }

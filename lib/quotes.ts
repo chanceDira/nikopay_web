@@ -14,6 +14,33 @@ export const QUOTE_TTL_MS = 15 * 60 * 1000;
 export const MAX_USDT = 10_000;
 export const DEFAULT_QUOTE_CURRENCY = DEFAULT_FX_CURRENCY;
 
+export function quoteFxErrorStatus(reason: string): 409 | 503 {
+  return reason.startsWith("no live NikoPay rate") ? 409 : 503;
+}
+
+export async function listActiveFxCurrencies(): Promise<
+  { ok: true; currencies: Set<string> } | { ok: false; reason: string }
+> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("fx_rates")
+    .select("currency, effective_to");
+
+  if (error) {
+    return { ok: false, reason: "unable to load exchange rate" };
+  }
+
+  const now = Date.now();
+  const currencies = new Set<string>();
+  for (const row of data ?? []) {
+    if (!row.effective_to || new Date(row.effective_to).getTime() > now) {
+      currencies.add(row.currency);
+    }
+  }
+
+  return { ok: true, currencies };
+}
+
 export async function loadActiveFx(
   currency: string = DEFAULT_QUOTE_CURRENCY,
 ): Promise<{ ok: true; fx: FxConfig } | { ok: false; reason: string }> {
@@ -47,7 +74,7 @@ export async function loadActiveFx(
   if (!current) {
     return {
       ok: false,
-      reason: `no active exchange rate for ${normalized.currency}`,
+      reason: `no live NikoPay rate for ${normalized.currency} yet`,
     };
   }
 
@@ -100,7 +127,11 @@ export async function createServerQuote(
 
   const fxResult = await loadActiveFx(currencyResult.currency);
   if (!fxResult.ok) {
-    return { ok: false, reason: fxResult.reason, status: 503 };
+    return {
+      ok: false,
+      reason: fxResult.reason,
+      status: quoteFxErrorStatus(fxResult.reason),
+    };
   }
 
   const quoted = createQuote({
