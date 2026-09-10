@@ -1,4 +1,5 @@
 import { isPaymentStatus } from "@/lib/settlement/intent-status";
+import { optionalIso } from "@/lib/settlement/timing";
 import {
   isChainId,
   type PaymentIntent,
@@ -109,6 +110,15 @@ export function isPaymentIntentPayload(value: unknown): value is PaymentIntent {
     return false;
   }
 
+  if (
+    !optionalIso(intent.detectedAt) ||
+    !optionalIso(intent.creditedAt) ||
+    !optionalIso(intent.payoutStartedAt) ||
+    !optionalIso(intent.paidAt)
+  ) {
+    return false;
+  }
+
   if (intent.payout === undefined) {
     return true;
   }
@@ -161,7 +171,11 @@ function isPaymentIntentSummaryPayload(
     typeof intent.treasuryAddress === "string" &&
     typeof intent.expiresAt === "string" &&
     typeof intent.createdAt === "string" &&
-    typeof intent.updatedAt === "string"
+    typeof intent.updatedAt === "string" &&
+    optionalIso(intent.detectedAt) &&
+    optionalIso(intent.creditedAt) &&
+    optionalIso(intent.payoutStartedAt) &&
+    optionalIso(intent.paidAt)
   );
 }
 

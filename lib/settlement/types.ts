@@ -70,6 +70,10 @@ export type PaymentIntent = {
   expiresAt: string;
   createdAt: string;
   updatedAt: string;
+  detectedAt?: string;
+  creditedAt?: string;
+  payoutStartedAt?: string;
+  paidAt?: string;
   depositTx?: string;
   payoutRef?: string;
   /** @deprecated alias of payoutRef; maps to payment_intents.momo_ref */
