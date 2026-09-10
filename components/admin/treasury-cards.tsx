@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useAdminIntents } from "@/components/admin/use-admin-intents";
-import { summarizeAdminIntents } from "@/lib/admin-metrics";
+import {
+  currencyTotalsLines,
+  summarizeAdminIntents,
+} from "@/lib/admin-metrics";
 import type {
   AdminTreasurySnapshot,
   PawapayPoolSnapshot,
   TreasuryWalletSnapshot,
 } from "@/lib/admin-treasury-types";
-import { formatRwf, formatUsdt } from "@/lib/rates";
+import { formatLocalAmount, formatRwf, formatUsdt } from "@/lib/rates";
 import type { ChainId } from "@/lib/settlement/types";
 
 const CHAIN_LABEL: Record<ChainId, string> = {
@@ -75,11 +78,12 @@ export function AdminTreasuryCards() {
   }
 
   const metrics = summarizeAdminIntents(intents);
+  const paidOut = currencyTotalsLines(metrics.paidLocalByCurrency);
 
   return (
     <div className="space-y-6">
       {snapshot.pawapay ? (
-        <PawapayPoolCard pawapay={snapshot.pawapay} paidRwf={metrics.paidRwf} />
+        <PawapayPoolCard pawapay={snapshot.pawapay} paidOut={paidOut} />
       ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -97,7 +101,7 @@ export function AdminTreasuryCards() {
 
 function PawapayPoolCard(props: {
   pawapay: PawapayPoolSnapshot;
-  paidRwf: number;
+  paidOut: { currency: string; amount: number }[];
 }) {
   const available =
     props.pawapay.ok && props.pawapay.currency.toUpperCase() === "RWF"
@@ -113,16 +117,13 @@ function PawapayPoolCard(props: {
             Low PawaPay RWF balance
           </strong>
           <p>
-            The disbursement wallet is below RWF 1,000,000. Large payouts may
-            fail until the pool is topped up in the PawaPay dashboard.
+            Balance under 1,000,000 RWF. Top up in PawaPay before large payouts.
           </p>
         </div>
       ) : null}
 
       <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
-        <p className="text-xs font-mono uppercase tracking-widest text-niko-muted">
-          PawaPay disbursement balance
-        </p>
+        <p className="text-xs text-niko-muted">PawaPay disbursement balance</p>
         <h3 className="text-2xl font-bold font-mono text-foreground mt-3">
           {props.pawapay.ok
             ? formatPoolBalance(
@@ -133,12 +134,22 @@ function PawapayPoolCard(props: {
         </h3>
         <p className="text-xs text-niko-muted mt-1 font-sans">
           {props.pawapay.ok
-            ? `Live ${props.pawapay.country} balance from PawaPay wallet-balances.`
+            ? `PawaPay ${props.pawapay.country} balance`
             : props.pawapay.reason}
         </p>
-        <div className="mt-6 flex items-center justify-between text-xs text-niko-muted font-mono border-t border-niko-border/10 pt-4">
-          <span>RWF paid from intents</span>
-          <span className="text-foreground">{formatRwf(props.paidRwf)}</span>
+        <div className="mt-6 flex items-start justify-between gap-4 text-xs text-niko-muted font-mono border-t border-niko-border/10 pt-4">
+          <span>Paid from intents</span>
+          <div className="text-right space-y-1">
+            {props.paidOut.length === 0 ? (
+              <span className="text-foreground">—</span>
+            ) : (
+              props.paidOut.map((row) => (
+                <div key={row.currency} className="text-foreground">
+                  {formatLocalAmount(row.amount, row.currency)}
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -153,9 +164,7 @@ function VaultCard(props: {
 
   return (
     <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
-      <p className="text-xs font-mono uppercase tracking-widest text-niko-muted">
-        {CHAIN_LABEL[wallet.chain]}
-      </p>
+      <p className="text-xs text-niko-muted">{CHAIN_LABEL[wallet.chain]}</p>
       <h3 className="text-2xl font-bold font-mono text-foreground mt-3">
         {wallet.usdtBalance === null
           ? "Unavailable"
@@ -167,9 +176,7 @@ function VaultCard(props: {
       {wallet.error ? (
         <p className="text-xs text-amber-500 mt-2">{wallet.error}</p>
       ) : (
-        <p className="text-xs text-niko-muted mt-1 font-sans">
-          On-chain USDT at the active treasury address.
-        </p>
+        <p className="text-xs text-niko-muted mt-1 font-sans">On-chain USDT</p>
       )}
       <div className="mt-6 flex items-center justify-between text-xs text-niko-muted font-mono border-t border-niko-border/10 pt-4">
         <span>Matched deposits</span>

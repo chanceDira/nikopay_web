@@ -69,7 +69,7 @@ export function AdminTransactionsTable() {
       case "manual_review":
         return (
           <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-[var(--niko-warning-bg)] text-[var(--niko-warning-text)] border border-[var(--niko-warning-border)]">
-            Manual Review
+            Manual review
           </span>
         );
       default:
@@ -97,7 +97,7 @@ export function AdminTransactionsTable() {
         <div className="relative w-full sm:max-w-xs">
           <input
             type="text"
-            placeholder="Search by ID or phone..."
+            placeholder="ID or phone"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-background border border-niko-border text-foreground px-4 py-2 text-sm rounded-md outline-none focus:border-niko-teal/50 transition-colors"
@@ -105,20 +105,17 @@ export function AdminTransactionsTable() {
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-          <span className="text-xs text-niko-muted font-mono uppercase">
-            Filter:
-          </span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-background border border-niko-border text-foreground px-3 py-2 text-sm rounded-md outline-none focus:border-niko-teal/50 transition-colors cursor-pointer"
           >
-            <option value="all">All Statuses</option>
+            <option value="all">All</option>
             <option value="awaiting_payment">Awaiting</option>
             <option value="detected">Detected</option>
             <option value="credited">Credited</option>
-            <option value="manual_review">Manual Review</option>
-            <option value="payout_pending">Payout Pending</option>
+            <option value="manual_review">Manual review</option>
+            <option value="payout_pending">Payout pending</option>
             <option value="paid">Paid</option>
             <option value="failed">Failed</option>
             <option value="expired">Expired</option>
@@ -126,19 +123,18 @@ export function AdminTransactionsTable() {
         </div>
       </div>
 
-      {/* Transactions Table Container */}
       <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md overflow-hidden shadow-md">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs font-mono uppercase tracking-wider text-niko-muted">
-                <th className="px-6 py-4">ID</th>
-                <th className="px-6 py-4">Date</th>
-                <th className="px-6 py-4">Recipient</th>
-                <th className="px-6 py-4">USDT Sent</th>
-                <th className="px-6 py-4">RWF Payout</th>
-                <th className="px-6 py-4">Network</th>
-                <th className="px-6 py-4 text-right">Status</th>
+              <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs text-niko-muted">
+                <th className="px-6 py-4 font-medium">ID</th>
+                <th className="px-6 py-4 font-medium">Date</th>
+                <th className="px-6 py-4 font-medium">Recipient</th>
+                <th className="px-6 py-4 font-medium text-right">USDT</th>
+                <th className="px-6 py-4 font-medium text-right">Payout</th>
+                <th className="px-6 py-4 font-medium">Network</th>
+                <th className="px-6 py-4 font-medium">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-niko-border/10 text-sm">
@@ -180,10 +176,10 @@ export function AdminTransactionsTable() {
                     <td className="px-6 py-4 font-mono text-foreground">
                       {intent.msisdn}
                     </td>
-                    <td className="px-6 py-4 font-mono font-semibold text-foreground">
+                    <td className="px-6 py-4 font-mono font-semibold text-foreground text-right tabular-nums">
                       {intent.usdtAmount.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 font-mono font-semibold text-niko-teal-bright">
+                    <td className="px-6 py-4 font-mono font-semibold text-niko-teal-bright text-right tabular-nums">
                       {formatLocalAmount(intent.netRwf, intent.currency)}
                     </td>
                     <td className="px-6 py-4">
@@ -194,7 +190,7 @@ export function AdminTransactionsTable() {
                         {intent.chain}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4">
                       {getStatusBadge(intent.status)}
                     </td>
                   </tr>

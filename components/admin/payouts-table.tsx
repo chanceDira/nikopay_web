@@ -118,15 +118,15 @@ export function AdminPayoutsTable() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs font-mono uppercase tracking-wider text-niko-muted">
-                <th className="px-6 py-4">Sent</th>
-                <th className="px-6 py-4">Corridor</th>
-                <th className="px-6 py-4">Recipient</th>
-                <th className="px-6 py-4">Recipient amount</th>
-                <th className="px-6 py-4">Payout status</th>
-                <th className="px-6 py-4">Provider ref</th>
-                <th className="px-6 py-4">Reason</th>
-                <th className="px-6 py-4 text-right">Intent</th>
+              <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs text-niko-muted">
+                <th className="px-6 py-4 font-medium">Sent</th>
+                <th className="px-6 py-4 font-medium">Corridor</th>
+                <th className="px-6 py-4 font-medium">Recipient</th>
+                <th className="px-6 py-4 font-medium text-right">Amount</th>
+                <th className="px-6 py-4 font-medium">Status</th>
+                <th className="px-6 py-4 font-medium">Provider ref</th>
+                <th className="px-6 py-4 font-medium">Reason</th>
+                <th className="px-6 py-4 font-medium text-right">Intent</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-niko-border/10 text-sm">
@@ -145,8 +145,7 @@ export function AdminPayoutsTable() {
                     colSpan={8}
                     className="px-6 py-12 text-center text-niko-muted"
                   >
-                    No payout transfers yet. Run payouts after a deposit is
-                    credited.
+                    No payouts yet.
                   </td>
                 </tr>
               ) : (
@@ -162,7 +161,7 @@ export function AdminPayoutsTable() {
                     <td className="px-6 py-4 font-mono text-foreground">
                       {row.msisdn}
                     </td>
-                    <td className="px-6 py-4 font-mono font-semibold text-niko-teal-bright">
+                    <td className="px-6 py-4 font-mono font-semibold text-niko-teal-bright text-right tabular-nums">
                       {row.currency === "RWF"
                         ? formatRwf(row.amountRwf)
                         : `${row.amountRwf} ${row.currency}`}
@@ -206,11 +205,6 @@ export function AdminPayoutsTable() {
           </table>
         </div>
       </div>
-
-      <p className="text-[11px] text-niko-muted">
-        Recipient amount is the PawaPay wallet debit sent to the user. PawaPay
-        does not return a per-payout provider fee on the API.
-      </p>
 
       {filtered.length > 0 ? (
         <div className="flex items-center justify-between">

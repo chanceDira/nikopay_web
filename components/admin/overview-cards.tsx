@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useAdminIntents } from "@/components/admin/use-admin-intents";
-import { summarizeAdminIntents } from "@/lib/admin-metrics";
-import { formatRwf, formatUsdt } from "@/lib/rates";
+import {
+  currencyTotalsLines,
+  summarizeAdminIntents,
+} from "@/lib/admin-metrics";
+import { formatLocalAmount, formatUsdt } from "@/lib/rates";
 import type { PaymentStatus } from "@/lib/settlement/types";
 
 const STATUS_BARS: {
@@ -33,6 +36,8 @@ export function AdminOverviewCards() {
   }
 
   const metrics = summarizeAdminIntents(intents);
+  const paidOut = currencyTotalsLines(metrics.paidLocalByCurrency);
+  const fees = currencyTotalsLines(metrics.paidFeesByCurrency);
   const polygonUsdt = metrics.matchedUsdtByChain.polygon;
   const baseUsdt = metrics.matchedUsdtByChain.base;
   const maxStatusCount = Math.max(
@@ -43,10 +48,8 @@ export function AdminOverviewCards() {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md transition-all hover:border-niko-teal/30 hover:translate-y-[-2px] duration-300">
-          <p className="text-xs font-mono uppercase tracking-widest text-niko-muted">
-            USDT received
-          </p>
+        <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
+          <p className="text-xs text-niko-muted">USDT received</p>
           <h3 className="text-2xl font-bold font-mono text-foreground mt-2">
             {formatUsdt(metrics.matchedUsdt)}
           </h3>
@@ -56,13 +59,22 @@ export function AdminOverviewCards() {
           </div>
         </div>
 
-        <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md transition-all hover:border-niko-teal/30 hover:translate-y-[-2px] duration-300">
-          <p className="text-xs font-mono uppercase tracking-widest text-niko-muted">
-            RWF disbursed (paid)
-          </p>
-          <h3 className="text-2xl font-bold font-mono text-foreground mt-2">
-            {formatRwf(metrics.paidRwf)}
-          </h3>
+        <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
+          <p className="text-xs text-niko-muted">Paid out</p>
+          <div className="mt-2 space-y-1">
+            {paidOut.length === 0 ? (
+              <h3 className="text-2xl font-bold font-mono text-foreground">—</h3>
+            ) : (
+              paidOut.map((row) => (
+                <h3
+                  key={row.currency}
+                  className="text-2xl font-bold font-mono text-foreground"
+                >
+                  {formatLocalAmount(row.amount, row.currency)}
+                </h3>
+              ))
+            )}
+          </div>
           <div className="mt-3 flex items-center justify-between text-xs text-niko-muted font-sans border-t border-niko-border/20 pt-3">
             <span>Paid payouts</span>
             <Link
@@ -74,32 +86,33 @@ export function AdminOverviewCards() {
           </div>
         </div>
 
-        <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md transition-all hover:border-niko-teal/30 hover:translate-y-[-2px] duration-300">
-          <p className="text-xs font-mono uppercase tracking-widest text-niko-muted">
-            NikoPay revenue (fees)
-          </p>
-          <h3 className="text-2xl font-bold font-mono text-foreground mt-2">
-            {formatRwf(metrics.paidFeesRwf)}
-          </h3>
+        <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
+          <p className="text-xs text-niko-muted">Fees collected</p>
+          <div className="mt-2 space-y-1">
+            {fees.length === 0 ? (
+              <h3 className="text-2xl font-bold font-mono text-foreground">—</h3>
+            ) : (
+              fees.map((row) => (
+                <h3
+                  key={row.currency}
+                  className="text-2xl font-bold font-mono text-foreground"
+                >
+                  {formatLocalAmount(row.amount, row.currency)}
+                </h3>
+              ))
+            )}
+          </div>
           <div className="mt-3 flex items-center justify-between text-xs text-niko-muted font-sans border-t border-niko-border/20 pt-3">
-            {metrics.averageFeePercent === null ||
-            metrics.averageFeeRwf === null ? (
+            {metrics.averageFeePercent === null ? (
               <span>No paid payouts yet</span>
             ) : (
-              <>
-                <span>Average fee ({metrics.averageFeePercent}%)</span>
-                <span className="text-emerald-500 font-semibold">
-                  +{formatRwf(metrics.averageFeeRwf)}/tx
-                </span>
-              </>
+              <span>Average fee {metrics.averageFeePercent}%</span>
             )}
           </div>
         </div>
 
-        <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md transition-all hover:border-niko-teal/30 hover:translate-y-[-2px] duration-300">
-          <p className="text-xs font-mono uppercase tracking-widest text-niko-muted">
-            Disbursement success
-          </p>
+        <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
+          <p className="text-xs text-niko-muted">Success rate</p>
           <h3 className="text-2xl font-bold font-mono text-foreground mt-2">
             {metrics.successRate === null ? "—" : `${metrics.successRate}%`}
           </h3>
@@ -115,25 +128,21 @@ export function AdminOverviewCards() {
       </div>
 
       <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
-        <h4 className="text-sm font-semibold text-foreground mb-6">
-          Volume breakdown and network activity
-        </h4>
+        <h4 className="text-sm font-semibold text-foreground mb-6">By chain</h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="space-y-4">
-            <p className="text-xs text-niko-muted">
-              Matched USDT deposits by chain
-            </p>
+            <p className="text-xs text-niko-muted">USDT by chain</p>
 
             <div className="space-y-3">
               <ChainVolumeBar
-                label="Polygon PoS"
+                label="Polygon"
                 amount={polygonUsdt}
                 total={metrics.matchedUsdt}
                 barClass="bg-indigo-500"
               />
               <ChainVolumeBar
-                label="Base L2"
+                label="Base"
                 amount={baseUsdt}
                 total={metrics.matchedUsdt}
                 barClass="bg-sky-400"
@@ -142,7 +151,7 @@ export function AdminOverviewCards() {
           </div>
 
           <div className="space-y-3">
-            <p className="text-xs text-niko-muted">Intent status counts</p>
+            <p className="text-xs text-niko-muted">By status</p>
             <div className="flex gap-2 h-32 items-end pt-4 border-b border-niko-border/30 px-1">
               {STATUS_BARS.map((bar) => {
                 const count = metrics.statusCounts[bar.status];
