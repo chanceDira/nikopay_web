@@ -93,7 +93,7 @@ export default function PaymentsHistoryPage() {
       case "manual_review":
         return (
           <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full bg-[#fffbeb] dark:bg-amber-500/10 text-[#92400e] dark:text-amber-300 border border-amber-200/60 dark:border-amber-500/20">
-            Manual Review
+            Manual review
           </span>
         );
       default:
@@ -157,7 +157,7 @@ export default function PaymentsHistoryPage() {
                 <th className="px-4 py-3 sm:px-6">ID</th>
                 <th className="px-4 py-3 sm:px-6">Network</th>
                 <th className="px-4 py-3 sm:px-6">Send Amount</th>
-                <th className="px-4 py-3 sm:px-6">Recipient (RWF)</th>
+                <th className="px-4 py-3 sm:px-6">Payout</th>
                 <th className="px-4 py-3 sm:px-6">Status</th>
                 <th className="px-4 py-3 sm:px-6 text-right">Actions</th>
               </tr>

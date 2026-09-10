@@ -1540,8 +1540,9 @@ export function PayWizard() {
                   <p className="mt-1.5 text-xs text-foreground leading-relaxed">
                     First you sign an offramp consent that shows the USDT
                     amount, treasury, and mobile money recipient. Then your
-                    wallet sends USDT to the NikoPay treasury. RWF is paid after
-                    the deposit is confirmed on {chainConfig.name}.
+                    wallet sends USDT to the NikoPay treasury. {displayCurrency}{" "}
+                    is paid after the deposit is confirmed on {chainConfig.name}
+                    .
                   </p>
                 </div>
 

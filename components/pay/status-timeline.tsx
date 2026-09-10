@@ -174,6 +174,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
 
   const getTimelineDetails = () => {
     const status = intent.status;
+    const currency = intent.currency;
     if (status === "awaiting_payment") {
       return {
         title: "Awaiting USDT Deposit",
@@ -189,7 +190,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
     if (status === "credited") {
       return {
         title: "USDT Deposit Confirmed",
-        desc: "Your deposit is confirmed. We are sending the RWF payout to the mobile money number.",
+        desc: `Your deposit is confirmed. We are sending the ${currency} payout to the mobile money number.`,
       };
     }
     if (status === "payout_pending") {
@@ -197,7 +198,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
         title: "Processing mobile money payout",
         desc: intent.payout
           ? `Payout status: ${payoutStatusLabel(intent.payout.status)}. Sandbox does not send SMS; watch this page until it shows completed.`
-          : "The RWF payout has been submitted to mobile money. Sandbox does not send SMS; this page updates when the provider confirms.",
+          : `The ${currency} payout has been submitted to mobile money. Sandbox does not send SMS; this page updates when the provider confirms.`,
       };
     }
     if (status === "paid") {
@@ -205,7 +206,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
         title: "Payout Completed Successfully",
         desc: intent.payout?.providerRef
           ? `Payout confirmed (ref ${intent.payout.providerRef}). Funds reached the mobile money wallet.`
-          : "RWF transfer has settled. The recipient received funds on their mobile money account.",
+          : `${currency} transfer has settled. The recipient received funds on their mobile money account.`,
       };
     }
     if (status === "failed") {
@@ -400,7 +401,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
             <div className="space-y-1">
               <h4 className="text-sm font-semibold">4. Completed</h4>
               <p className="text-xs text-niko-muted leading-snug md:max-w-[150px]">
-                RWF deposited in destination wallet.
+                {intent.currency} deposited in destination wallet.
               </p>
             </div>
           </div>

@@ -63,7 +63,9 @@ export function AdminOverviewCards() {
           <p className="text-xs text-niko-muted">Paid out</p>
           <div className="mt-2 space-y-1">
             {paidOut.length === 0 ? (
-              <h3 className="text-2xl font-bold font-mono text-foreground">—</h3>
+              <h3 className="text-2xl font-bold font-mono text-foreground">
+                —
+              </h3>
             ) : (
               paidOut.map((row) => (
                 <h3
@@ -90,7 +92,9 @@ export function AdminOverviewCards() {
           <p className="text-xs text-niko-muted">Fees collected</p>
           <div className="mt-2 space-y-1">
             {fees.length === 0 ? (
-              <h3 className="text-2xl font-bold font-mono text-foreground">—</h3>
+              <h3 className="text-2xl font-bold font-mono text-foreground">
+                —
+              </h3>
             ) : (
               fees.map((row) => (
                 <h3
