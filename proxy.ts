@@ -23,7 +23,7 @@ async function enforceAdminAccess(
 ): Promise<NextResponse | null> {
   const { pathname } = request.nextUrl;
 
-  if (!pathname.startsWith("/admin")) {
+  if (!pathname.startsWith("/admin") && !isDocsPath(pathname)) {
     return null;
   }
 
@@ -52,6 +52,10 @@ function redirectToLogin(request: NextRequest): NextResponse {
   login.pathname = "/admin/login";
   login.search = "";
   return NextResponse.redirect(login);
+}
+
+function isDocsPath(pathname: string): boolean {
+  return pathname === "/docs" || pathname.startsWith("/docs/");
 }
 
 /** Edge-safe cookie check (Web Crypto HMAC). Matches lib/admin-auth format. */

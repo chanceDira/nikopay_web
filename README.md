@@ -188,8 +188,8 @@ Sandbox does not always send real mobile money SMS. Watch the status page and ad
 | `/admin/payouts`      | Payout transfers + provider reason      |
 | `/admin/treasury`     | PawaPay RWF balance + chain USDT vaults |
 | `/admin/fx`           | Rate / fee config                       |
-| `/docs`               | API docs (Swagger)                      |
-| `GET /api/openapi`    | OpenAPI 3 JSON                          |
+| `/docs`               | API docs (Swagger, admin session)       |
+| `GET /api/openapi`    | OpenAPI 3 JSON (admin session)          |
 
 ## Scripts
 
