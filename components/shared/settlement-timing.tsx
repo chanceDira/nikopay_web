@@ -8,40 +8,62 @@ import {
 export function SettlementTimingFields(props: {
   timing: SettlementTiming;
   compact?: boolean;
+  customer?: boolean;
 }) {
-  const { timing, compact } = props;
+  const { timing, compact, customer } = props;
   const durations = settlementDurations(timing);
   const rows: { label: string; value: string }[] = [];
 
-  if (timing.detectedAt) {
-    rows.push({ label: "USDT seen", value: formatClockUtc(timing.detectedAt) });
-  }
-  if (timing.creditedAt) {
-    rows.push({
-      label: "Deposit credited",
-      value: formatClockUtc(timing.creditedAt),
-    });
-  }
-  if (timing.payoutStartedAt) {
-    rows.push({
-      label: "Payout sent",
-      value: formatClockUtc(timing.payoutStartedAt),
-    });
-  }
-  if (timing.paidAt) {
-    rows.push({ label: "Settled", value: formatClockUtc(timing.paidAt) });
-  }
-  if (durations.usdtToPaidMicros != null) {
-    rows.push({
-      label: "USDT to paid",
-      value: formatDurationMicros(durations.usdtToPaidMicros),
-    });
-  }
-  if (durations.disburseMicros != null) {
-    rows.push({
-      label: "Local disbursement",
-      value: formatDurationMicros(durations.disburseMicros),
-    });
+  if (customer) {
+    if (timing.paidAt) {
+      rows.push({ label: "Settled", value: formatClockUtc(timing.paidAt) });
+    }
+    if (durations.usdtToPaidMicros != null) {
+      rows.push({
+        label: "On-chain settlement",
+        value: formatDurationMicros(durations.usdtToPaidMicros),
+      });
+    }
+    if (durations.disburseMicros != null) {
+      rows.push({
+        label: "Local disbursement",
+        value: formatDurationMicros(durations.disburseMicros),
+      });
+    }
+  } else {
+    if (timing.detectedAt) {
+      rows.push({
+        label: "USDT seen",
+        value: formatClockUtc(timing.detectedAt),
+      });
+    }
+    if (timing.creditedAt) {
+      rows.push({
+        label: "Deposit credited",
+        value: formatClockUtc(timing.creditedAt),
+      });
+    }
+    if (timing.payoutStartedAt) {
+      rows.push({
+        label: "Payout sent",
+        value: formatClockUtc(timing.payoutStartedAt),
+      });
+    }
+    if (timing.paidAt) {
+      rows.push({ label: "Settled", value: formatClockUtc(timing.paidAt) });
+    }
+    if (durations.usdtToPaidMicros != null) {
+      rows.push({
+        label: "USDT to paid",
+        value: formatDurationMicros(durations.usdtToPaidMicros),
+      });
+    }
+    if (durations.disburseMicros != null) {
+      rows.push({
+        label: "Local disbursement",
+        value: formatDurationMicros(durations.disburseMicros),
+      });
+    }
   }
 
   if (rows.length === 0) {
