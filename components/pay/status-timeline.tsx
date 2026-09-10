@@ -3,10 +3,7 @@
 import { formatLocalAmount, formatUsdt } from "@/lib/rates";
 import { displayPayoutRef } from "@/lib/payout-ref";
 import { useIntentView } from "@/components/pay/use-intent-view";
-import {
-  formatDurationMicros,
-  settlementDurations,
-} from "@/lib/settlement/timing";
+import { SettlementTimingFields } from "@/components/shared/settlement-timing";
 import type { IntentPayout } from "@/lib/settlement/types";
 import Link from "next/link";
 
@@ -206,21 +203,11 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
       };
     }
     if (status === "paid") {
-      const durations = settlementDurations({
-        detectedAt: intent.detectedAt,
-        creditedAt: intent.creditedAt,
-        payoutStartedAt: intent.payoutStartedAt,
-        paidAt: intent.paidAt,
-      });
-      const settle =
-        durations.usdtToPaidMicros != null
-          ? ` Settled in ${formatDurationMicros(durations.usdtToPaidMicros)} after USDT was seen.`
-          : "";
       return {
         title: "Payout Completed Successfully",
         desc: intent.payout?.providerRef
-          ? `Payout confirmed (ref ${intent.payout.providerRef}). Funds reached the mobile money wallet.${settle}`
-          : `${currency} transfer has settled. The recipient received funds on their mobile money account.${settle}`,
+          ? `Payout confirmed (ref ${intent.payout.providerRef}). Funds reached the mobile money wallet.`
+          : `${currency} transfer has settled. The recipient received funds on their mobile money account.`,
       };
     }
     if (status === "failed") {
@@ -468,6 +455,25 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
           </dl>
         </div>
       )}
+
+      {intent.status === "paid" &&
+      (intent.paidAt || intent.detectedAt || intent.payoutStartedAt) ? (
+        <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-3">
+          <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">
+            Settlement timing
+          </h3>
+          <SettlementTimingFields
+            customer
+            compact
+            timing={{
+              detectedAt: intent.detectedAt,
+              creditedAt: intent.creditedAt,
+              payoutStartedAt: intent.payoutStartedAt,
+              paidAt: intent.paidAt,
+            }}
+          />
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-4">

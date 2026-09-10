@@ -34,6 +34,7 @@ type Snapshot = {
 export function useLiveQuote(input: {
   chain: ChainId;
   currency: string;
+  country?: string;
   entry: AmountEntry | LegacyAmountEntry;
   localPayout: number;
   usdtSell: number;
@@ -41,6 +42,7 @@ export function useLiveQuote(input: {
   rwfPayout?: number;
 }) {
   const currency = input.currency.trim().toUpperCase() || "RWF";
+  const country = input.country?.trim().toUpperCase() || "";
   const entry: AmountEntry =
     input.entry === "rwf" ? "local" : (input.entry as AmountEntry);
   const localPayout =
@@ -54,7 +56,7 @@ export function useLiveQuote(input: {
       : usdtSell > 0
         ? usdtSell
         : 0;
-  const requestKey = `${chain}:${currency}:${entry}:${activeAmount}`;
+  const requestKey = `${chain}:${country}:${currency}:${entry}:${activeAmount}`;
   const [snapshot, setSnapshot] = useState<Snapshot>({
     key: "",
     chain,
@@ -129,6 +131,7 @@ export function useLiveQuote(input: {
         chain,
         controller.signal,
         currency,
+        country || undefined,
       );
       if (controller.signal.aborted || isAborted(quoted)) {
         return;
@@ -165,7 +168,16 @@ export function useLiveQuote(input: {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [requestKey, chain, currency, entry, localPayout, usdtSell, activeAmount]);
+  }, [
+    requestKey,
+    chain,
+    country,
+    currency,
+    entry,
+    localPayout,
+    usdtSell,
+    activeAmount,
+  ]);
 
   const stale = snapshot.key !== requestKey;
   const fx =

@@ -11,6 +11,7 @@ import {
 import { toNumber } from "@/lib/numbers";
 import { payoutRefAlias } from "@/lib/payout-ref";
 import { assertPayoutProviderOpen } from "@/lib/pawapay/availability-gate";
+import { assertPayoutFunds } from "@/lib/pawapay/liquidity";
 import { createServerQuote } from "@/lib/quotes";
 import { isPaymentStatus } from "@/lib/settlement/intent-status";
 import {
@@ -119,6 +120,15 @@ export async function createPaymentIntent(input: {
       reason: "quote currency does not match corridor",
       status: 409,
     };
+  }
+
+  const funds = await assertPayoutFunds({
+    country: country.country,
+    currency: currency.currency,
+    amount: quoted.quote.netRwf,
+  });
+  if (!funds.ok) {
+    return funds;
   }
 
   const available = await assertPayoutProviderOpen(
