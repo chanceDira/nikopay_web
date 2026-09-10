@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 import "swagger-ui-dist/swagger-ui.css";
 
@@ -41,5 +42,15 @@ export function SwaggerDocs() {
     };
   }, []);
 
-  return <div ref={hostRef} className="min-h-screen bg-white" />;
+  return (
+    <div className="min-h-screen bg-white">
+      <Link
+        href="/admin"
+        className="fixed top-3 left-3 z-50 rounded border border-neutral-300 bg-white px-2.5 py-1 font-sans text-xs text-neutral-700 hover:border-neutral-500"
+      >
+        Ops
+      </Link>
+      <div ref={hostRef} />
+    </div>
+  );
 }
