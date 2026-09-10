@@ -174,7 +174,7 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
               Exchange Rate
             </span>
             <span className="font-mono text-foreground print:text-black">
-              1 USDT = {intent.rate.toLocaleString()} RWF
+              1 USDT = {intent.rate.toLocaleString()} {intent.currency}
             </span>
           </div>
           <div className="flex justify-between text-xs">

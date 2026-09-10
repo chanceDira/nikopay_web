@@ -363,7 +363,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                 <div className="grid grid-cols-2 gap-4 text-sm font-mono">
                   <div>
                     <span className="text-xs text-niko-muted block">
-                      Recipient amount
+                      Amount
                     </span>
                     <span className="text-foreground font-bold">
                       {formatMoney(intent.netRwf)}
