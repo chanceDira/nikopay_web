@@ -18,12 +18,12 @@ export function isAdminAccessReason(
 export function adminAccessMessage(reason: AdminAccessReason): string {
   switch (reason) {
     case "wallet_changed":
-      return "Wallet changed. Sign in again with an active treasury wallet.";
+      return "Wallet changed. Sign in again with an admin wallet.";
     case "session_ended":
-      return "Admin session ended. Sign in again with an active treasury wallet.";
+      return "Admin session ended. Sign in again with an admin wallet.";
     case "access_denied":
     default:
-      return "Admin access required. Connect an active treasury wallet.";
+      return "Admin access required. Connect an admin wallet.";
   }
 }
 

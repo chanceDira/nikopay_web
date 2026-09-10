@@ -16,20 +16,25 @@ const RECEIVED_STATUSES = new Set<PaymentStatus>([
 
 export type AdminIntentTotalsInput = Pick<
   PaymentIntent,
-  "status" | "chain" | "usdtAmount" | "feeRwf" | "netRwf" | "depositTx"
+  | "status"
+  | "chain"
+  | "currency"
+  | "usdtAmount"
+  | "feeRwf"
+  | "netRwf"
+  | "depositTx"
 >;
 
 export type AdminIntentSummary = {
   matchedUsdt: number;
   matchedUsdtByChain: Record<ChainId, number>;
-  paidRwf: number;
-  paidFeesRwf: number;
+  paidLocalByCurrency: Record<string, number>;
+  paidFeesByCurrency: Record<string, number>;
   paidCount: number;
   failedCount: number;
   reviewCount: number;
   successRate: number | null;
   averageFeePercent: number | null;
-  averageFeeRwf: number | null;
   statusCounts: Record<PaymentStatus, number>;
 };
 
@@ -56,20 +61,27 @@ export function summarizeAdminIntents(
 ): AdminIntentSummary {
   const statusCounts = emptyStatusCounts();
   const matchedUsdtByChain = emptyChainTotals();
+  const paidLocalByCurrency: Record<string, number> = {};
+  const paidFeesByCurrency: Record<string, number> = {};
   let matchedUsdt = 0;
-  let paidRwf = 0;
-  let paidFeesRwf = 0;
   let paidCount = 0;
   let failedCount = 0;
   let reviewCount = 0;
+  let paidLocalTotal = 0;
+  let paidFeesTotal = 0;
 
   for (const intent of intents) {
     statusCounts[intent.status] += 1;
+    const currency = intent.currency?.trim().toUpperCase() || "RWF";
 
     if (intent.status === "paid") {
       paidCount += 1;
-      paidRwf += intent.netRwf;
-      paidFeesRwf += intent.feeRwf;
+      paidLocalByCurrency[currency] =
+        (paidLocalByCurrency[currency] ?? 0) + intent.netRwf;
+      paidFeesByCurrency[currency] =
+        (paidFeesByCurrency[currency] ?? 0) + intent.feeRwf;
+      paidLocalTotal += intent.netRwf;
+      paidFeesTotal += intent.feeRwf;
     }
     if (intent.status === "failed") {
       failedCount += 1;
@@ -85,22 +97,21 @@ export function summarizeAdminIntents(
   }
 
   const settled = paidCount + failedCount;
-  const grossPaidRwf = paidRwf + paidFeesRwf;
+  const grossPaid = paidLocalTotal + paidFeesTotal;
 
   return {
     matchedUsdt,
     matchedUsdtByChain,
-    paidRwf,
-    paidFeesRwf,
+    paidLocalByCurrency,
+    paidFeesByCurrency,
     paidCount,
     failedCount,
     reviewCount,
     successRate: settled > 0 ? Math.round((paidCount / settled) * 100) : null,
     averageFeePercent:
-      paidCount > 0 && grossPaidRwf > 0
-        ? Math.round((paidFeesRwf / grossPaidRwf) * 1000) / 10
+      paidCount > 0 && grossPaid > 0
+        ? Math.round((paidFeesTotal / grossPaid) * 1000) / 10
         : null,
-    averageFeeRwf: paidCount > 0 ? Math.round(paidFeesRwf / paidCount) : null,
     statusCounts,
   };
 }
@@ -122,4 +133,12 @@ export function formatPayoutRunSummary(
   ).length;
 
   return `Checked ${payouts.length}. ${paid} paid, ${pending} pending, ${failed} failed, ${review} in review.`;
+}
+
+export function currencyTotalsLines(
+  totals: Record<string, number>,
+): { currency: string; amount: number }[] {
+  return Object.entries(totals)
+    .map(([currency, amount]) => ({ currency, amount }))
+    .sort((a, b) => a.currency.localeCompare(b.currency));
 }
