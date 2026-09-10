@@ -49,8 +49,8 @@ next-env.d.ts
 AGENTS.md
 CLAUDE.md
 
-# docs
-docs/
+# local planning notes (repo-root only; keep app/docs for API UI)
+/docs/
 
 # supabase local
 supabase/.temp/

@@ -279,19 +279,19 @@ export function AdminPawapayDashboard() {
             Payout history
           </h4>
           <p className="text-[11px] font-mono text-niko-muted">
-            Recipient paid: {formatRwf(paidDebit)}
+            Paid out: {formatRwf(paidDebit)}
           </p>
         </div>
         <div className="rounded-md border border-niko-border/40 overflow-hidden">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs font-mono uppercase tracking-wider text-niko-muted">
-                <th className="px-4 py-3">Sent</th>
-                <th className="px-4 py-3">Corridor</th>
-                <th className="px-4 py-3">Recipient amount</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Payout id</th>
-                <th className="px-4 py-3 text-right">Intent</th>
+              <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs text-niko-muted">
+                <th className="px-4 py-3 font-medium">Sent</th>
+                <th className="px-4 py-3 font-medium">Corridor</th>
+                <th className="px-4 py-3 font-medium text-right">Amount</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Payout id</th>
+                <th className="px-4 py-3 font-medium text-right">Intent</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-niko-border/10">
@@ -318,7 +318,7 @@ export function AdminPawapayDashboard() {
                     <td className="px-4 py-3 font-mono text-xs">
                       {row.country} · {row.provider ?? "—"}
                     </td>
-                    <td className="px-4 py-3 font-mono font-semibold">
+                    <td className="px-4 py-3 font-mono font-semibold text-right tabular-nums">
                       {row.currency === "RWF"
                         ? formatRwf(row.amountRwf)
                         : `${row.amountRwf} ${row.currency}`}

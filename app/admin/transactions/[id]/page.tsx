@@ -5,8 +5,7 @@ import Link from "next/link";
 import { displayPayoutRef } from "@/lib/payout-ref";
 import type { PaymentIntent, PaymentStatus } from "@/lib/settlement/types";
 import { canTransition } from "@/lib/settlement/transitions";
-import { feeUsdtForAmount } from "@/lib/settlement/quote";
-import { formatLocalAmount, formatUsdt } from "@/lib/rates";
+import { formatLocalAmount } from "@/lib/rates";
 import { PageHeader } from "@/components/shared/page-header";
 import type { PayoutLookupData } from "@/lib/pawapay/types";
 import type { AdminAuditEntry } from "@/lib/admin-audit";
@@ -245,7 +244,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                 </div>
                 <div>
                   <span className="text-xs text-niko-muted block">
-                    RWF payout (net)
+                    Payout (net)
                   </span>
                   <span className="text-niko-teal-bright font-bold">
                     {formatMoney(intent.netRwf)}
@@ -260,16 +259,9 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                   </span>
                 </div>
                 <div>
-                  <span className="text-xs text-niko-muted block">
-                    Service fee
-                  </span>
+                  <span className="text-xs text-niko-muted block">Fee</span>
                   <span className="text-foreground">
-                    {intent.feePercent}% ({formatMoney(intent.feeRwf)}
-                    {feeUsdtForAmount(intent.usdtAmount, intent.feePercent) !=
-                    null
-                      ? ` · ${formatUsdt(feeUsdtForAmount(intent.usdtAmount, intent.feePercent) ?? 0)} from USDT`
-                      : ""}
-                    )
+                    {intent.feePercent}% ({formatMoney(intent.feeRwf)})
                   </span>
                 </div>
                 <div>
@@ -426,10 +418,8 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                   </p>
                 )}
                 <p className="text-[11px] text-niko-muted">
-                  Recipient amount is what we send through PawaPay (merchant
-                  wallet debit). NikoPay fee is already taken from the user
-                  USDT. PawaPay does not return a per-payout provider fee on the
-                  API. Commercial charges, if any, are on PawaPay statements.
+                  Amount is the wallet debit to the recipient. NikoPay fee is
+                  taken from USDT before payout.
                 </p>
                 {intent.payout.status === "enqueued" ? (
                   <button

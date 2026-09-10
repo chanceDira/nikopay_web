@@ -57,7 +57,7 @@ export function AdminLoginForm() {
         </div>
 
         <div className="mb-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-niko-teal/20 bg-niko-teal/5 px-3 py-1 text-center text-xs font-semibold text-niko-teal max-w-max mx-auto">
-          Restricted administration
+          Admin only
         </div>
 
         <h2 className="text-center text-2xl font-bold tracking-tight text-foreground mt-2">

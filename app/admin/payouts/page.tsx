@@ -4,10 +4,7 @@ import { PageHeader } from "@/components/shared/page-header";
 
 export default function AdminPayoutsPage() {
   return (
-    <PageHeader
-      title="Payouts"
-      description="Payout amounts debited from the PawaPay wallet"
-    >
+    <PageHeader title="Payouts" description="PawaPay transfers">
       <Suspense
         fallback={
           <p className="text-sm font-mono text-niko-muted">Loading...</p>

@@ -3,10 +3,7 @@ import { PageHeader } from "@/components/shared/page-header";
 
 export default function AdminTransactionsPage() {
   return (
-    <PageHeader
-      title="Transactions"
-      description="Monitor and inspect payment intents."
-    >
+    <PageHeader title="Transactions" description="Payment intents">
       <AdminTransactionsTable />
     </PageHeader>
   );

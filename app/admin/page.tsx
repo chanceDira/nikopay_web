@@ -4,10 +4,7 @@ import { PageHeader } from "@/components/shared/page-header";
 
 export default function AdminOverviewPage() {
   return (
-    <PageHeader
-      title="Overview"
-      description="Payment volume and operational status"
-    >
+    <PageHeader title="Overview" description="Volume and ops">
       <div className="space-y-8">
         <AdminOpsPanel />
         <AdminOverviewCards />

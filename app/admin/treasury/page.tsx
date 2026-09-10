@@ -3,10 +3,7 @@ import { PageHeader } from "@/components/shared/page-header";
 
 export default function AdminTreasuryPage() {
   return (
-    <PageHeader
-      title="Treasury"
-      description="Live treasury addresses, on-chain USDT, and disbursement balance"
-    >
+    <PageHeader title="Treasury" description="Vaults and PawaPay balance">
       <AdminTreasuryCards />
     </PageHeader>
   );

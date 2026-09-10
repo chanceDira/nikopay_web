@@ -76,8 +76,8 @@ export function AdminReviewQueue() {
       ) : null}
 
       <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
-        <h4 className="text-sm font-semibold font-mono uppercase tracking-wider text-niko-teal mb-4">
-          Pending operations queue ({loading ? "..." : queue.length})
+        <h4 className="text-sm font-semibold text-niko-teal mb-4">
+          Review queue ({loading ? "..." : queue.length})
         </h4>
 
         {loading && queue.length === 0 ? (
@@ -86,7 +86,7 @@ export function AdminReviewQueue() {
           </div>
         ) : queue.length === 0 ? (
           <p className="text-sm text-niko-muted py-8 text-center font-sans">
-            Queue is empty. All payments are settled or closed.
+            Nothing to review.
           </p>
         ) : (
           <div className="space-y-4">

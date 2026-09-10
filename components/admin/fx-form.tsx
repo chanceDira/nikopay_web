@@ -125,9 +125,7 @@ export function AdminFxForm() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-1 rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md h-fit">
-        <h4 className="text-sm font-semibold font-mono uppercase tracking-wider text-niko-teal mb-4">
-          Set rate
-        </h4>
+        <h4 className="text-sm font-semibold text-niko-teal mb-4">Set rate</h4>
 
         <form onSubmit={handleSave} className="space-y-4">
           <div>
@@ -266,9 +264,7 @@ export function AdminFxForm() {
 
         <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h4 className="text-sm font-semibold font-mono uppercase tracking-wider text-niko-teal">
-              History
-            </h4>
+            <h4 className="text-sm font-semibold text-niko-teal">History</h4>
             <select
               aria-label="Filter history by currency"
               value={historyFilter}
@@ -305,7 +301,7 @@ function RateTable(props: {
 }) {
   return (
     <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
-      <h4 className="text-sm font-semibold font-mono uppercase tracking-wider text-niko-teal mb-4">
+      <h4 className="text-sm font-semibold text-niko-teal mb-4">
         {props.title}
       </h4>
       <RateTableBody
@@ -330,12 +326,14 @@ function RateTableBody(props: {
     <div className="overflow-x-auto rounded border border-niko-border/20 bg-background/50">
       <table className="w-full text-left border-collapse text-xs">
         <thead>
-          <tr className="border-b border-niko-border/30 bg-niko-surface/20 font-mono uppercase text-niko-muted">
-            {props.showWhen ? <th className="px-4 py-3">When</th> : null}
-            <th className="px-4 py-3">Currency</th>
-            <th className="px-4 py-3 text-right">Rate</th>
-            <th className="px-4 py-3 text-right">Fee</th>
-            <th className="px-4 py-3 text-right">Min</th>
+          <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-niko-muted">
+            {props.showWhen ? (
+              <th className="px-4 py-3 font-medium">When</th>
+            ) : null}
+            <th className="px-4 py-3 font-medium">Currency</th>
+            <th className="px-4 py-3 font-medium text-right">Rate</th>
+            <th className="px-4 py-3 font-medium text-right">Fee</th>
+            <th className="px-4 py-3 font-medium text-right">Min</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-niko-border/10 font-mono text-foreground">

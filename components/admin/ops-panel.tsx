@@ -72,9 +72,7 @@ export function AdminOpsPanel() {
 
   return (
     <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
-      <h4 className="text-sm font-semibold font-mono uppercase tracking-wider text-niko-teal mb-5">
-        Operations
-      </h4>
+      <h4 className="text-sm font-semibold text-niko-teal mb-5">Operations</h4>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-3">

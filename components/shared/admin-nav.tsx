@@ -158,7 +158,7 @@ export function AdminNav() {
               href="/app/pay"
               className="text-niko-muted font-sans text-xs transition-colors hover:text-niko-teal border border-niko-border/60 hover:border-niko-teal/40 px-2.5 py-1 rounded bg-background/30"
             >
-              App Portal
+              App
             </Link>
 
             <button
