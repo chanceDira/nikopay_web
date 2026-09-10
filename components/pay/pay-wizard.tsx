@@ -1541,7 +1541,8 @@ export function PayWizard() {
                     First you sign an offramp consent that shows the USDT
                     amount, treasury, and mobile money recipient. Then your
                     wallet sends USDT to the NikoPay treasury. {displayCurrency}{" "}
-                    is paid after the deposit is confirmed on {chainConfig.name}.
+                    is paid after the deposit is confirmed on {chainConfig.name}
+                    .
                   </p>
                 </div>
 
