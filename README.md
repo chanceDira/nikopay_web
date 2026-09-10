@@ -188,6 +188,8 @@ Sandbox does not always send real mobile money SMS. Watch the status page and ad
 | `/admin/payouts`      | Payout transfers + provider reason      |
 | `/admin/treasury`     | PawaPay RWF balance + chain USDT vaults |
 | `/admin/fx`           | Rate / fee config                       |
+| `/docs`               | API docs (Swagger)                      |
+| `GET /api/openapi`    | OpenAPI 3 JSON                          |
 
 ## Scripts
 
@@ -216,7 +218,7 @@ Public discovery files:
 | `/robots.txt`  | `app/robots.ts`                              |
 | `/sitemap.xml` | `app/sitemap.ts` (home, privacy, terms only) |
 
-`/admin`, `/app`, `/auth`, and `/api` are disallowed in robots and marked `noindex`. After deploy, set `NEXT_PUBLIC_SITE_URL` to the production origin and submit the sitemap in Google Search Console.
+`/admin`, `/app`, `/auth`, `/api`, and `/docs` are disallowed in robots and marked `noindex`. After deploy, set `NEXT_PUBLIC_SITE_URL` to the production origin and submit the sitemap in Google Search Console.
 
 ## Layout
 
