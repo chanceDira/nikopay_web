@@ -5,11 +5,13 @@ import {
   parseUsdtAmount,
   readJsonBody,
 } from "@/lib/http";
+import { normalizeCorridorCountry } from "@/lib/corridor";
 import {
   allowIpRequest,
   clientIp,
   createIpRateLimiter,
 } from "@/lib/ip-rate-limit";
+import { assertPayoutFunds } from "@/lib/pawapay/liquidity";
 import { createServerQuote } from "@/lib/quotes";
 
 const quoteLimit = createIpRateLimiter({
@@ -44,6 +46,18 @@ export async function POST(request: Request) {
   );
   if (!result.ok) {
     return jsonError(result.reason, result.status);
+  }
+
+  const country = normalizeCorridorCountry(body.country);
+  if (country.ok) {
+    const funds = await assertPayoutFunds({
+      country: country.country,
+      currency: result.quote.currency,
+      amount: result.quote.netRwf,
+    });
+    if (!funds.ok) {
+      return jsonError(funds.reason, funds.status);
+    }
   }
 
   return jsonData(result.quote, 201);

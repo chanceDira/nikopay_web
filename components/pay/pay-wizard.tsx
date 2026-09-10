@@ -116,6 +116,7 @@ export function PayWizard() {
   } = useLiveQuote({
     chain,
     currency: corridorCurrency,
+    country: corridorCountry,
     entry: amountEntry,
     localPayout: rwfPayout,
     usdtSell,

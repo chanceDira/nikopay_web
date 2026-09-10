@@ -249,6 +249,13 @@ function buildPaths(): Record<string, OpenApiPathItem> {
                 minLength: 3,
                 maxLength: 3,
               },
+              country: {
+                type: "string",
+                minLength: 3,
+                maxLength: 3,
+                description:
+                  "ISO-3 corridor country. When set, the quote is refused if the PawaPay wallet cannot cover the payout.",
+              },
             },
           }),
         },

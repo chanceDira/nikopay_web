@@ -220,11 +220,17 @@ export async function requestQuote(
   chain: Quote["chain"],
   signal?: AbortSignal,
   currency = "RWF",
+  country?: string,
 ): Promise<ApiResult<Quote>> {
   return requestJson("/api/quotes", isQuotePayload, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ usdtAmount, chain, currency }),
+    body: JSON.stringify({
+      usdtAmount,
+      chain,
+      currency,
+      ...(country ? { country } : {}),
+    }),
     signal,
   });
 }
