@@ -2,7 +2,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { PayoutTransferRow } from "@/lib/supabase/types";
 
 export type PayoutTransferInsert = {
-  intentId: string;
+  intentId?: string | null;
+  batchId?: string | null;
   payoutId: string;
   country: string;
   currency: string;
@@ -102,7 +103,8 @@ export async function insertPayoutTransfer(
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   const supabase = createAdminClient();
   const inserted = await supabase.from("payout_transfers").insert({
-    intent_id: row.intentId,
+    intent_id: row.intentId ?? null,
+    batch_id: row.batchId ?? null,
     payout_id: row.payoutId,
     country: row.country,
     currency: row.currency,

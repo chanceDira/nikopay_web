@@ -177,12 +177,18 @@ export function AdminPayoutsTable() {
                       {row.providerReason ?? "—"}
                     </td>
                     <td className="px-6 py-4 text-right space-y-1">
-                      <Link
-                        href={`/admin/transactions/${row.intentId}`}
-                        className="font-mono text-xs text-niko-teal hover:underline"
-                      >
-                        {row.intentId.slice(0, 8)}...
-                      </Link>
+                      {row.intentId ? (
+                        <Link
+                          href={`/admin/transactions/${row.intentId}`}
+                          className="font-mono text-xs text-niko-teal hover:underline"
+                        >
+                          {row.intentId.slice(0, 8)}...
+                        </Link>
+                      ) : (
+                        <span className="font-mono text-xs text-niko-muted">
+                          bulk
+                        </span>
+                      )}
                       {row.rail === "pawapay" && row.status === "enqueued" ? (
                         <div>
                           <button

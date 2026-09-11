@@ -15,7 +15,7 @@ export type AdminPayoutStatus = (typeof ADMIN_PAYOUT_STATUSES)[number];
 
 export type AdminPayout = {
   id: string;
-  intentId: string;
+  intentId: string | null;
   referenceId: string;
   amountRwf: number;
   msisdn: string;

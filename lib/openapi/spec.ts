@@ -651,6 +651,86 @@ function buildPaths(): Record<string, OpenApiPathItem> {
         },
       },
     },
+    "/api/admin/bulk": {
+      get: {
+        tags: ["Admin"],
+        summary: "List bulk payout batches",
+        security: [{ AdminCookie: [] }],
+        responses: {
+          "200": {
+            description: "Bulk payout batches",
+            ...jsonContent(
+              dataEnvelope({
+                type: "object",
+                properties: {
+                  batches: { type: "array", items: { type: "object" } },
+                },
+              }),
+            ),
+          },
+          ...errorResponses(401, 503),
+        },
+      },
+      post: {
+        tags: ["Admin"],
+        summary: "Submit a bulk payout (1-20 items)",
+        security: [{ AdminCookie: [] }],
+        requestBody: {
+          required: true,
+          ...jsonContent({
+            type: "object",
+            required: ["country", "currency", "provider", "items"],
+            properties: {
+              label: { type: "string" },
+              country: { type: "string" },
+              currency: { type: "string" },
+              provider: { type: "string" },
+              items: {
+                type: "array",
+                maxItems: 20,
+                items: {
+                  type: "object",
+                  required: ["msisdn", "amount"],
+                  properties: {
+                    msisdn: { type: "string" },
+                    amount: { type: "number" },
+                  },
+                },
+              },
+            },
+          }),
+        },
+        responses: {
+          "201": {
+            description: "Batch persisted and submitted",
+            ...jsonContent(dataEnvelope({ type: "object" })),
+          },
+          ...errorResponses(400, 401, 409, 503),
+        },
+      },
+    },
+    "/api/admin/bulk/{id}/retry": {
+      post: {
+        tags: ["Admin"],
+        summary: "Retry pending items in a bulk batch",
+        security: [{ AdminCookie: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Retry submitted",
+            ...jsonContent(dataEnvelope({ type: "object" })),
+          },
+          ...errorResponses(401, 404, 409, 503),
+        },
+      },
+    },
     "/api/admin/checkouts": {
       get: {
         tags: ["Admin"],
