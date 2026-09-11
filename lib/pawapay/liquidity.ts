@@ -8,18 +8,18 @@ export const PAYOUTS_PAUSED_REASON = "Payouts are paused. Try again shortly.";
 
 const BALANCE_TTL_MS = 15_000;
 
-const OPEN_PAYOUT_STATUSES = [
-  "awaiting_payment",
+const COMMITTED_PAYOUT_STATUSES = [
   "detected",
   "credited",
   "payout_pending",
   "manual_review",
 ] as const;
 
+const BALANCE_CACHE_KEY = "all";
+
 export type ReservedIntentRow = {
   status: string;
   netRwf: number;
-  expiresAt: string;
 };
 
 type BalanceCache = {
@@ -39,9 +39,14 @@ export function walletAvailableForCorridor(
   country: string,
   currency: string,
 ): number | null {
+  const countryCode = country.trim().toUpperCase();
+  const currencyCode = currency.trim().toUpperCase();
   let best: number | null = null;
   for (const row of balances) {
-    if (row.country !== country || row.currency !== currency) {
+    if (
+      row.country.trim().toUpperCase() !== countryCode ||
+      row.currency.trim().toUpperCase() !== currencyCode
+    ) {
       continue;
     }
     const amount = toNumber(row.balance);
@@ -57,14 +62,11 @@ export function walletAvailableForCorridor(
 
 export function reservedPayoutTotal(
   rows: readonly ReservedIntentRow[],
-  nowMs: number,
 ): number {
+  const committed = new Set<string>(COMMITTED_PAYOUT_STATUSES);
   let total = 0;
   for (const row of rows) {
-    if (
-      row.status === "awaiting_payment" &&
-      Date.parse(row.expiresAt) <= nowMs
-    ) {
+    if (!committed.has(row.status)) {
       continue;
     }
     if (!Number.isFinite(row.netRwf) || row.netRwf <= 0) {
@@ -103,7 +105,7 @@ export async function assertPayoutFunds(input: {
     return { ok: true };
   }
 
-  const wallets = await loadBalances(configured.config, input.country);
+  const wallets = await loadBalances(configured.config);
   if (!wallets.ok) {
     return { ok: false, reason: PAYOUTS_PAUSED_REASON, status: 503 };
   }
@@ -131,23 +133,25 @@ export async function assertPayoutFunds(input: {
 
 async function loadBalances(
   config: PawapayConfig,
-  country: string,
 ): Promise<{ ok: true; data: WalletBalance[] } | { ok: false }> {
-  const key = country;
   if (
     balanceCache &&
-    balanceCache.key === key &&
+    balanceCache.key === BALANCE_CACHE_KEY &&
     Date.now() - balanceCache.at < BALANCE_TTL_MS
   ) {
     return { ok: true, data: balanceCache.data };
   }
 
-  const loaded = await getWalletBalances(config, { country });
+  const loaded = await getWalletBalances(config);
   if (!loaded.ok) {
     return { ok: false };
   }
 
-  balanceCache = { key, at: Date.now(), data: loaded.data };
+  balanceCache = {
+    key: BALANCE_CACHE_KEY,
+    at: Date.now(),
+    data: loaded.data,
+  };
   return { ok: true, data: loaded.data };
 }
 
@@ -158,10 +162,10 @@ async function loadReservedPayoutTotal(
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("payment_intents")
-    .select("status, net_rwf, expires_at")
+    .select("status, net_rwf")
     .eq("country", country)
     .eq("currency", currency)
-    .in("status", [...OPEN_PAYOUT_STATUSES]);
+    .in("status", [...COMMITTED_PAYOUT_STATUSES]);
 
   if (error) {
     return { ok: false };
@@ -170,8 +174,7 @@ async function loadReservedPayoutTotal(
   const rows: ReservedIntentRow[] = (data ?? []).map((row) => ({
     status: row.status,
     netRwf: toNumber(row.net_rwf),
-    expiresAt: row.expires_at,
   }));
 
-  return { ok: true, amount: reservedPayoutTotal(rows, Date.now()) };
+  return { ok: true, amount: reservedPayoutTotal(rows) };
 }
