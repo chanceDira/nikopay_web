@@ -282,11 +282,11 @@ export async function getWalletBalances(
   const parsed: WalletBalance[] = [];
   for (const item of balances) {
     const row = asRecord(item);
-    const country = asNonEmptyString(row?.country);
-    const balance = asNonEmptyString(row?.balance);
-    const currency = asNonEmptyString(row?.currency);
+    const country = asNonEmptyString(row?.country)?.toUpperCase() ?? null;
+    const balance = asWalletBalanceAmount(row?.balance);
+    const currency = asNonEmptyString(row?.currency)?.toUpperCase() ?? null;
     if (!country || !balance || !currency) {
-      return { ok: false, reason: "pawapay wallet-balances response invalid" };
+      continue;
     }
     parsed.push({
       country,
@@ -576,6 +576,13 @@ function asNonEmptyString(value: unknown): string | null {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function asWalletBalanceAmount(value: unknown): string | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return asNonEmptyString(value);
 }
 
 function safeJson(text: string): unknown {
