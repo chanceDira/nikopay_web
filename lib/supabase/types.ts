@@ -15,3 +15,4 @@ export type ChainSyncRow = Tables["chain_sync"]["Row"];
 export type MomoTransferRow = Tables["momo_transfers"]["Row"];
 export type PayoutTransferRow = Tables["payout_transfers"]["Row"];
 export type AdminAuditLogRow = Tables["admin_audit_log"]["Row"];
+export type CheckoutLinkRow = Tables["checkout_links"]["Row"];

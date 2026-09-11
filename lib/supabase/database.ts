@@ -194,6 +194,7 @@ export type Database = {
           credited_at: string | null;
           payout_started_at: string | null;
           paid_at: string | null;
+          checkout_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -231,6 +232,7 @@ export type Database = {
           credited_at?: string | null;
           payout_started_at?: string | null;
           paid_at?: string | null;
+          checkout_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -268,6 +270,7 @@ export type Database = {
           credited_at?: string | null;
           payout_started_at?: string | null;
           paid_at?: string | null;
+          checkout_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -489,6 +492,54 @@ export type Database = {
           to_status?: string | null;
           detail?: string | null;
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      checkout_links: {
+        Row: {
+          id: string;
+          token: string;
+          label: string | null;
+          usdt_amount: number;
+          country: string;
+          currency: string;
+          provider: string;
+          msisdn: string;
+          expires_at: string | null;
+          revoked_at: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          token: string;
+          label?: string | null;
+          usdt_amount: number;
+          country: string;
+          currency: string;
+          provider: string;
+          msisdn: string;
+          expires_at?: string | null;
+          revoked_at?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          token?: string;
+          label?: string | null;
+          usdt_amount?: number;
+          country?: string;
+          currency?: string;
+          provider?: string;
+          msisdn?: string;
+          expires_at?: string | null;
+          revoked_at?: string | null;
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

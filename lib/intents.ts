@@ -13,6 +13,7 @@ import { payoutRefAlias } from "@/lib/payout-ref";
 import { assertPayoutProviderOpen } from "@/lib/pawapay/availability-gate";
 import { assertPayoutFunds } from "@/lib/pawapay/liquidity";
 import { createServerQuote } from "@/lib/quotes";
+import { resolveCheckoutForIntent } from "@/lib/checkouts";
 import { isPaymentStatus } from "@/lib/settlement/intent-status";
 import {
   isChainId,
@@ -71,6 +72,7 @@ export async function createPaymentIntent(input: {
   currency: unknown;
   provider: unknown;
   notifyEmail?: unknown;
+  checkoutToken?: unknown;
 }): Promise<
   | { ok: true; intent: PaymentIntent }
   | { ok: false; reason: string; status: number }
@@ -139,6 +141,22 @@ export async function createPaymentIntent(input: {
     return available;
   }
 
+  let checkoutId: string | undefined;
+  if (input.checkoutToken !== undefined && input.checkoutToken !== null) {
+    const checkout = await resolveCheckoutForIntent({
+      token: input.checkoutToken,
+      usdtAmount: quoted.quote.usdtAmount,
+      country: country.country,
+      currency: currency.currency,
+      provider: provider.provider,
+      msisdn: msisdn.msisdn,
+    });
+    if (!checkout.ok) {
+      return checkout;
+    }
+    checkoutId = checkout.checkoutId;
+  }
+
   const treasury = await loadActiveTreasury(quoted.quote.chain);
   if (!treasury.ok) {
     return { ok: false, reason: treasury.reason, status: 409 };
@@ -163,9 +181,18 @@ export async function createPaymentIntent(input: {
       treasury_address: treasury.address,
       expires_at: quoted.quote.expiresAt,
       notify_email: notifyEmail.email,
+      checkout_id: checkoutId ?? null,
     })
     .select()
     .single();
+
+  if (error?.code === "23505" && checkoutId) {
+    return {
+      ok: false,
+      reason: "This checkout is no longer available.",
+      status: 409,
+    };
+  }
 
   if (error || !data) {
     return {

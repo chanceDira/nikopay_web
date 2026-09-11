@@ -32,6 +32,7 @@ export async function POST(request: Request) {
     currency: body.currency,
     provider: body.provider,
     notifyEmail: body.notifyEmail,
+    checkoutToken: body.checkoutToken,
   });
 
   if (!result.ok) {

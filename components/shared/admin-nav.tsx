@@ -16,6 +16,7 @@ const links = [
   { href: "/admin/pawapay", label: "PawaPay" },
   { href: "/admin/fx", label: "FX" },
   { href: "/admin/treasury", label: "Treasury" },
+  { href: "/admin/checkouts", label: "Links" },
   { href: "/docs", label: "API" },
 ] as const;
 

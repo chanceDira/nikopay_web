@@ -47,6 +47,16 @@ type Step = 1 | 2 | 3 | 4;
 
 const FALLBACK_CORRIDOR_COUNTRY = "RWA";
 
+export type CheckoutPrefill = {
+  token: string;
+  label: string | null;
+  usdtAmount: number;
+  country: string;
+  currency: string;
+  provider: string;
+  msisdn: string;
+};
+
 const CheckIcon = () => (
   <svg
     className="h-4 w-4 text-niko-navy"
@@ -68,8 +78,9 @@ function formatUsdtInput(value: number): string {
   return fixed.replace(/\.?0+$/, "");
 }
 
-export function PayWizard() {
+export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   const router = useRouter();
+  const locked = Boolean(checkout);
   const {
     walletConnected,
     walletAddress,
@@ -81,12 +92,20 @@ export function PayWizard() {
 
   const [step, setStep] = useState<Step>(1);
   const [chain, setChain] = useState<ChainId>("base");
-  const [amountEntry, setAmountEntry] = useState<AmountEntry>("local");
+  const [amountEntry, setAmountEntry] = useState<AmountEntry>(
+    checkout ? "usdt" : "local",
+  );
   const [amountRwf, setAmountRwf] = useState<string>("");
-  const [amountUsdt, setAmountUsdt] = useState<string>("");
-  const [msisdn, setMsisdn] = useState<string>("");
-  const [formattedMsisdn, setFormattedMsisdn] = useState<string>("");
-  const [verifiedMsisdn, setVerifiedMsisdn] = useState<string>("");
+  const [amountUsdt, setAmountUsdt] = useState<string>(
+    checkout ? formatUsdtInput(checkout.usdtAmount) : "",
+  );
+  const [msisdn, setMsisdn] = useState<string>(checkout?.msisdn ?? "");
+  const [formattedMsisdn, setFormattedMsisdn] = useState<string>(
+    checkout ? formatMsisdnDisplay(checkout.msisdn) : "",
+  );
+  const [verifiedMsisdn, setVerifiedMsisdn] = useState<string>(
+    checkout?.msisdn ?? "",
+  );
   const [recipientName, setRecipientName] = useState<string | null>(null);
   const [recipientNameStatus, setRecipientNameStatus] = useState<
     "idle" | "loading" | "found" | "not_found" | "unavailable"
@@ -95,10 +114,14 @@ export function PayWizard() {
     CorridorCountryOption[]
   >([]);
   const [corridorCountry, setCorridorCountry] = useState(
-    FALLBACK_CORRIDOR_COUNTRY,
+    checkout?.country ?? FALLBACK_CORRIDOR_COUNTRY,
   );
-  const [corridorCurrency, setCorridorCurrency] = useState("RWF");
-  const [corridorProvider, setCorridorProvider] = useState("");
+  const [corridorCurrency, setCorridorCurrency] = useState(
+    checkout?.currency ?? "RWF",
+  );
+  const [corridorProvider, setCorridorProvider] = useState(
+    checkout?.provider ?? "",
+  );
   const [corridorProviders, setCorridorProviders] = useState<
     CorridorProviderOption[]
   >([]);
@@ -213,6 +236,14 @@ export function PayWizard() {
     corridorCountries.find((row) => row.country === corridorCountry) ?? null;
   const dialPrefix = selectedCountry?.prefix ?? "";
   const knownPrefixes = corridorCountries.map((row) => row.prefix);
+  const msisdnInput =
+    locked && checkout && dialPrefix
+      ? nationalNumberDigits(checkout.msisdn, dialPrefix)
+      : msisdn;
+  const shownFormatted =
+    locked && checkout
+      ? formatMsisdnDisplay(checkout.msisdn, dialPrefix)
+      : formattedMsisdn;
 
   const selectedCorridor =
     corridorProviders.find((row) => row.provider === corridorProvider) ?? null;
@@ -482,6 +513,20 @@ export function PayWizard() {
       return null;
     }
 
+    if (locked) {
+      setVerifiedMsisdn(predicted.data.phoneNumber);
+      setFormattedMsisdn(
+        formatMsisdnDisplay(predicted.data.phoneNumber, dialPrefix),
+      );
+      setMsisdnError("");
+      void loadRecipientName({
+        msisdn: checkout?.msisdn ?? predicted.data.phoneNumber,
+        country: corridorCountry,
+        provider: corridorProvider,
+      });
+      return predicted.data.phoneNumber;
+    }
+
     const match = corridorCountries.find(
       (row) => row.country === predicted.data.country,
     );
@@ -529,6 +574,9 @@ export function PayWizard() {
   };
 
   const handleCountryChange = (country: string) => {
+    if (locked) {
+      return;
+    }
     setCorridorError("");
     setVerifiedMsisdn("");
     setFormattedMsisdn("");
@@ -558,6 +606,9 @@ export function PayWizard() {
   };
 
   const handleMsisdnChange = (value: string) => {
+    if (locked) {
+      return;
+    }
     setVerifiedMsisdn("");
     setFormattedMsisdn("");
     clearRecipientName();
@@ -753,6 +804,7 @@ export function PayWizard() {
       currency: corridorCurrency,
       provider: corridorProvider,
       notifyEmail: parsedEmail.email ?? undefined,
+      checkoutToken: checkout?.token,
     });
     setCreatingIntent(false);
 
@@ -812,6 +864,11 @@ export function PayWizard() {
 
   return (
     <div className="w-full max-w-xl mx-auto">
+      {checkout?.label ? (
+        <p className="mb-6 rounded-md border border-niko-border bg-niko-surface/80 px-4 py-3 text-sm text-foreground">
+          {checkout.label}
+        </p>
+      ) : null}
       {/* Step Indicator Header (3 Steps) */}
       <div className="mb-8 flex items-center justify-between px-2">
         <div className="flex items-center gap-2">
@@ -938,9 +995,10 @@ export function PayWizard() {
                   type="text"
                   inputMode="numeric"
                   value={amountRwf}
+                  disabled={locked}
                   onChange={(e) => handleRwfChange(e.target.value)}
                   onBlur={validateAmount}
-                  className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40"
+                  className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40 disabled:opacity-60"
                   placeholder="0"
                 />
                 <span className="ml-3 font-semibold text-niko-teal text-sm">
@@ -974,9 +1032,10 @@ export function PayWizard() {
                   type="text"
                   inputMode="decimal"
                   value={amountUsdt}
+                  disabled={locked}
                   onChange={(e) => handleUsdtChange(e.target.value)}
                   onBlur={validateAmount}
-                  className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40"
+                  className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40 disabled:opacity-60"
                   placeholder="0.00"
                 />
                 <span className="ml-3 font-semibold text-niko-teal text-sm">
@@ -1072,7 +1131,9 @@ export function PayWizard() {
             <select
               id="country-select"
               value={corridorCountry}
-              disabled={corridorLoading || corridorCountries.length === 0}
+              disabled={
+                locked || corridorLoading || corridorCountries.length === 0
+              }
               onChange={(e) => handleCountryChange(e.target.value)}
               className="mt-3 w-full rounded-md border border-niko-border bg-background px-4 py-3.5 text-sm text-foreground outline-none focus:border-niko-teal/50 disabled:opacity-50"
             >
@@ -1109,7 +1170,8 @@ export function PayWizard() {
                 id="msisdn-input"
                 type="text"
                 inputMode="tel"
-                value={msisdn}
+                value={msisdnInput}
+                disabled={locked}
                 onChange={(e) => {
                   const val = e.target.value;
                   if (/^[+\d\s-]*$/.test(val)) {
@@ -1117,7 +1179,7 @@ export function PayWizard() {
                   }
                 }}
                 onBlur={handleMsisdnBlur}
-                className="w-full bg-transparent font-mono text-lg font-semibold text-foreground outline-none placeholder:text-niko-muted/40"
+                className="w-full bg-transparent font-mono text-lg font-semibold text-foreground outline-none placeholder:text-niko-muted/40 disabled:opacity-60"
                 placeholder={dialPrefix ? "e.g. 0783456789" : "mobile number"}
               />
               <span className="ml-3 font-semibold text-niko-teal text-xs tracking-wider uppercase shrink-0">
@@ -1130,13 +1192,13 @@ export function PayWizard() {
               <p className="mt-2 text-xs text-red-400">{msisdnError}</p>
             )}
 
-            {formattedMsisdn && verifiedMsisdn && !msisdnError && (
+            {shownFormatted && verifiedMsisdn && !msisdnError && (
               <div className="mt-3 p-3 rounded-lg bg-niko-surface/80 border border-niko-border/40 flex justify-between items-center">
                 <span className="text-xs text-niko-muted">
                   Validated number
                 </span>
                 <span className="text-xs font-mono font-bold text-niko-teal-bright">
-                  {formattedMsisdn}
+                  {shownFormatted}
                 </span>
               </div>
             )}
@@ -1164,7 +1226,9 @@ export function PayWizard() {
             <select
               id="provider-select"
               value={corridorProvider}
-              disabled={corridorLoading || corridorProviders.length === 0}
+              disabled={
+                locked || corridorLoading || corridorProviders.length === 0
+              }
               onChange={(e) => {
                 const next = corridorProviders.find(
                   (row) => row.provider === e.target.value,
@@ -1399,7 +1463,7 @@ export function PayWizard() {
 
               <div className="text-niko-muted">Mobile money number</div>
               <div className="font-mono font-bold text-right text-foreground">
-                {formattedMsisdn}
+                {shownFormatted}
               </div>
 
               {recipientNameStatus === "found" && recipientName ? (

@@ -244,6 +244,7 @@ export async function createLiveIntent(input: {
   currency: string;
   provider: string;
   notifyEmail?: string;
+  checkoutToken?: string;
 }): Promise<ApiResult<PaymentIntent>> {
   return requestJson("/api/intents", isPaymentIntentPayload, {
     method: "POST",
