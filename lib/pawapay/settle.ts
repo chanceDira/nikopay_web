@@ -8,7 +8,7 @@ import type { PayoutTransferRow } from "@/lib/supabase/types";
 type IntentOutcome = "paid" | "manual_review";
 
 export type SettleOutcome = {
-  intentId: string;
+  intentId: string | null;
   intentStatus: IntentOutcome | null;
   claimed: boolean;
 };
@@ -50,6 +50,13 @@ async function settleRow(
 ): Promise<
   { ok: true; outcome: SettleOutcome } | { ok: false; reason: string }
 > {
+  if (!row.intent_id) {
+    return {
+      ok: true,
+      outcome: { intentId: null, intentStatus: null, claimed: false },
+    };
+  }
+
   const target = intentOutcomeFor(row.status);
   if (!target) {
     return {
@@ -88,6 +95,10 @@ export async function claimIntent(
   row: PayoutTransferRow,
   target: IntentOutcome,
 ): Promise<{ ok: true; claimed: boolean } | { ok: false; reason: string }> {
+  if (!row.intent_id) {
+    return { ok: true, claimed: false };
+  }
+
   const supabase = createAdminClient();
   const patch =
     target === "paid"

@@ -13,6 +13,7 @@ const links = [
   { href: "/admin/transactions", label: "Transactions" },
   { href: "/admin/review", label: "Review" },
   { href: "/admin/payouts", label: "Payouts" },
+  { href: "/admin/bulk", label: "Bulk" },
   { href: "/admin/pawapay", label: "PawaPay" },
   { href: "/admin/fx", label: "FX" },
   { href: "/admin/treasury", label: "Treasury" },

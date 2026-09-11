@@ -375,7 +375,8 @@ export type Database = {
       payout_transfers: {
         Row: {
           id: string;
-          intent_id: string;
+          intent_id: string | null;
+          batch_id: string | null;
           payout_id: string;
           country: string;
           currency: string;
@@ -390,7 +391,8 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          intent_id: string;
+          intent_id?: string | null;
+          batch_id?: string | null;
           payout_id: string;
           country: string;
           currency: string;
@@ -405,7 +407,8 @@ export type Database = {
         };
         Update: {
           id?: string;
-          intent_id?: string;
+          intent_id?: string | null;
+          batch_id?: string | null;
           payout_id?: string;
           country?: string;
           currency?: string;
@@ -492,6 +495,39 @@ export type Database = {
           to_status?: string | null;
           detail?: string | null;
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      bulk_payout_batches: {
+        Row: {
+          id: string;
+          label: string | null;
+          country: string;
+          currency: string;
+          provider: string;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          label?: string | null;
+          country: string;
+          currency: string;
+          provider: string;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          label?: string | null;
+          country?: string;
+          currency?: string;
+          provider?: string;
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

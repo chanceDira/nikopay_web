@@ -205,12 +205,16 @@ export function AdminPawapayDashboard() {
                       minute: "2-digit",
                     })}
                   </span>
-                  <Link
-                    href={`/admin/transactions/${row.intentId}`}
-                    className="text-niko-teal hover:underline"
-                  >
-                    open
-                  </Link>
+                  {row.intentId ? (
+                    <Link
+                      href={`/admin/transactions/${row.intentId}`}
+                      className="text-niko-teal hover:underline"
+                    >
+                      open
+                    </Link>
+                  ) : (
+                    <span className="text-niko-muted">bulk</span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -328,12 +332,18 @@ export function AdminPawapayDashboard() {
                       {row.referenceId.slice(0, 8)}…
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/admin/transactions/${row.intentId}`}
-                        className="font-mono text-xs text-niko-teal hover:underline"
-                      >
-                        open
-                      </Link>
+                      {row.intentId ? (
+                        <Link
+                          href={`/admin/transactions/${row.intentId}`}
+                          className="font-mono text-xs text-niko-teal hover:underline"
+                        >
+                          open
+                        </Link>
+                      ) : (
+                        <span className="font-mono text-xs text-niko-muted">
+                          bulk
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))

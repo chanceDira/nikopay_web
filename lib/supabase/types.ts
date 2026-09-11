@@ -16,3 +16,4 @@ export type MomoTransferRow = Tables["momo_transfers"]["Row"];
 export type PayoutTransferRow = Tables["payout_transfers"]["Row"];
 export type AdminAuditLogRow = Tables["admin_audit_log"]["Row"];
 export type CheckoutLinkRow = Tables["checkout_links"]["Row"];
+export type BulkPayoutBatchRow = Tables["bulk_payout_batches"]["Row"];

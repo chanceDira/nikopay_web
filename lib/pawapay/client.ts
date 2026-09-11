@@ -54,6 +54,53 @@ export async function initiatePayout(
   return { ok: true, data: parsed };
 }
 
+export async function initiateBulkPayouts(
+  config: PawapayConfig,
+  body: InitiatePayoutRequest[],
+  fetchImpl: FetchLike = fetch,
+): Promise<PawapayHttpResult<InitiatePayoutResponse[]>> {
+  if (body.length < 1 || body.length > 20) {
+    return { ok: false, reason: "bulk payout must contain 1 to 20 items" };
+  }
+
+  for (const item of body) {
+    if (!isUuid(item.payoutId)) {
+      return { ok: false, reason: "payoutId must be a uuid" };
+    }
+  }
+
+  const response = await pawapayFetch(config, "/v2/payouts/bulk", {
+    method: "POST",
+    body: JSON.stringify(body),
+    fetchImpl,
+  });
+
+  if (!response.ok) {
+    if (response.timedOut) {
+      return { ok: false, reason: "pawapay bulk payout timed out" };
+    }
+    return {
+      ok: false,
+      reason: `pawapay bulk payout failed (${response.status})`,
+    };
+  }
+
+  if (!Array.isArray(response.json)) {
+    return { ok: false, reason: "pawapay bulk payout response invalid" };
+  }
+
+  const parsed: InitiatePayoutResponse[] = [];
+  for (const item of response.json) {
+    const row = parseInitiatePayoutResponse(item);
+    if (!row) {
+      return { ok: false, reason: "pawapay bulk payout response invalid" };
+    }
+    parsed.push(row);
+  }
+
+  return { ok: true, data: parsed };
+}
+
 export async function failEnqueuedPayout(
   config: PawapayConfig,
   payoutId: string,
