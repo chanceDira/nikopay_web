@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  fetchCorridorCountries,
+  fetchCorridorProviders,
+  type CorridorCountryOption,
+  type CorridorProviderOption,
+} from "@/lib/pay-api";
 import { formatUsdt } from "@/lib/rates";
 
 type CheckoutRow = {
@@ -23,21 +29,31 @@ type CheckoutRow = {
 type FormState = "idle" | "saving" | "error";
 
 const HEADERS = { "Content-Type": "application/json" };
+const FALLBACK_COUNTRY = "RWA";
+const FIELD_CLASS =
+  "mt-1 w-full rounded-md border border-niko-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-niko-teal/50";
 
 export function AdminCheckoutLinks() {
   const [rows, setRows] = useState<CheckoutRow[]>([]);
   const [label, setLabel] = useState("");
   const [usdtAmount, setUsdtAmount] = useState("0.1");
-  const [country, setCountry] = useState("RWA");
-  const [currency, setCurrency] = useState("RWF");
-  const [provider, setProvider] = useState("MTN_MOMO_RWA");
+  const [countries, setCountries] = useState<CorridorCountryOption[]>([]);
+  const [providers, setProviders] = useState<CorridorProviderOption[]>([]);
+  const [country, setCountry] = useState("");
+  const [currency, setCurrency] = useState("");
+  const [provider, setProvider] = useState("");
   const [msisdn, setMsisdn] = useState("");
   const [expiresHours, setExpiresHours] = useState("72");
   const [formState, setFormState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [copiedId, setCopiedId] = useState("");
+  const [corridorLoading, setCorridorLoading] = useState(true);
 
-  const load = async () => {
+  const selectedCountry =
+    countries.find((row) => row.country === country) ?? null;
+  const dialPrefix = selectedCountry?.prefix ?? "";
+
+  const loadLinks = async () => {
     const res = await fetch("/api/admin/checkouts");
     if (!res.ok) {
       return;
@@ -46,12 +62,84 @@ export function AdminCheckoutLinks() {
     setRows(json.data.checkouts ?? []);
   };
 
+  const applyProviders = (
+    list: CorridorProviderOption[],
+    preferred?: string,
+  ) => {
+    setProviders(list);
+    const next =
+      list.find((row) => row.provider === preferred) ?? list[0] ?? null;
+    setProvider(next?.provider ?? "");
+    setCurrency(next?.currency ?? "");
+  };
+
+  const loadProviders = async (nextCountry: string, preferred?: string) => {
+    const result = await fetchCorridorProviders(nextCountry);
+    if (!result.ok) {
+      applyProviders([]);
+      return result.reason;
+    }
+    applyProviders(result.data.providers, preferred);
+    return null;
+  };
+
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void load();
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      void loadLinks();
+      const countriesResult = await fetchCorridorCountries();
+      if (cancelled) {
+        return;
+      }
+      if (!countriesResult.ok) {
+        setCorridorLoading(false);
+        setErrorMsg(countriesResult.reason);
+        return;
+      }
+      const list = countriesResult.data.countries;
+      setCountries(list);
+      const preferred =
+        list.find((row) => row.country === FALLBACK_COUNTRY) ?? list[0];
+      if (!preferred) {
+        setCorridorLoading(false);
+        setErrorMsg("no payout countries configured");
+        return;
+      }
+      setCountry(preferred.country);
+      const providerError = await loadProviders(preferred.country);
+      if (cancelled) {
+        return;
+      }
+      setCorridorLoading(false);
+      if (providerError) {
+        setErrorMsg(providerError);
+      }
     }, 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load corridors once on mount
   }, []);
+
+  const handleCountryChange = async (next: string) => {
+    setCountry(next);
+    setErrorMsg("");
+    setCorridorLoading(true);
+    const providerError = await loadProviders(next);
+    setCorridorLoading(false);
+    if (providerError) {
+      setErrorMsg(providerError);
+    }
+  };
+
+  const handleProviderChange = (next: string) => {
+    const selected = providers.find((row) => row.provider === next);
+    setProvider(next);
+    if (selected) {
+      setCurrency(selected.currency);
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +167,8 @@ export function AdminCheckoutLinks() {
     }
     setFormState("idle");
     setLabel("");
-    await load();
+    setMsisdn("");
+    await loadLinks();
   };
 
   const handleRevoke = async (id: string) => {
@@ -92,7 +181,7 @@ export function AdminCheckoutLinks() {
       setErrorMsg(json.error ?? "unable to revoke");
       return;
     }
-    await load();
+    await loadLinks();
   };
 
   const handleCopy = async (row: CheckoutRow) => {
@@ -100,6 +189,11 @@ export function AdminCheckoutLinks() {
     await navigator.clipboard.writeText(href);
     setCopiedId(row.id);
   };
+
+  const busy = formState === "saving" || corridorLoading;
+  const numberPlaceholder = dialPrefix
+    ? `07… or +${dialPrefix} …`
+    : "local or +country code";
 
   return (
     <div className="space-y-8">
@@ -110,7 +204,7 @@ export function AdminCheckoutLinks() {
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             maxLength={80}
-            className="mt-1 w-full rounded-md border border-niko-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-niko-teal/50"
+            className={FIELD_CLASS}
           />
         </label>
         <label className="text-sm">
@@ -120,45 +214,74 @@ export function AdminCheckoutLinks() {
             onChange={(e) => setUsdtAmount(e.target.value)}
             inputMode="decimal"
             required
-            className="mt-1 w-full rounded-md border border-niko-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-niko-teal/50"
+            className={FIELD_CLASS}
           />
         </label>
         <label className="text-sm">
           Country
-          <input
+          <select
             value={country}
-            onChange={(e) => setCountry(e.target.value.toUpperCase())}
+            onChange={(e) => void handleCountryChange(e.target.value)}
             required
-            className="mt-1 w-full rounded-md border border-niko-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-niko-teal/50"
-          />
+            disabled={corridorLoading || countries.length === 0}
+            className={`${FIELD_CLASS} cursor-pointer disabled:opacity-50`}
+          >
+            {countries.length === 0 ? (
+              <option value="">No countries available</option>
+            ) : (
+              countries.map((row) => (
+                <option key={row.country} value={row.country}>
+                  {row.displayName} (+{row.prefix})
+                </option>
+              ))
+            )}
+          </select>
         </label>
         <label className="text-sm">
           Currency
           <input
             value={currency}
-            onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-            required
-            className="mt-1 w-full rounded-md border border-niko-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-niko-teal/50"
+            readOnly
+            className={`${FIELD_CLASS} text-niko-muted`}
           />
         </label>
         <label className="text-sm">
           Provider
-          <input
+          <select
             value={provider}
-            onChange={(e) => setProvider(e.target.value.toUpperCase())}
+            onChange={(e) => handleProviderChange(e.target.value)}
             required
-            className="mt-1 w-full rounded-md border border-niko-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-niko-teal/50"
-          />
+            disabled={corridorLoading || providers.length === 0}
+            className={`${FIELD_CLASS} cursor-pointer disabled:opacity-50`}
+          >
+            {providers.length === 0 ? (
+              <option value="">No providers available</option>
+            ) : (
+              providers.map((row) => (
+                <option
+                  key={`${row.provider}-${row.currency}`}
+                  value={row.provider}
+                >
+                  {row.displayName} ({row.provider})
+                </option>
+              ))
+            )}
+          </select>
         </label>
         <label className="text-sm">
-          Recipient MSISDN
+          Recipient number
           <input
             value={msisdn}
             onChange={(e) => setMsisdn(e.target.value)}
             required
             inputMode="tel"
-            className="mt-1 w-full rounded-md border border-niko-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-niko-teal/50"
+            placeholder={numberPlaceholder}
+            className={FIELD_CLASS}
           />
+          <span className="mt-1 block text-[11px] text-niko-muted">
+            Local or international. Country code is added from the selected
+            corridor.
+          </span>
         </label>
         <label className="text-sm">
           Expires in hours (0 = no expiry)
@@ -166,13 +289,13 @@ export function AdminCheckoutLinks() {
             value={expiresHours}
             onChange={(e) => setExpiresHours(e.target.value)}
             inputMode="numeric"
-            className="mt-1 w-full rounded-md border border-niko-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-niko-teal/50"
+            className={FIELD_CLASS}
           />
         </label>
         <div className="flex items-end">
           <button
             type="submit"
-            disabled={formState === "saving"}
+            disabled={busy || !country || !provider}
             className="rounded-md border border-niko-teal/40 bg-niko-teal/10 px-4 py-2 text-sm text-niko-teal hover:border-niko-teal disabled:opacity-50"
           >
             {formState === "saving" ? "Creating..." : "Create link"}

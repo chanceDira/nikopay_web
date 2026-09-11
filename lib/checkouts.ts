@@ -4,8 +4,14 @@ import {
   normalizeCorridorCurrency,
   normalizeCorridorProvider,
 } from "@/lib/corridor";
-import { normalizeMsisdn } from "@/lib/identity";
+import { normalizeMsisdnForCountry } from "@/lib/identity";
 import { parseUsdtAmount } from "@/lib/http";
+import { getActiveConf } from "@/lib/pawapay/client";
+import { getPawapayConfig } from "@/lib/pawapay/config";
+import {
+  listPayoutCountries,
+  listPayoutProviders,
+} from "@/lib/pawapay/corridor";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { CheckoutLinkRow } from "@/lib/supabase/types";
 import { toNumber } from "@/lib/numbers";
@@ -213,7 +219,21 @@ export async function createCheckoutLink(input: {
   if (!provider.ok) {
     return { ok: false, reason: provider.reason, status: 400 };
   }
-  const msisdn = normalizeMsisdn(input.msisdn);
+
+  const corridor = await loadCheckoutCorridor(
+    country.country,
+    currency.currency,
+    provider.provider,
+  );
+  if (!corridor.ok) {
+    return corridor;
+  }
+
+  const msisdn = normalizeMsisdnForCountry(
+    input.msisdn,
+    corridor.prefix,
+    corridor.knownPrefixes,
+  );
   if (!msisdn.ok) {
     return { ok: false, reason: msisdn.reason, status: 400 };
   }
@@ -415,6 +435,59 @@ export async function resolveCheckoutForIntent(input: {
   }
 
   return { ok: true, checkoutId: data.id };
+}
+
+async function loadCheckoutCorridor(
+  country: string,
+  currency: string,
+  provider: string,
+): Promise<
+  | {
+      ok: true;
+      prefix: string;
+      knownPrefixes: string[];
+    }
+  | { ok: false; reason: string; status: number }
+> {
+  const configured = getPawapayConfig();
+  if (!configured.ok) {
+    return { ok: false, reason: configured.reason, status: 503 };
+  }
+
+  const conf = await getActiveConf(configured.config, {
+    operationType: "PAYOUT",
+  });
+  if (!conf.ok) {
+    return { ok: false, reason: conf.reason, status: 503 };
+  }
+
+  const countries = listPayoutCountries(conf.data);
+  const selected = countries.find((row) => row.country === country);
+  if (!selected) {
+    return {
+      ok: false,
+      reason: "no payout corridor for this country",
+      status: 400,
+    };
+  }
+
+  const providers = listPayoutProviders(conf.data, country);
+  const match = providers.find(
+    (row) => row.provider === provider && row.currency === currency,
+  );
+  if (!match) {
+    return {
+      ok: false,
+      reason: "provider and currency do not match this country",
+      status: 400,
+    };
+  }
+
+  return {
+    ok: true,
+    prefix: selected.prefix,
+    knownPrefixes: countries.map((row) => row.prefix),
+  };
 }
 
 async function loadCheckoutIntentId(
