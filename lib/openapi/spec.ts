@@ -417,6 +417,7 @@ function buildPaths(): Record<string, OpenApiPathItem> {
               currency: { type: "string" },
               provider: { type: "string" },
               notifyEmail: { type: "string", format: "email" },
+              checkoutToken: { type: "string" },
             },
           }),
         },
@@ -426,6 +427,35 @@ function buildPaths(): Record<string, OpenApiPathItem> {
             ...jsonContent(dataEnvelope(paymentIntentSchema)),
           },
           ...errorResponses(400, 409, 503),
+        },
+      },
+    },
+    "/api/checkouts/{token}": {
+      get: {
+        tags: ["Public"],
+        summary: "Load a pay link",
+        security: [],
+        parameters: [
+          {
+            name: "token",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Checkout prefill",
+            ...jsonContent(
+              dataEnvelope({
+                type: "object",
+                properties: {
+                  checkout: { type: "object" },
+                },
+              }),
+            ),
+          },
+          ...errorResponses(404, 410, 429, 503),
         },
       },
     },
@@ -618,6 +648,83 @@ function buildPaths(): Record<string, OpenApiPathItem> {
             ),
           },
           ...errorResponses(400, 401, 503),
+        },
+      },
+    },
+    "/api/admin/checkouts": {
+      get: {
+        tags: ["Admin"],
+        summary: "List pay links",
+        security: [{ AdminCookie: [] }],
+        responses: {
+          "200": {
+            description: "Checkout links",
+            ...jsonContent(
+              dataEnvelope({
+                type: "object",
+                properties: {
+                  checkouts: { type: "array", items: { type: "object" } },
+                },
+              }),
+            ),
+          },
+          ...errorResponses(401, 503),
+        },
+      },
+      post: {
+        tags: ["Admin"],
+        summary: "Create a pay link",
+        security: [{ AdminCookie: [] }],
+        requestBody: {
+          required: true,
+          ...jsonContent({
+            type: "object",
+            required: [
+              "usdtAmount",
+              "country",
+              "currency",
+              "provider",
+              "msisdn",
+            ],
+            properties: {
+              label: { type: "string" },
+              usdtAmount: { type: "number" },
+              country: { type: "string" },
+              currency: { type: "string" },
+              provider: { type: "string" },
+              msisdn: { type: "string" },
+              expiresHours: { type: "integer" },
+            },
+          }),
+        },
+        responses: {
+          "201": {
+            description: "Checkout created",
+            ...jsonContent(dataEnvelope({ type: "object" })),
+          },
+          ...errorResponses(400, 401, 503),
+        },
+      },
+    },
+    "/api/admin/checkouts/{id}/revoke": {
+      post: {
+        tags: ["Admin"],
+        summary: "Revoke a pay link",
+        security: [{ AdminCookie: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Checkout revoked",
+            ...jsonContent(dataEnvelope({ type: "object" })),
+          },
+          ...errorResponses(401, 404, 409, 503),
         },
       },
     },
