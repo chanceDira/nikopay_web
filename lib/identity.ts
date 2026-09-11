@@ -58,16 +58,17 @@ export function composeMsisdnDigits(
   selectedPrefix: string,
   knownPrefixes: readonly string[] = [],
 ): string {
-  const digits = stripPhoneDigits(raw);
+  const digits = phoneDigitsForPrefixMatch(raw);
   const selected = stripPhoneDigits(selectedPrefix);
-  const prefixes = uniquePrefixes([
+  const prefixes = sortedPrefixes([
     ...knownPrefixes.map(stripPhoneDigits),
     selected,
-  ]).sort((a, b) => b.length - a.length);
+  ]);
 
   for (const prefix of prefixes) {
-    if (prefix && digits.startsWith(prefix)) {
-      return digits;
+    if (prefix && digits.startsWith(prefix) && digits.length > prefix.length) {
+      const national = digits.slice(prefix.length).replace(/^0+/, "");
+      return national ? `${prefix}${national}` : digits;
     }
   }
 
@@ -79,10 +80,8 @@ export function matchLongestDialPrefix(
   raw: string,
   knownPrefixes: readonly string[],
 ): string | null {
-  const digits = stripPhoneDigits(raw);
-  const prefixes = uniquePrefixes(knownPrefixes.map(stripPhoneDigits)).sort(
-    (a, b) => b.length - a.length,
-  );
+  const digits = phoneDigitsForPrefixMatch(raw);
+  const prefixes = sortedPrefixes(knownPrefixes.map(stripPhoneDigits));
 
   for (const prefix of prefixes) {
     if (prefix && digits.startsWith(prefix) && digits.length > prefix.length) {
@@ -94,12 +93,13 @@ export function matchLongestDialPrefix(
 }
 
 export function nationalNumberDigits(raw: string, dialPrefix: string): string {
-  const digits = stripPhoneDigits(raw);
+  const digits = phoneDigitsForPrefixMatch(raw);
   const prefix = stripPhoneDigits(dialPrefix);
   if (prefix && digits.startsWith(prefix)) {
-    return digits.slice(prefix.length);
+    return digits.slice(prefix.length).replace(/^0+/, "");
   }
-  return digits;
+  const local = digits.replace(/^0+/, "");
+  return local || digits;
 }
 
 export function formatMsisdnDisplay(
@@ -125,18 +125,67 @@ export function normalizeMsisdn(
   value: unknown,
 ): { ok: true; msisdn: string } | { ok: false; reason: string } {
   if (typeof value !== "string") {
-    return { ok: false, reason: "msisdn is required" };
+    return { ok: false, reason: "recipient number is required" };
   }
 
-  const digits = stripPhoneDigits(value);
+  const digits = phoneDigitsForPrefixMatch(value);
   if (!MSISDN_DIGITS.test(digits)) {
     return {
       ok: false,
-      reason: "msisdn must be a valid mobile number (10-15 digits)",
+      reason: "enter a local number or international number with country code",
     };
   }
 
   return { ok: true, msisdn: digits };
+}
+
+export function normalizeMsisdnForCountry(
+  value: unknown,
+  countryPrefix: string,
+  knownPrefixes: readonly string[] = [],
+): { ok: true; msisdn: string } | { ok: false; reason: string } {
+  if (typeof value !== "string" || !stripPhoneDigits(value)) {
+    return { ok: false, reason: "recipient number is required" };
+  }
+
+  const prefix = stripPhoneDigits(countryPrefix);
+  if (!prefix) {
+    return { ok: false, reason: "country dial code is missing" };
+  }
+
+  const prefixes = uniquePrefixes([
+    ...knownPrefixes.map(stripPhoneDigits),
+    prefix,
+  ]);
+  const matched = matchLongestDialPrefix(value, prefixes);
+  if (matched && matched !== prefix) {
+    return {
+      ok: false,
+      reason: "number does not match the selected country",
+    };
+  }
+
+  const composed = composeMsisdnDigits(value, prefix, prefixes);
+  if (!composed.startsWith(prefix) || !MSISDN_DIGITS.test(composed)) {
+    return {
+      ok: false,
+      reason: `enter a local number or +${prefix}…`,
+    };
+  }
+
+  return { ok: true, msisdn: composed };
+}
+
+function phoneDigitsForPrefixMatch(raw: string): string {
+  const digits = stripPhoneDigits(raw);
+  if (digits.startsWith("00")) {
+    return digits.replace(/^0+/, "");
+  }
+  return digits;
+}
+
+function sortedPrefixes(values: string[]): string[] {
+  return uniquePrefixes(values).sort((a, b) => b.length - a.length);
 }
 
 function uniquePrefixes(values: string[]): string[] {

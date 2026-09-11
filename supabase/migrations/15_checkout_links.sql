@@ -1,5 +1,5 @@
--- Shareable single-use offramp checkout links (Phase 6a).
--- Payer still sends USDT on-chain. Not PawaPay hosted checkout (that is collections).
+-- Shareable single-use offramp checkout links
+-- Payer still sends USDT on-chain. Not PawaPay hosted checkout (that is collections)
 
 create table public.checkout_links (
   id uuid primary key default gen_random_uuid(),
