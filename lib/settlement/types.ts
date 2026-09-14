@@ -62,6 +62,7 @@ export type PaymentIntent = {
   currency: string;
   provider: string;
   usdtAmount: number;
+  payUsdt: number;
   rate: number;
   feePercent: number;
   feeRwf: number;

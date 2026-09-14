@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useIntentView } from "@/components/pay/use-intent-view";
 import { CONTACT } from "@/lib/contact";
 import { displayPayoutRef } from "@/lib/payout-ref";
-import { formatLocalAmount, formatUsdt } from "@/lib/rates";
+import { formatLocalAmount, formatExactUsdt, formatUsdt } from "@/lib/rates";
 import { feeUsdtForAmount } from "@/lib/settlement/quote";
 import { SettlementTimingFields } from "@/components/shared/settlement-timing";
 
@@ -167,7 +167,7 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
               USDT Sent
             </span>
             <span className="font-mono font-semibold text-foreground print:text-black">
-              {formatUsdt(intent.usdtAmount)}
+              {formatExactUsdt(intent.payUsdt)}
             </span>
           </div>
           <div className="flex justify-between text-xs">

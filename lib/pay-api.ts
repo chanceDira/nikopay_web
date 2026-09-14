@@ -78,6 +78,8 @@ export function isPaymentIntentPayload(value: unknown): value is PaymentIntent {
     typeof intent.provider === "string" &&
     typeof intent.usdtAmount === "number" &&
     Number.isFinite(intent.usdtAmount) &&
+    typeof intent.payUsdt === "number" &&
+    Number.isFinite(intent.payUsdt) &&
     typeof intent.rate === "number" &&
     Number.isFinite(intent.rate) &&
     typeof intent.feePercent === "number" &&
@@ -160,6 +162,8 @@ function isPaymentIntentSummaryPayload(
     typeof intent.walletAddress === "string" &&
     typeof intent.usdtAmount === "number" &&
     Number.isFinite(intent.usdtAmount) &&
+    typeof intent.payUsdt === "number" &&
+    Number.isFinite(intent.payUsdt) &&
     typeof intent.rate === "number" &&
     Number.isFinite(intent.rate) &&
     typeof intent.feePercent === "number" &&

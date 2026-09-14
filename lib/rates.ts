@@ -22,3 +22,11 @@ export function formatLocalAmount(amount: number, currency: string) {
 export function formatUsdt(amount: number) {
   return `${amount.toLocaleString("en-US", { maximumFractionDigits: 2 })} USDT`;
 }
+
+export function formatExactUsdt(amount: number) {
+  return `${amount.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6,
+    useGrouping: false,
+  })} USDT`;
+}

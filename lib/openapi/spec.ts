@@ -86,6 +86,7 @@ const paymentIntentSchema: JsonSchema = {
     "currency",
     "provider",
     "usdtAmount",
+    "payUsdt",
     "rate",
     "feePercent",
     "feeRwf",
@@ -105,6 +106,11 @@ const paymentIntentSchema: JsonSchema = {
     currency: { type: "string", minLength: 3, maxLength: 3 },
     provider: { type: "string" },
     usdtAmount: { type: "number" },
+    payUsdt: {
+      type: "number",
+      description:
+        "Exact USDT to send on-chain. Unique among open intents on the same treasury.",
+    },
     rate: { type: "number" },
     feePercent: { type: "number" },
     feeRwf: {

@@ -1,4 +1,9 @@
 import { getPublicChain } from "@/lib/chain-config";
+import {
+  fromPayUsdtUnits,
+  PAY_USDT_DECIMALS,
+  toPayUsdtUnits,
+} from "@/lib/settlement/pay-usdt";
 import type { PaymentIntent } from "@/lib/settlement/types";
 
 export type OfframpTypedData = {
@@ -62,11 +67,19 @@ export function buildOfframpTypedData(
       chain: chain.name,
       token: chain.usdtAddress,
       treasury: intent.treasuryAddress,
-      usdtAmount: `${intent.usdtAmount} USDT`,
+      usdtAmount: `${payUsdtText(intent.payUsdt)} USDT`,
       netRwf: `${intent.netRwf} ${intent.currency}`,
       recipientMomo: intent.msisdn,
       expiresAt: intent.expiresAt,
-      notice: `This signature does not move funds. A second wallet prompt sends the exact USDT amount to the NikoPay treasury. ${intent.currency} is paid to the mobile money number above after the deposit is confirmed!`,
+      notice: `This signature does not move funds. A second wallet prompt sends the exact USDT amount to the NikoPay treasury. Send the amount shown, not a rounded figure. ${intent.currency} is paid to the mobile money number above after the deposit is confirmed!`,
     },
   };
+}
+
+function payUsdtText(amount: number): string {
+  const units = toPayUsdtUnits(amount);
+  if (units == null) {
+    return String(amount);
+  }
+  return fromPayUsdtUnits(units).toFixed(PAY_USDT_DECIMALS);
 }

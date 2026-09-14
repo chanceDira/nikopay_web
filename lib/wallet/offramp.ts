@@ -122,7 +122,7 @@ export async function consentAndTransferUsdt(input: {
     return signed;
   }
 
-  const units = usdtToTokenUnits(input.intent.usdtAmount, chain.usdtDecimals);
+  const units = usdtToTokenUnits(input.intent.payUsdt, chain.usdtDecimals);
   if (units == null) {
     return { ok: false, reason: "usdt amount is invalid" };
   }

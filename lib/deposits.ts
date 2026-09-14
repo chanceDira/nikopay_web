@@ -475,7 +475,7 @@ function toMatchable(rows: PaymentIntentRow[]): MatchableIntent[] {
       status: intent.status,
       chain: intent.chain,
       treasuryAddress: intent.treasuryAddress,
-      usdtAmount: intent.usdtAmount,
+      payUsdt: intent.payUsdt,
       expiresAt: intent.expiresAt,
     });
   }
