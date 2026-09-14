@@ -377,6 +377,16 @@ export async function fetchCorridorCountries(
   return requestJson("/api/corridors", isCorridorCountriesPayload, { signal });
 }
 
+export async function fetchDepositCorridorCountries(
+  signal?: AbortSignal,
+): Promise<ApiResult<{ countries: CorridorCountryOption[] }>> {
+  return requestJson(
+    "/api/corridors?operation=DEPOSIT",
+    isCorridorCountriesPayload,
+    { signal },
+  );
+}
+
 export async function fetchCorridorProviders(
   country: string,
   signal?: AbortSignal,
@@ -385,6 +395,19 @@ export async function fetchCorridorProviders(
 > {
   return requestJson(
     `/api/corridors?country=${encodeURIComponent(country)}`,
+    isCorridorProvidersPayload,
+    { signal },
+  );
+}
+
+export async function fetchDepositCorridorProviders(
+  country: string,
+  signal?: AbortSignal,
+): Promise<
+  ApiResult<{ country: string; providers: CorridorProviderOption[] }>
+> {
+  return requestJson(
+    `/api/corridors?operation=DEPOSIT&country=${encodeURIComponent(country)}`,
     isCorridorProvidersPayload,
     { signal },
   );

@@ -1,4 +1,5 @@
 import {
+  flattenDepositAvailability,
   flattenPayoutAvailability,
   payoutAvailabilityStatus,
 } from "@/lib/pawapay/availability";
@@ -9,6 +10,22 @@ export async function assertPayoutProviderOpen(
   country: string,
   provider: string,
 ): Promise<{ ok: true } | { ok: false; reason: string; status: number }> {
+  return assertProviderOpen(country, provider, "PAYOUT", "payout");
+}
+
+export async function assertDepositProviderOpen(
+  country: string,
+  provider: string,
+): Promise<{ ok: true } | { ok: false; reason: string; status: number }> {
+  return assertProviderOpen(country, provider, "DEPOSIT", "deposit");
+}
+
+async function assertProviderOpen(
+  country: string,
+  provider: string,
+  operationType: "PAYOUT" | "DEPOSIT",
+  label: "payout" | "deposit",
+): Promise<{ ok: true } | { ok: false; reason: string; status: number }> {
   const configured = getPawapayConfig();
   if (!configured.ok) {
     return { ok: true };
@@ -16,21 +33,21 @@ export async function assertPayoutProviderOpen(
 
   const availability = await getAvailability(configured.config, {
     country,
-    operationType: "PAYOUT",
+    operationType,
   });
   if (!availability.ok) {
     return { ok: true };
   }
 
-  const status = payoutAvailabilityStatus(
-    flattenPayoutAvailability(availability.data),
-    country,
-    provider,
-  );
+  const rows =
+    operationType === "PAYOUT"
+      ? flattenPayoutAvailability(availability.data)
+      : flattenDepositAvailability(availability.data);
+  const status = payoutAvailabilityStatus(rows, country, provider);
   if (status === "CLOSED") {
     return {
       ok: false,
-      reason: "payout provider is currently closed",
+      reason: `${label} provider is currently closed`,
       status: 409,
     };
   }

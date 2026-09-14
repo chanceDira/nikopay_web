@@ -10,6 +10,8 @@ export type PayoutCorridor = {
   maxAmount: string;
 };
 
+export type DepositCorridor = PayoutCorridor;
+
 export type CorridorProviderOption = {
   country: string;
   provider: string;
@@ -26,7 +28,25 @@ export type CorridorCountryOption = {
   displayName: string;
 };
 
+type CorridorOperation = "PAYOUT" | "DEPOSIT" | "REMITTANCE";
+
 export function listPayoutCountries(conf: unknown): CorridorCountryOption[] {
+  return listOperationCountries(conf, "PAYOUT");
+}
+
+export function listDepositCountries(conf: unknown): CorridorCountryOption[] {
+  return listOperationCountries(conf, "DEPOSIT");
+}
+
+export function listRemittanceCountries(conf: unknown): CorridorCountryOption[] {
+  const remittance = listOperationCountries(conf, "REMITTANCE");
+  return remittance.length > 0 ? remittance : listPayoutCountries(conf);
+}
+
+function listOperationCountries(
+  conf: unknown,
+  operation: CorridorOperation,
+): CorridorCountryOption[] {
   const countries = asRecord(conf)?.countries;
   if (!Array.isArray(countries)) {
     return [];
@@ -40,8 +60,8 @@ export function listPayoutCountries(conf: unknown): CorridorCountryOption[] {
     if (!country || !prefix || !/^\d{1,4}$/.test(prefix)) {
       continue;
     }
-    const providers = row?.providers;
-    if (!Array.isArray(providers) || providers.length === 0) {
+    const providers = listOperationProviders(conf, country, operation);
+    if (providers.length === 0) {
       continue;
     }
     options.push({
@@ -70,6 +90,31 @@ function countryDisplayName(value: unknown): string | null {
 export function listPayoutProviders(
   conf: unknown,
   country: string,
+): CorridorProviderOption[] {
+  return listOperationProviders(conf, country, "PAYOUT");
+}
+
+export function listDepositProviders(
+  conf: unknown,
+  country: string,
+): CorridorProviderOption[] {
+  return listOperationProviders(conf, country, "DEPOSIT");
+}
+
+export function listRemittanceProviders(
+  conf: unknown,
+  country: string,
+): CorridorProviderOption[] {
+  const remittance = listOperationProviders(conf, country, "REMITTANCE");
+  return remittance.length > 0
+    ? remittance
+    : listOperationProviders(conf, country, "PAYOUT");
+}
+
+function listOperationProviders(
+  conf: unknown,
+  country: string,
+  operation: CorridorOperation,
 ): CorridorProviderOption[] {
   const countries = asRecord(conf)?.countries;
   if (!Array.isArray(countries)) {
@@ -102,7 +147,12 @@ export function listPayoutProviders(
         continue;
       }
       for (const currencyItem of currencies) {
-        const corridor = pickFromCurrency(currencyItem, countryCode, provider);
+        const corridor = pickFromCurrency(
+          currencyItem,
+          countryCode,
+          provider,
+          operation,
+        );
         if (!corridor) {
           continue;
         }
@@ -136,6 +186,31 @@ export function pickPayoutCorridor(
   conf: unknown,
   query: { country: string; provider: string },
 ): PayoutCorridor | null {
+  return pickOperationCorridor(conf, query, "PAYOUT");
+}
+
+export function pickDepositCorridor(
+  conf: unknown,
+  query: { country: string; provider: string },
+): DepositCorridor | null {
+  return pickOperationCorridor(conf, query, "DEPOSIT");
+}
+
+export function pickRemittanceCorridor(
+  conf: unknown,
+  query: { country: string; provider: string },
+): PayoutCorridor | null {
+  return (
+    pickOperationCorridor(conf, query, "REMITTANCE") ??
+    pickOperationCorridor(conf, query, "PAYOUT")
+  );
+}
+
+function pickOperationCorridor(
+  conf: unknown,
+  query: { country: string; provider: string },
+  operation: CorridorOperation,
+): PayoutCorridor | null {
   const countries = asRecord(conf)?.countries;
   if (!Array.isArray(countries)) {
     return null;
@@ -145,7 +220,7 @@ export function pickPayoutCorridor(
   const provider = query.provider.trim().toUpperCase();
 
   for (const item of countries) {
-    const picked = pickFromCountry(item, country, provider);
+    const picked = pickFromCountry(item, country, provider, operation);
     if (picked) {
       return picked;
     }
@@ -158,6 +233,7 @@ function pickFromCountry(
   value: unknown,
   country: string,
   provider: string,
+  operation: CorridorOperation,
 ): PayoutCorridor | null {
   const row = asRecord(value);
   const code = asNonEmptyString(row?.country)?.toUpperCase();
@@ -167,7 +243,7 @@ function pickFromCountry(
   }
 
   for (const item of providers) {
-    const picked = pickFromProvider(item, country, provider);
+    const picked = pickFromProvider(item, country, provider, operation);
     if (picked) {
       return picked;
     }
@@ -180,6 +256,7 @@ function pickFromProvider(
   value: unknown,
   country: string,
   provider: string,
+  operation: CorridorOperation,
 ): PayoutCorridor | null {
   const row = asRecord(value);
   const code = asNonEmptyString(row?.provider)?.toUpperCase();
@@ -189,7 +266,7 @@ function pickFromProvider(
   }
 
   for (const item of currencies) {
-    const picked = pickFromCurrency(item, country, provider);
+    const picked = pickFromCurrency(item, country, provider, operation);
     if (picked) {
       return picked;
     }
@@ -202,21 +279,20 @@ function pickFromCurrency(
   value: unknown,
   country: string,
   provider: string,
+  operation: CorridorOperation,
 ): PayoutCorridor | null {
   const row = asRecord(value);
   const currency = asNonEmptyString(row?.currency)?.toUpperCase();
-  const payout = readPayoutOperation(row?.operationTypes);
-  if (!currency || !payout) {
+  const op = readOperation(row?.operationTypes, operation);
+  if (!currency || !op) {
     return null;
   }
 
-  const decimals = asAmountDecimals(payout.decimalsInAmount);
+  const decimals = asAmountDecimals(op.decimalsInAmount);
   const minAmount =
-    asNonEmptyString(payout.minAmount) ??
-    asNonEmptyString(payout.minTransactionLimit);
+    asNonEmptyString(op.minAmount) ?? asNonEmptyString(op.minTransactionLimit);
   const maxAmount =
-    asNonEmptyString(payout.maxAmount) ??
-    asNonEmptyString(payout.maxTransactionLimit);
+    asNonEmptyString(op.maxAmount) ?? asNonEmptyString(op.maxTransactionLimit);
   if (!decimals || !minAmount || !maxAmount) {
     return null;
   }
@@ -231,12 +307,13 @@ function pickFromCurrency(
   };
 }
 
-function readPayoutOperation(
+function readOperation(
   operationTypes: unknown,
+  operation: CorridorOperation,
 ): Record<string, unknown> | null {
   const asObject = asRecord(operationTypes);
   if (asObject) {
-    return asRecord(asObject.PAYOUT);
+    return asRecord(asObject[operation]);
   }
   if (!Array.isArray(operationTypes)) {
     return null;
@@ -247,10 +324,10 @@ function readPayoutOperation(
     if (!row) {
       continue;
     }
-    if (asNonEmptyString(row.operationType)?.toUpperCase() === "PAYOUT") {
+    if (asNonEmptyString(row.operationType)?.toUpperCase() === operation) {
       return row;
     }
-    const nested = asRecord(row.PAYOUT);
+    const nested = asRecord(row[operation]);
     if (nested) {
       return nested;
     }

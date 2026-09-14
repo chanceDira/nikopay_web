@@ -29,6 +29,15 @@ export type InitiatePayoutRequest = {
   customerMessage?: string;
 };
 
+export type InitiateDepositRequest = {
+  depositId: string;
+  amount: string;
+  currency: string;
+  payer: PawapayMmoAccount;
+  clientReferenceId?: string;
+  customerMessage?: string;
+};
+
 export type PawapayFailureReason = {
   failureCode: string;
   failureMessage: string;
@@ -36,6 +45,13 @@ export type PawapayFailureReason = {
 
 export type InitiatePayoutResponse = {
   payoutId: string;
+  status: PawapayInitiationStatus;
+  created?: string;
+  failureReason?: PawapayFailureReason;
+};
+
+export type InitiateDepositResponse = {
+  depositId: string;
   status: PawapayInitiationStatus;
   created?: string;
   failureReason?: PawapayFailureReason;
@@ -53,8 +69,90 @@ export type PayoutLookupData = {
   failureReason?: PawapayFailureReason;
 };
 
+export type DepositLookupData = {
+  depositId: string;
+  status: PawapayPayoutStatus;
+  amount?: string;
+  currency?: string;
+  country?: string;
+  provider?: string;
+  created?: string;
+  providerTransactionId?: string;
+  failureReason?: PawapayFailureReason;
+};
+
 export type GetPayoutResponse =
   { status: "FOUND"; data: PayoutLookupData } | { status: "NOT_FOUND" };
+
+export type GetDepositResponse =
+  { status: "FOUND"; data: DepositLookupData } | { status: "NOT_FOUND" };
+
+export type InitiateRemittanceRequest = {
+  remittanceId: string;
+  amount: string;
+  currency: string;
+  recipient: {
+    type: "MMO";
+    accountDetails: {
+      phoneNumber: string;
+      provider: string;
+    };
+    recipientDetails: {
+      firstName: string;
+      lastName: string;
+    };
+  };
+  sender: {
+    transactionDetails: {
+      transactionReference: string;
+      originalAmount: string;
+      originalCurrency: string;
+      buyFxRate: string;
+      senderFees: string;
+      purposeOfFunds: string;
+      sourceOfFunds: string;
+    };
+    senderDetails: {
+      firstName: string;
+      lastName: string;
+      nationality: string;
+      phoneNumber: string;
+      address: {
+        addressLine: string;
+        postalCode: string;
+        city: string;
+        country: string;
+      };
+      identification: {
+        type: string;
+        number: string;
+      };
+    };
+  };
+  customerMessage?: string;
+};
+
+export type InitiateRemittanceResponse = {
+  remittanceId: string;
+  status: PawapayInitiationStatus;
+  created?: string;
+  failureReason?: PawapayFailureReason;
+};
+
+export type RemittanceLookupData = {
+  remittanceId: string;
+  status: PawapayPayoutStatus;
+  amount?: string;
+  currency?: string;
+  country?: string;
+  provider?: string;
+  created?: string;
+  providerTransactionId?: string;
+  failureReason?: PawapayFailureReason;
+};
+
+export type GetRemittanceResponse =
+  { status: "FOUND"; data: RemittanceLookupData } | { status: "NOT_FOUND" };
 
 export type PawapayPublicKey = {
   id: string;
