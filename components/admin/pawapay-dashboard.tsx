@@ -134,6 +134,69 @@ export function AdminPawapayDashboard() {
 
       <section className="space-y-3">
         <h4 className="text-sm font-semibold text-foreground">
+          Quote liquidity
+        </h4>
+        <p className="text-[11px] text-niko-muted">
+          Spendable = wallet minus committed intents (detected, credited,
+          payout_pending, manual_review). New quotes pause when the net local
+          amount exceeds spendable.
+        </p>
+        {snapshot.liquidity.length === 0 ? (
+          <p className="text-xs text-niko-muted">No liquidity rows.</p>
+        ) : (
+          <div className="rounded-md border border-niko-border/40 overflow-hidden">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs font-mono uppercase tracking-wider text-niko-muted">
+                  <th className="px-4 py-3">Corridor</th>
+                  <th className="px-4 py-3">Wallet</th>
+                  <th className="px-4 py-3">Reserved</th>
+                  <th className="px-4 py-3">Spendable</th>
+                  <th className="px-4 py-3">Source</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-niko-border/10">
+                {snapshot.liquidity.map((row) => (
+                  <tr key={`${row.country}-${row.currency}`}>
+                    <td className="px-4 py-3 font-mono text-xs">
+                      {row.country} · {row.currency}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs">
+                      {row.available == null
+                        ? "—"
+                        : row.currency === "RWF"
+                          ? formatRwf(row.available)
+                          : `${row.available} ${row.currency}`}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs">
+                      {!row.reservedOk
+                        ? "error"
+                        : row.reserved == null
+                          ? "—"
+                          : row.currency === "RWF"
+                            ? formatRwf(row.reserved)
+                            : `${row.reserved} ${row.currency}`}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs font-semibold">
+                      {row.spendable == null
+                        ? "—"
+                        : row.currency === "RWF"
+                          ? formatRwf(row.spendable)
+                          : `${row.spendable} ${row.currency}`}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-niko-muted">
+                      {row.walletSource}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h4 className="text-sm font-semibold text-foreground">
           Payout availability
         </h4>
         {snapshot.availabilityError ? (

@@ -19,6 +19,10 @@ import {
   listPayoutProviders,
   type CorridorProviderOption,
 } from "@/lib/pawapay/corridor";
+import {
+  inspectPayoutLiquidity,
+  type PayoutLiquidityView,
+} from "@/lib/pawapay/liquidity";
 import type { PayoutLookupData, WalletBalance } from "@/lib/pawapay/types";
 
 export type PawapayAvailabilityRow = PayoutAvailabilityRow;
@@ -32,6 +36,7 @@ export type AdminPawapaySnapshot = {
   verifyCallbacks?: boolean;
   balances: WalletBalance[];
   balancesError: string | null;
+  liquidity: PayoutLiquidityView[];
   availability: PawapayAvailabilityRow[];
   availabilityError: string | null;
   corridors: CorridorProviderOption[];
@@ -53,6 +58,7 @@ export async function loadAdminPawapaySnapshot(): Promise<AdminPawapaySnapshot> 
       reason: configured.reason,
       balances: [],
       balancesError: configured.reason,
+      liquidity: [],
       availability: [],
       availabilityError: configured.reason,
       corridors: [],
@@ -69,14 +75,18 @@ export async function loadAdminPawapaySnapshot(): Promise<AdminPawapaySnapshot> 
     getActiveConf(config, { operationType: "PAYOUT" }),
   ]);
 
+  const balanceRows = balances.ok ? balances.data : [];
+  const liquidity = await loadLiquidityViews(balanceRows);
+
   return {
     configured: true,
     environment: pawapayEnvironment(config.baseUrl),
     dashboardUrl: pawapayDashboardUrl(config.baseUrl),
     callbackPath: config.callbackPath,
     verifyCallbacks: config.verifyCallbacks,
-    balances: balances.ok ? balances.data : [],
+    balances: balanceRows,
     balancesError: balances.ok ? null : balances.reason,
+    liquidity,
     availability: availability.ok
       ? flattenPayoutAvailability(availability.data)
       : [],
@@ -130,4 +140,34 @@ function flattenPayoutCorridors(conf: unknown): CorridorProviderOption[] {
     options.push(...listPayoutProviders(conf, country.country));
   }
   return options;
+}
+
+async function loadLiquidityViews(
+  balances: WalletBalance[],
+): Promise<PayoutLiquidityView[]> {
+  const keys = uniqueCorridors(balances);
+  if (!keys.some((row) => row.country === "RWA" && row.currency === "RWF")) {
+    keys.unshift({ country: "RWA", currency: "RWF" });
+  }
+  return Promise.all(
+    keys.map((row) =>
+      inspectPayoutLiquidity({ country: row.country, currency: row.currency }),
+    ),
+  );
+}
+
+function uniqueCorridors(
+  rows: WalletBalance[],
+): Array<{ country: string; currency: string }> {
+  const seen = new Set<string>();
+  const out: Array<{ country: string; currency: string }> = [];
+  for (const row of rows) {
+    const key = `${row.country}:${row.currency}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    out.push({ country: row.country, currency: row.currency });
+  }
+  return out;
 }
