@@ -8,16 +8,19 @@ export const PAYOUTS_PAUSED_REASON = "Payouts are paused. Try again shortly.";
 
 const BALANCE_TTL_MS = 15_000;
 
-const COMMITTED_PAYOUT_STATUSES = [
+/** Intents that still expect a float debit. Parked manual_review does not reserve. */
+export const LIVE_RESERVE_STATUSES = [
   "detected",
   "credited",
   "payout_pending",
-  "manual_review",
 ] as const;
+
+export const OPEN_TRANSFER_STATUSES = ["pending", "enqueued"] as const;
 
 const BALANCE_CACHE_KEY = "all";
 
 export type ReservedIntentRow = {
+  id: string;
   status: string;
   netRwf: number;
 };
@@ -60,13 +63,32 @@ export function walletAvailableForCorridor(
   return best;
 }
 
-export function reservedPayoutTotal(
-  rows: readonly ReservedIntentRow[],
-): number {
-  const committed = new Set<string>(COMMITTED_PAYOUT_STATUSES);
+export function sumPositiveAmounts(values: readonly number[]): number {
   let total = 0;
-  for (const row of rows) {
-    if (!committed.has(row.status)) {
+  for (const value of values) {
+    if (!Number.isFinite(value) || value <= 0) {
+      continue;
+    }
+    total += value;
+  }
+  return total;
+}
+
+/**
+ * Live intents reserve their net only when no open transfer already covers them.
+ * Open transfer amounts are counted separately. manual_review is never reserved.
+ */
+export function reservedFromLiveIntents(
+  intents: readonly ReservedIntentRow[],
+  coveredByOpenTransfer: ReadonlySet<string>,
+): number {
+  const live = new Set<string>(LIVE_RESERVE_STATUSES);
+  let total = 0;
+  for (const row of intents) {
+    if (!live.has(row.status)) {
+      continue;
+    }
+    if (coveredByOpenTransfer.has(row.id)) {
       continue;
     }
     if (!Number.isFinite(row.netRwf) || row.netRwf <= 0) {
@@ -75,6 +97,20 @@ export function reservedPayoutTotal(
     total += row.netRwf;
   }
   return total;
+}
+
+/** @deprecated Prefer reservedFromLiveIntents + open transfers. Kept for call sites. */
+export function reservedPayoutTotal(
+  rows: readonly { status: string; netRwf: number }[],
+): number {
+  return reservedFromLiveIntents(
+    rows.map((row, index) => ({
+      id: `legacy-${index}`,
+      status: row.status,
+      netRwf: row.netRwf,
+    })),
+    new Set(),
+  );
 }
 
 export function canCoverPayout(
@@ -97,6 +133,8 @@ export type PayoutLiquidityView = {
   available: number | null;
   reserved: number | null;
   spendable: number | null;
+  openTransfers: number | null;
+  liveIntents: number | null;
   walletSource: "all" | "country" | "none" | "error";
   reservedOk: boolean;
 };
@@ -157,6 +195,8 @@ export async function inspectPayoutLiquidity(input: {
       available: null,
       reserved: null,
       spendable: null,
+      openTransfers: null,
+      liveIntents: null,
       walletSource: "none",
       reservedOk: false,
     };
@@ -174,6 +214,8 @@ export async function inspectPayoutLiquidity(input: {
       available: null,
       reserved: null,
       spendable: null,
+      openTransfers: null,
+      liveIntents: null,
       walletSource: "error",
       reservedOk: false,
     };
@@ -197,6 +239,8 @@ export async function inspectPayoutLiquidity(input: {
     available,
     reserved: reservedAmount,
     spendable,
+    openTransfers: reserved.ok ? reserved.openTransfers : null,
+    liveIntents: reserved.ok ? reserved.liveIntents : null,
     walletSource: available == null ? "none" : wallets.source,
     reservedOk: reserved.ok,
   };
@@ -262,23 +306,60 @@ async function loadBalancesForCorridor(
 async function loadReservedPayoutTotal(
   country: string,
   currency: string,
-): Promise<{ ok: true; amount: number } | { ok: false }> {
+): Promise<
+  | {
+      ok: true;
+      amount: number;
+      openTransfers: number;
+      liveIntents: number;
+    }
+  | { ok: false }
+> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("payment_intents")
-    .select("status, net_rwf")
-    .eq("country", country)
-    .eq("currency", currency)
-    .in("status", [...COMMITTED_PAYOUT_STATUSES]);
 
-  if (error) {
+  const [transfers, intents] = await Promise.all([
+    supabase
+      .from("payout_transfers")
+      .select("intent_id, amount")
+      .eq("country", country)
+      .eq("currency", currency)
+      .in("status", [...OPEN_TRANSFER_STATUSES]),
+    supabase
+      .from("payment_intents")
+      .select("id, status, net_rwf")
+      .eq("country", country)
+      .eq("currency", currency)
+      .in("status", [...LIVE_RESERVE_STATUSES]),
+  ]);
+
+  if (transfers.error || intents.error) {
     return { ok: false };
   }
 
-  const rows: ReservedIntentRow[] = (data ?? []).map((row) => ({
-    status: row.status,
-    netRwf: toNumber(row.net_rwf),
-  }));
+  const openTransfers = sumPositiveAmounts(
+    (transfers.data ?? []).map((row) => toNumber(row.amount)),
+  );
 
-  return { ok: true, amount: reservedPayoutTotal(rows) };
+  const covered = new Set<string>();
+  for (const row of transfers.data ?? []) {
+    if (row.intent_id) {
+      covered.add(row.intent_id);
+    }
+  }
+
+  const liveIntents = reservedFromLiveIntents(
+    (intents.data ?? []).map((row) => ({
+      id: row.id,
+      status: row.status,
+      netRwf: toNumber(row.net_rwf),
+    })),
+    covered,
+  );
+
+  return {
+    ok: true,
+    amount: openTransfers + liveIntents,
+    openTransfers,
+    liveIntents,
+  };
 }

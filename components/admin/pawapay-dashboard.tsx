@@ -137,9 +137,10 @@ export function AdminPawapayDashboard() {
           Quote liquidity
         </h4>
         <p className="text-[11px] text-niko-muted">
-          Spendable = wallet minus committed intents (detected, credited,
-          payout_pending, manual_review). New quotes pause when the net local
-          amount exceeds spendable.
+          Spendable = wallet minus open payout transfers (pending/enqueued)
+          minus live intents (detected/credited/payout_pending) that have no
+          open transfer yet. Parked manual_review does not reserve. New quotes
+          pause when the net local amount exceeds spendable.
         </p>
         {snapshot.liquidity.length === 0 ? (
           <p className="text-xs text-niko-muted">No liquidity rows.</p>
@@ -150,7 +151,8 @@ export function AdminPawapayDashboard() {
                 <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs font-mono uppercase tracking-wider text-niko-muted">
                   <th className="px-4 py-3">Corridor</th>
                   <th className="px-4 py-3">Wallet</th>
-                  <th className="px-4 py-3">Reserved</th>
+                  <th className="px-4 py-3">Open tx</th>
+                  <th className="px-4 py-3">Live intents</th>
                   <th className="px-4 py-3">Spendable</th>
                   <th className="px-4 py-3">Source</th>
                 </tr>
@@ -162,27 +164,16 @@ export function AdminPawapayDashboard() {
                       {row.country} · {row.currency}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs">
-                      {row.available == null
-                        ? "—"
-                        : row.currency === "RWF"
-                          ? formatRwf(row.available)
-                          : `${row.available} ${row.currency}`}
+                      {formatLiquidityAmount(row.available, row.currency)}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs">
-                      {!row.reservedOk
-                        ? "error"
-                        : row.reserved == null
-                          ? "—"
-                          : row.currency === "RWF"
-                            ? formatRwf(row.reserved)
-                            : `${row.reserved} ${row.currency}`}
+                      {formatLiquidityAmount(row.openTransfers, row.currency)}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs">
+                      {formatLiquidityAmount(row.liveIntents, row.currency)}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs font-semibold">
-                      {row.spendable == null
-                        ? "—"
-                        : row.currency === "RWF"
-                          ? formatRwf(row.spendable)
-                          : `${row.spendable} ${row.currency}`}
+                      {formatLiquidityAmount(row.spendable, row.currency)}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-niko-muted">
                       {row.walletSource}
@@ -417,6 +408,16 @@ export function AdminPawapayDashboard() {
       </section>
     </div>
   );
+}
+
+function formatLiquidityAmount(
+  value: number | null | undefined,
+  currency: string,
+): string {
+  if (value == null) {
+    return "—";
+  }
+  return currency === "RWF" ? formatRwf(value) : `${value} ${currency}`;
 }
 
 function statusChip(status: string) {
