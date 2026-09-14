@@ -91,6 +91,16 @@ export function canCoverPayout(
   );
 }
 
+export type PayoutLiquidityView = {
+  country: string;
+  currency: string;
+  available: number | null;
+  reserved: number | null;
+  spendable: number | null;
+  walletSource: "all" | "country" | "none" | "error";
+  reservedOk: boolean;
+};
+
 export async function assertPayoutFunds(input: {
   country: string;
   currency: string;
@@ -105,7 +115,11 @@ export async function assertPayoutFunds(input: {
     return { ok: true };
   }
 
-  const wallets = await loadBalances(configured.config);
+  const wallets = await loadBalancesForCorridor(
+    configured.config,
+    input.country,
+    input.currency,
+  );
   if (!wallets.ok) {
     return { ok: false, reason: PAYOUTS_PAUSED_REASON, status: 503 };
   }
@@ -131,6 +145,63 @@ export async function assertPayoutFunds(input: {
   return { ok: true };
 }
 
+export async function inspectPayoutLiquidity(input: {
+  country: string;
+  currency: string;
+}): Promise<PayoutLiquidityView> {
+  const configured = getPawapayConfig();
+  if (!configured.ok) {
+    return {
+      country: input.country,
+      currency: input.currency,
+      available: null,
+      reserved: null,
+      spendable: null,
+      walletSource: "none",
+      reservedOk: false,
+    };
+  }
+
+  const wallets = await loadBalancesForCorridor(
+    configured.config,
+    input.country,
+    input.currency,
+  );
+  if (!wallets.ok) {
+    return {
+      country: input.country,
+      currency: input.currency,
+      available: null,
+      reserved: null,
+      spendable: null,
+      walletSource: "error",
+      reservedOk: false,
+    };
+  }
+
+  const available = walletAvailableForCorridor(
+    wallets.data,
+    input.country,
+    input.currency,
+  );
+  const reserved = await loadReservedPayoutTotal(input.country, input.currency);
+  const reservedAmount = reserved.ok ? reserved.amount : null;
+  const spendable =
+    available != null && reservedAmount != null
+      ? Math.max(0, available - reservedAmount)
+      : null;
+
+  return {
+    country: input.country,
+    currency: input.currency,
+    available,
+    reserved: reservedAmount,
+    spendable,
+    walletSource: available == null ? "none" : wallets.source,
+    reservedOk: reserved.ok,
+  };
+}
+
 async function loadBalances(
   config: PawapayConfig,
 ): Promise<{ ok: true; data: WalletBalance[] } | { ok: false }> {
@@ -153,6 +224,39 @@ async function loadBalances(
     data: loaded.data,
   };
   return { ok: true, data: loaded.data };
+}
+
+async function loadBalancesForCorridor(
+  config: PawapayConfig,
+  country: string,
+  currency: string,
+): Promise<
+  { ok: true; data: WalletBalance[]; source: "all" | "country" } | { ok: false }
+> {
+  const all = await loadBalances(config);
+  if (
+    all.ok &&
+    walletAvailableForCorridor(all.data, country, currency) != null
+  ) {
+    return { ok: true, data: all.data, source: "all" };
+  }
+
+  // Same path as treasury: some accounts only return the corridor when filtered
+  const scoped = await getWalletBalances(config, { country });
+  if (scoped.ok) {
+    if (
+      walletAvailableForCorridor(scoped.data, country, currency) != null ||
+      !all.ok
+    ) {
+      return { ok: true, data: scoped.data, source: "country" };
+    }
+  }
+
+  if (all.ok) {
+    return { ok: true, data: all.data, source: "all" };
+  }
+
+  return { ok: false };
 }
 
 async function loadReservedPayoutTotal(
