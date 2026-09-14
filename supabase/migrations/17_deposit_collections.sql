@@ -1,5 +1,5 @@
--- MoMo collections (PawaPay deposits). Fiat in to the PawaPay float.
--- Not on-chain USDT matching (chain_deposits) and not offramp payment_intents.
+-- MoMo collections (PawaPay deposits). Fiat in to the PawaPay float
+-- Not on-chain USDT matching (chain_deposits) and not offramp payment_intents
 
 create table public.deposit_collections (
   id uuid primary key default gen_random_uuid(),
