@@ -5,7 +5,7 @@ import Link from "next/link";
 import { displayPayoutRef } from "@/lib/payout-ref";
 import type { PaymentIntent, PaymentStatus } from "@/lib/settlement/types";
 import { canTransition } from "@/lib/settlement/transitions";
-import { formatLocalAmount } from "@/lib/rates";
+import { formatExactUsdt, formatLocalAmount } from "@/lib/rates";
 import { PageHeader } from "@/components/shared/page-header";
 import { SettlementTimingFields } from "@/components/shared/settlement-timing";
 import type { PayoutLookupData } from "@/lib/pawapay/types";
@@ -240,7 +240,7 @@ export default function AdminTransactionDetailPage({ params }: Props) {
                     USDT deposit
                   </span>
                   <span className="text-foreground font-bold">
-                    {intent.usdtAmount.toFixed(2)} USDT
+                    {formatExactUsdt(intent.payUsdt)}
                   </span>
                 </div>
                 <div>

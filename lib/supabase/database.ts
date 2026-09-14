@@ -179,6 +179,7 @@ export type Database = {
           currency: string;
           provider: string;
           usdt_amount: number;
+          pay_usdt: number;
           rate: number;
           fee_percent: number;
           fee_rwf: number;
@@ -217,6 +218,7 @@ export type Database = {
           currency: string;
           provider: string;
           usdt_amount: number;
+          pay_usdt: number;
           rate: number;
           fee_percent: number;
           fee_rwf: number;
@@ -255,6 +257,7 @@ export type Database = {
           currency?: string;
           provider?: string;
           usdt_amount?: number;
+          pay_usdt?: number;
           rate?: number;
           fee_percent?: number;
           fee_rwf?: number;

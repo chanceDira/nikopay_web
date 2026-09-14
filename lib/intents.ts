@@ -9,6 +9,7 @@ import {
   normalizeCorridorProvider,
 } from "@/lib/corridor";
 import { toNumber } from "@/lib/numbers";
+import { allocatePayUsdt } from "@/lib/settlement/pay-usdt";
 import { payoutRefAlias } from "@/lib/payout-ref";
 import { assertPayoutProviderOpen } from "@/lib/pawapay/availability-gate";
 import { assertPayoutFunds } from "@/lib/pawapay/liquidity";
@@ -17,6 +18,7 @@ import { resolveCheckoutForIntent } from "@/lib/checkouts";
 import { isPaymentStatus } from "@/lib/settlement/intent-status";
 import {
   isChainId,
+  type ChainId,
   type IntentPayout,
   type PaymentIntent,
 } from "@/lib/settlement/types";
@@ -34,6 +36,12 @@ export function toPaymentIntent(
     return null;
   }
 
+  const usdtAmount = toNumber(row.usdt_amount);
+  const payUsdt = toNumber(row.pay_usdt);
+  if (!Number.isFinite(usdtAmount) || !Number.isFinite(payUsdt)) {
+    return null;
+  }
+
   return {
     id: row.id,
     status: row.status,
@@ -43,7 +51,8 @@ export function toPaymentIntent(
     country: row.country,
     currency: row.currency,
     provider: row.provider,
-    usdtAmount: toNumber(row.usdt_amount),
+    usdtAmount,
+    payUsdt,
     rate: toNumber(row.rate),
     feePercent: toNumber(row.fee_percent),
     feeRwf: toNumber(row.fee_rwf),
@@ -163,9 +172,12 @@ export async function createPaymentIntent(input: {
   }
 
   const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("payment_intents")
-    .insert({
+  const created = await insertOpenIntent({
+    supabase,
+    chain: quoted.quote.chain,
+    treasuryAddress: treasury.address,
+    quotedAmount: quoted.quote.usdtAmount,
+    row: {
       wallet_address: wallet.address,
       status: "awaiting_payment",
       chain_id: quoted.quote.chain,
@@ -182,19 +194,91 @@ export async function createPaymentIntent(input: {
       expires_at: quoted.quote.expiresAt,
       notify_email: notifyEmail.email,
       checkout_id: checkoutId ?? null,
-    })
-    .select()
-    .single();
-
-  if (error?.code === "23505" && checkoutId) {
-    return {
-      ok: false,
-      reason: "This checkout is no longer available.",
-      status: 409,
-    };
+    },
+    checkoutId,
+  });
+  if (!created.ok) {
+    return created;
   }
 
-  if (error || !data) {
+  return { ok: true, intent: created.intent };
+}
+
+async function insertOpenIntent(input: {
+  supabase: ReturnType<typeof createAdminClient>;
+  chain: ChainId;
+  treasuryAddress: string;
+  quotedAmount: number;
+  checkoutId?: string;
+  row: {
+    wallet_address: string;
+    status: "awaiting_payment";
+    chain_id: ChainId;
+    msisdn: string;
+    country: string;
+    currency: string;
+    provider: string;
+    usdt_amount: number;
+    rate: number;
+    fee_percent: number;
+    fee_rwf: number;
+    net_rwf: number;
+    treasury_address: string;
+    expires_at: string;
+    notify_email: string | null;
+    checkout_id: string | null;
+  };
+}): Promise<
+  | { ok: true; intent: PaymentIntent }
+  | { ok: false; reason: string; status: number }
+> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const taken = await listOpenPayUsdt(
+      input.supabase,
+      input.chain,
+      input.treasuryAddress,
+    );
+    if (!taken.ok) {
+      return taken;
+    }
+
+    const allocated = allocatePayUsdt(input.quotedAmount, taken.amounts);
+    if (!allocated.ok) {
+      return { ok: false, reason: allocated.reason, status: 409 };
+    }
+
+    const { data, error } = await input.supabase
+      .from("payment_intents")
+      .insert({
+        ...input.row,
+        pay_usdt: allocated.payUsdt,
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      const intent = toPaymentIntent(data);
+      if (!intent) {
+        return {
+          ok: false,
+          reason: "unable to create payment intent",
+          status: 503,
+        };
+      }
+      return { ok: true, intent };
+    }
+
+    if (error?.code === "23505") {
+      if (isCheckoutUniqueConflict(error, input.checkoutId)) {
+        return {
+          ok: false,
+          reason: "This checkout is no longer available.",
+          status: 409,
+        };
+      }
+      continue;
+    }
+
     return {
       ok: false,
       reason: "unable to create payment intent",
@@ -202,8 +286,29 @@ export async function createPaymentIntent(input: {
     };
   }
 
-  const intent = toPaymentIntent(data);
-  if (!intent) {
+  return {
+    ok: false,
+    reason: "unable to create payment intent",
+    status: 503,
+  };
+}
+
+async function listOpenPayUsdt(
+  supabase: ReturnType<typeof createAdminClient>,
+  chain: ChainId,
+  treasuryAddress: string,
+): Promise<
+  | { ok: true; amounts: number[] }
+  | { ok: false; reason: string; status: number }
+> {
+  const { data, error } = await supabase
+    .from("payment_intents")
+    .select("pay_usdt")
+    .eq("chain_id", chain)
+    .eq("status", "awaiting_payment")
+    .eq("treasury_address", treasuryAddress);
+
+  if (error) {
     return {
       ok: false,
       reason: "unable to create payment intent",
@@ -211,7 +316,21 @@ export async function createPaymentIntent(input: {
     };
   }
 
-  return { ok: true, intent };
+  return {
+    ok: true,
+    amounts: (data ?? []).map((row) => toNumber(row.pay_usdt)),
+  };
+}
+
+function isCheckoutUniqueConflict(
+  error: { message?: string; details?: string },
+  checkoutId?: string,
+): boolean {
+  if (!checkoutId) {
+    return false;
+  }
+  const text = `${error.message ?? ""} ${error.details ?? ""}`.toLowerCase();
+  return text.includes("checkout");
 }
 
 export async function getPaymentIntent(

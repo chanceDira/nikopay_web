@@ -1,5 +1,5 @@
-import { equalUsdt } from "@/lib/numbers";
 import { shouldExpireIntent } from "@/lib/settlement/expiry";
+import { equalPayUsdt } from "@/lib/settlement/pay-usdt";
 import type { ChainId, PaymentStatus } from "@/lib/settlement/types";
 
 export type MatchableIntent = {
@@ -7,7 +7,7 @@ export type MatchableIntent = {
   status: PaymentStatus;
   chain: ChainId;
   treasuryAddress: string;
-  usdtAmount: number;
+  payUsdt: number;
   expiresAt: string;
 };
 
@@ -47,7 +47,7 @@ export function matchDeposit(
   }
 
   const exact = [...live, ...expired].filter((intent) =>
-    equalUsdt(intent.usdtAmount, deposit.amount),
+    equalPayUsdt(intent.payUsdt, deposit.amount),
   );
   if (exact.length === 1) {
     return { outcome: "credited", intentId: exact[0].id };

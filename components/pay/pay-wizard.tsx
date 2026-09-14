@@ -35,7 +35,7 @@ import {
   usdtForTargetLocal,
   feeUsdtForAmount,
 } from "@/lib/settlement/quote";
-import { formatLocalAmount, formatUsdt } from "@/lib/rates";
+import { formatLocalAmount, formatExactUsdt, formatUsdt } from "@/lib/rates";
 import { asWalletKind, type WalletKind } from "@/lib/wallet/browser";
 import {
   connectInjectedWallet,
@@ -321,6 +321,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   const amountQuoteReady =
     hasAmount && quoteStatus === "ready" && quote != null;
   const usdtAmount = amountQuoteReady ? quote.usdtAmount : estimatedUsdt;
+  const sendUsdt = liveIntent?.payUsdt ?? usdtAmount;
   const feeRwf = amountQuoteReady
     ? quote.feeRwf
     : hasLiveRate
@@ -1535,7 +1536,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
                   </p>
                   Connect your web3 crypto wallet to authorize the transfer of{" "}
                   <span className="text-foreground font-semibold">
-                    {usdtAmount.toFixed(2)} USDT
+                    {sendUsdt.toFixed(liveIntent ? 6 : 2)} USDT
                   </span>{" "}
                   directly from your browser.
                 </div>
@@ -1678,11 +1679,19 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
                   </div>
                   <div className="h-px bg-niko-border/40 my-1" />
                   <div className="flex justify-between items-baseline">
-                    <span className="text-sm text-foreground">Amount</span>
+                    <span className="text-sm text-foreground">
+                      Send exactly
+                    </span>
                     <span className="text-lg text-niko-teal font-mono">
-                      {formatUsdt(usdtAmount)}
+                      {formatExactUsdt(sendUsdt)}
                     </span>
                   </div>
+                  {liveIntent ? (
+                    <p className="text-[11px] text-niko-muted">
+                      Send this exact amount. It identifies your payment on the
+                      shared treasury. Do not round it.
+                    </p>
+                  ) : null}
                   <div className="flex justify-between text-xs text-niko-muted mt-1">
                     <span>Network</span>
                     <span className="font-mono text-foreground">

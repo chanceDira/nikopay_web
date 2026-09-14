@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAdminIntents } from "@/components/admin/use-admin-intents";
 import { getPublicChain } from "@/lib/chain-config";
 import { paginate } from "@/lib/paginate";
-import { formatLocalAmount, formatUsdt } from "@/lib/rates";
+import { formatLocalAmount, formatExactUsdt } from "@/lib/rates";
 import { displayPayoutRef } from "@/lib/payout-ref";
 import { canTransition } from "@/lib/settlement/transitions";
 import type {
@@ -188,7 +188,7 @@ function ReviewCard(props: {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 text-xs font-mono">
-        <Field label="USDT" value={formatUsdt(item.usdtAmount)} />
+        <Field label="USDT" value={formatExactUsdt(item.payUsdt)} />
         <Field
           label="Payout (net)"
           value={formatLocalAmount(item.netRwf, item.currency)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatLocalAmount, formatUsdt } from "@/lib/rates";
+import { formatLocalAmount, formatExactUsdt } from "@/lib/rates";
 import { displayPayoutRef } from "@/lib/payout-ref";
 import { useIntentView } from "@/components/pay/use-intent-view";
 import { SettlementTimingFields } from "@/components/shared/settlement-timing";
@@ -483,7 +483,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
           <dl className="grid grid-cols-2 gap-y-3 text-sm">
             <dt className="text-niko-muted">USDT Transfer</dt>
             <dd className="font-mono font-semibold text-right text-foreground">
-              {formatUsdt(intent.usdtAmount)}
+              {formatExactUsdt(intent.payUsdt)}
             </dd>
 
             <dt className="text-niko-muted">Settlement Chain</dt>
