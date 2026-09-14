@@ -12,11 +12,24 @@ export type PayoutAvailabilityRow = {
 export function flattenPayoutAvailability(
   countries: AvailabilityCountry[],
 ): PayoutAvailabilityRow[] {
+  return flattenOperationAvailability(countries, "PAYOUT");
+}
+
+export function flattenDepositAvailability(
+  countries: AvailabilityCountry[],
+): PayoutAvailabilityRow[] {
+  return flattenOperationAvailability(countries, "DEPOSIT");
+}
+
+function flattenOperationAvailability(
+  countries: AvailabilityCountry[],
+  operation: "PAYOUT" | "DEPOSIT",
+): PayoutAvailabilityRow[] {
   const rows: PayoutAvailabilityRow[] = [];
   for (const country of countries) {
     for (const provider of country.providers) {
       for (const op of provider.operationTypes) {
-        if (op.operationType.toUpperCase() !== "PAYOUT") {
+        if (op.operationType.toUpperCase() !== operation) {
           continue;
         }
         rows.push({

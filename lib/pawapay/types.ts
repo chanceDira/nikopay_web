@@ -29,6 +29,15 @@ export type InitiatePayoutRequest = {
   customerMessage?: string;
 };
 
+export type InitiateDepositRequest = {
+  depositId: string;
+  amount: string;
+  currency: string;
+  payer: PawapayMmoAccount;
+  clientReferenceId?: string;
+  customerMessage?: string;
+};
+
 export type PawapayFailureReason = {
   failureCode: string;
   failureMessage: string;
@@ -36,6 +45,13 @@ export type PawapayFailureReason = {
 
 export type InitiatePayoutResponse = {
   payoutId: string;
+  status: PawapayInitiationStatus;
+  created?: string;
+  failureReason?: PawapayFailureReason;
+};
+
+export type InitiateDepositResponse = {
+  depositId: string;
   status: PawapayInitiationStatus;
   created?: string;
   failureReason?: PawapayFailureReason;
@@ -53,8 +69,23 @@ export type PayoutLookupData = {
   failureReason?: PawapayFailureReason;
 };
 
+export type DepositLookupData = {
+  depositId: string;
+  status: PawapayPayoutStatus;
+  amount?: string;
+  currency?: string;
+  country?: string;
+  provider?: string;
+  created?: string;
+  providerTransactionId?: string;
+  failureReason?: PawapayFailureReason;
+};
+
 export type GetPayoutResponse =
   { status: "FOUND"; data: PayoutLookupData } | { status: "NOT_FOUND" };
+
+export type GetDepositResponse =
+  { status: "FOUND"; data: DepositLookupData } | { status: "NOT_FOUND" };
 
 export type PawapayPublicKey = {
   id: string;

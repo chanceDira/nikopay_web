@@ -579,6 +579,57 @@ export type Database = {
         };
         Relationships: [];
       };
+      deposit_collections: {
+        Row: {
+          id: string;
+          deposit_id: string;
+          label: string | null;
+          country: string;
+          currency: string;
+          provider: string;
+          msisdn: string;
+          amount: number;
+          status: "pending" | "enqueued" | "successful" | "failed";
+          provider_ref: string | null;
+          provider_reason: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          deposit_id: string;
+          label?: string | null;
+          country: string;
+          currency: string;
+          provider: string;
+          msisdn: string;
+          amount: number;
+          status?: "pending" | "enqueued" | "successful" | "failed";
+          provider_ref?: string | null;
+          provider_reason?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          deposit_id?: string;
+          label?: string | null;
+          country?: string;
+          currency?: string;
+          provider?: string;
+          msisdn?: string;
+          amount?: number;
+          status?: "pending" | "enqueued" | "successful" | "failed";
+          provider_ref?: string | null;
+          provider_reason?: string | null;
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

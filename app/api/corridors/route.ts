@@ -6,12 +6,15 @@ import {
   createIpRateLimiter,
 } from "@/lib/ip-rate-limit";
 import {
+  flattenDepositAvailability,
   flattenPayoutAvailability,
   payoutAvailabilityStatus,
 } from "@/lib/pawapay/availability";
 import { getActiveConf, getAvailability } from "@/lib/pawapay/client";
 import { getPawapayConfig } from "@/lib/pawapay/config";
 import {
+  listDepositCountries,
+  listDepositProviders,
   listPayoutCountries,
   listPayoutProviders,
 } from "@/lib/pawapay/corridor";
@@ -21,6 +24,8 @@ const corridorListLimit = createIpRateLimiter({
   windowMs: 10 * 60 * 1000,
   maxHits: 60,
 });
+
+type CorridorOp = "PAYOUT" | "DEPOSIT";
 
 export async function GET(request: Request) {
   if (!allowIpRequest(corridorListLimit, clientIp(request))) {
@@ -32,19 +37,29 @@ export async function GET(request: Request) {
     return jsonError(configured.reason, 503);
   }
 
-  const rawCountry = new URL(request.url).searchParams.get("country")?.trim();
+  const url = new URL(request.url);
+  const operation = parseOperation(url.searchParams.get("operation"));
+  const rawCountry = url.searchParams.get("country")?.trim();
 
   if (!rawCountry) {
     const conf = await getActiveConf(configured.config, {
-      operationType: "PAYOUT",
+      operationType: operation,
     });
     if (!conf.ok) {
       return jsonError(conf.reason, 503);
     }
 
-    const countries = listPayoutCountries(conf.data);
+    const countries =
+      operation === "DEPOSIT"
+        ? listDepositCountries(conf.data)
+        : listPayoutCountries(conf.data);
     if (countries.length === 0) {
-      return jsonError("no payout countries configured", 404);
+      return jsonError(
+        operation === "DEPOSIT"
+          ? "no deposit countries configured"
+          : "no payout countries configured",
+        404,
+      );
     }
 
     return jsonData({ countries });
@@ -58,24 +73,34 @@ export async function GET(request: Request) {
   const [conf, availability] = await Promise.all([
     getActiveConf(configured.config, {
       country: country.country,
-      operationType: "PAYOUT",
+      operationType: operation,
     }),
     getAvailability(configured.config, {
       country: country.country,
-      operationType: "PAYOUT",
+      operationType: operation,
     }),
   ]);
   if (!conf.ok) {
     return jsonError(conf.reason, 503);
   }
 
-  const providers = listPayoutProviders(conf.data, country.country);
+  const providers =
+    operation === "DEPOSIT"
+      ? listDepositProviders(conf.data, country.country)
+      : listPayoutProviders(conf.data, country.country);
   if (providers.length === 0) {
-    return jsonError("no payout providers for this country", 404);
+    return jsonError(
+      operation === "DEPOSIT"
+        ? "no deposit providers for this country"
+        : "no payout providers for this country",
+      404,
+    );
   }
 
   const availabilityRows = availability.ok
-    ? flattenPayoutAvailability(availability.data)
+    ? operation === "DEPOSIT"
+      ? flattenDepositAvailability(availability.data)
+      : flattenPayoutAvailability(availability.data)
     : [];
   const fx = await listActiveFxCurrencies();
   const priced = fx.ok ? fx.currencies : null;
@@ -90,7 +115,16 @@ export async function GET(request: Request) {
           provider.country,
           provider.provider,
         ) ?? undefined,
-      ...(priced ? { rateConfigured: priced.has(provider.currency) } : {}),
+      ...(operation === "PAYOUT" && priced
+        ? { rateConfigured: priced.has(provider.currency) }
+        : {}),
     })),
   });
+}
+
+function parseOperation(value: string | null): CorridorOp {
+  if (value?.trim().toUpperCase() === "DEPOSIT") {
+    return "DEPOSIT";
+  }
+  return "PAYOUT";
 }
