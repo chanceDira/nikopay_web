@@ -38,7 +38,9 @@ export function listDepositCountries(conf: unknown): CorridorCountryOption[] {
   return listOperationCountries(conf, "DEPOSIT");
 }
 
-export function listRemittanceCountries(conf: unknown): CorridorCountryOption[] {
+export function listRemittanceCountries(
+  conf: unknown,
+): CorridorCountryOption[] {
   const remittance = listOperationCountries(conf, "REMITTANCE");
   return remittance.length > 0 ? remittance : listPayoutCountries(conf);
 }

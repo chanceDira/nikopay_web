@@ -1,5 +1,5 @@
--- MoMo → MoMo remittances via PawaPay. Separate from offramp and collections.
--- Sender / recipient KYC payloads stored as jsonb (validated at API boundary).
+-- MoMo -> MoMo remittances via PawaPay. Separate from offramp and collections
+-- Sender / recipient KYC payloads stored as jsonb (validated at API boundary)
 
 create table public.remittances (
   id uuid primary key default gen_random_uuid(),
