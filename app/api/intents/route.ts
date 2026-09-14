@@ -5,9 +5,28 @@ import {
   parseUsdtAmount,
   readJsonBody,
 } from "@/lib/http";
+import {
+  allowIpRequest,
+  clientIp,
+  createIpRateLimiter,
+} from "@/lib/ip-rate-limit";
 import { createPaymentIntent, listPaymentIntents } from "@/lib/intents";
 
+const intentWriteLimit = createIpRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  maxHits: 20,
+});
+
+const intentListLimit = createIpRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  maxHits: 30,
+});
+
 export async function POST(request: Request) {
+  if (!allowIpRequest(intentWriteLimit, clientIp(request))) {
+    return jsonError("too many payment requests", 429);
+  }
+
   const parsed = await readJsonBody(request);
   if (!parsed.ok) {
     return jsonError("invalid request body", 400);
@@ -43,6 +62,10 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  if (!allowIpRequest(intentListLimit, clientIp(request))) {
+    return jsonError("too many payment requests", 429);
+  }
+
   const walletAddress = new URL(request.url).searchParams.get("wallet");
   const result = await listPaymentIntents(walletAddress);
 
