@@ -630,6 +630,66 @@ export type Database = {
         };
         Relationships: [];
       };
+      remittances: {
+        Row: {
+          id: string;
+          remittance_id: string;
+          label: string | null;
+          amount: number;
+          currency: string;
+          recipient_country: string;
+          recipient_provider: string;
+          recipient_msisdn: string;
+          recipient_details: Json;
+          sender_details: Json;
+          transaction_details: Json;
+          status: "pending" | "enqueued" | "successful" | "failed";
+          provider_ref: string | null;
+          provider_reason: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          remittance_id: string;
+          label?: string | null;
+          amount: number;
+          currency: string;
+          recipient_country: string;
+          recipient_provider: string;
+          recipient_msisdn: string;
+          recipient_details: Json;
+          sender_details: Json;
+          transaction_details: Json;
+          status?: "pending" | "enqueued" | "successful" | "failed";
+          provider_ref?: string | null;
+          provider_reason?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          remittance_id?: string;
+          label?: string | null;
+          amount?: number;
+          currency?: string;
+          recipient_country?: string;
+          recipient_provider?: string;
+          recipient_msisdn?: string;
+          recipient_details?: Json;
+          sender_details?: Json;
+          transaction_details?: Json;
+          status?: "pending" | "enqueued" | "successful" | "failed";
+          provider_ref?: string | null;
+          provider_reason?: string | null;
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

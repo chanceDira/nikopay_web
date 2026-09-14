@@ -28,7 +28,7 @@ export type CorridorCountryOption = {
   displayName: string;
 };
 
-type CorridorOperation = "PAYOUT" | "DEPOSIT";
+type CorridorOperation = "PAYOUT" | "DEPOSIT" | "REMITTANCE";
 
 export function listPayoutCountries(conf: unknown): CorridorCountryOption[] {
   return listOperationCountries(conf, "PAYOUT");
@@ -36,6 +36,11 @@ export function listPayoutCountries(conf: unknown): CorridorCountryOption[] {
 
 export function listDepositCountries(conf: unknown): CorridorCountryOption[] {
   return listOperationCountries(conf, "DEPOSIT");
+}
+
+export function listRemittanceCountries(conf: unknown): CorridorCountryOption[] {
+  const remittance = listOperationCountries(conf, "REMITTANCE");
+  return remittance.length > 0 ? remittance : listPayoutCountries(conf);
 }
 
 function listOperationCountries(
@@ -94,6 +99,16 @@ export function listDepositProviders(
   country: string,
 ): CorridorProviderOption[] {
   return listOperationProviders(conf, country, "DEPOSIT");
+}
+
+export function listRemittanceProviders(
+  conf: unknown,
+  country: string,
+): CorridorProviderOption[] {
+  const remittance = listOperationProviders(conf, country, "REMITTANCE");
+  return remittance.length > 0
+    ? remittance
+    : listOperationProviders(conf, country, "PAYOUT");
 }
 
 function listOperationProviders(
@@ -179,6 +194,16 @@ export function pickDepositCorridor(
   query: { country: string; provider: string },
 ): DepositCorridor | null {
   return pickOperationCorridor(conf, query, "DEPOSIT");
+}
+
+export function pickRemittanceCorridor(
+  conf: unknown,
+  query: { country: string; provider: string },
+): PayoutCorridor | null {
+  return (
+    pickOperationCorridor(conf, query, "REMITTANCE") ??
+    pickOperationCorridor(conf, query, "PAYOUT")
+  );
 }
 
 function pickOperationCorridor(

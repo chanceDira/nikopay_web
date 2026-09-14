@@ -6,10 +6,13 @@ import type {
   AvailabilityOperationStatus,
   GetDepositResponse,
   GetPayoutResponse,
+  GetRemittanceResponse,
   InitiateDepositRequest,
   InitiateDepositResponse,
   InitiatePayoutRequest,
   InitiatePayoutResponse,
+  InitiateRemittanceRequest,
+  InitiateRemittanceResponse,
   PawapayFailureReason,
   PawapayInitiationStatus,
   PawapayPublicKey,
@@ -232,6 +235,75 @@ export async function getDeposit(
   const parsed = parseGetDepositResponse(response.json);
   if (!parsed) {
     return { ok: false, reason: "pawapay deposit status invalid" };
+  }
+
+  return { ok: true, data: parsed };
+}
+
+export async function initiateRemittance(
+  config: PawapayConfig,
+  body: InitiateRemittanceRequest,
+  fetchImpl: FetchLike = fetch,
+): Promise<PawapayHttpResult<InitiateRemittanceResponse>> {
+  if (!isUuid(body.remittanceId)) {
+    return { ok: false, reason: "remittanceId must be a uuid" };
+  }
+
+  const response = await pawapayFetch(config, "/v2/remittances", {
+    method: "POST",
+    body: JSON.stringify(body),
+    fetchImpl,
+  });
+
+  if (!response.ok) {
+    if (response.timedOut) {
+      return { ok: false, reason: "pawapay remittance request timed out" };
+    }
+    return {
+      ok: false,
+      reason: `pawapay remittance request failed (${response.status})`,
+    };
+  }
+
+  const parsed = parseInitiateRemittanceResponse(response.json);
+  if (!parsed) {
+    return { ok: false, reason: "pawapay remittance response invalid" };
+  }
+
+  return { ok: true, data: parsed };
+}
+
+export async function getRemittance(
+  config: PawapayConfig,
+  remittanceId: string,
+  fetchImpl: FetchLike = fetch,
+): Promise<PawapayHttpResult<GetRemittanceResponse>> {
+  if (!isUuid(remittanceId)) {
+    return { ok: false, reason: "remittanceId must be a uuid" };
+  }
+
+  const response = await pawapayFetch(
+    config,
+    `/v2/remittances/${remittanceId}`,
+    {
+      method: "GET",
+      fetchImpl,
+    },
+  );
+
+  if (!response.ok) {
+    if (response.timedOut) {
+      return { ok: false, reason: "pawapay remittance status timed out" };
+    }
+    return {
+      ok: false,
+      reason: `pawapay remittance status failed (${response.status})`,
+    };
+  }
+
+  const parsed = parseGetRemittanceResponse(response.json);
+  if (!parsed) {
+    return { ok: false, reason: "pawapay remittance status invalid" };
   }
 
   return { ok: true, data: parsed };
@@ -603,6 +675,66 @@ function payoutProvider(data: Record<string, unknown>): string | null {
 function depositProvider(data: Record<string, unknown>): string | null {
   const payer = asRecord(data.payer);
   const account = asRecord(payer?.accountDetails);
+  return asNonEmptyString(account?.provider);
+}
+
+function parseInitiateRemittanceResponse(
+  value: unknown,
+): InitiateRemittanceResponse | null {
+  const record = asRecord(value);
+  const remittanceId = asNonEmptyString(record?.remittanceId);
+  const status = asInitiationStatus(record?.status);
+  if (!remittanceId || !status) {
+    return null;
+  }
+
+  return {
+    remittanceId,
+    status,
+    created: asNonEmptyString(record?.created) ?? undefined,
+    failureReason: parseFailureReason(record?.failureReason) ?? undefined,
+  };
+}
+
+function parseGetRemittanceResponse(
+  value: unknown,
+): GetRemittanceResponse | null {
+  const record = asRecord(value);
+  const searchStatus = asNonEmptyString(record?.status)?.toUpperCase();
+  if (searchStatus === "NOT_FOUND") {
+    return { status: "NOT_FOUND" };
+  }
+  if (searchStatus !== "FOUND") {
+    return null;
+  }
+
+  const data = asRecord(record?.data);
+  const remittanceId = asNonEmptyString(data?.remittanceId);
+  const remittanceStatus = asPawapayPayoutStatus(data?.status);
+  if (!remittanceId || !remittanceStatus) {
+    return null;
+  }
+
+  return {
+    status: "FOUND",
+    data: {
+      remittanceId,
+      status: remittanceStatus,
+      amount: asNonEmptyString(data?.amount) ?? undefined,
+      currency: asNonEmptyString(data?.currency) ?? undefined,
+      country: asNonEmptyString(data?.country) ?? undefined,
+      provider: remittanceProvider(data ?? {}) ?? undefined,
+      created: asNonEmptyString(data?.created) ?? undefined,
+      providerTransactionId:
+        asNonEmptyString(data?.providerTransactionId) ?? undefined,
+      failureReason: parseFailureReason(data?.failureReason) ?? undefined,
+    },
+  };
+}
+
+function remittanceProvider(data: Record<string, unknown>): string | null {
+  const recipient = asRecord(data.recipient);
+  const account = asRecord(recipient?.accountDetails);
   return asNonEmptyString(account?.provider);
 }
 

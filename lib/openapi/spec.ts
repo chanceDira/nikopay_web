@@ -779,6 +779,66 @@ function buildPaths(): Record<string, OpenApiPathItem> {
         },
       },
     },
+    "/api/admin/remittances": {
+      get: {
+        tags: ["Admin"],
+        summary: "List MoMo remittances",
+        security: [{ AdminCookie: [] }],
+        responses: {
+          "200": {
+            description: "Remittances",
+            ...jsonContent(
+              dataEnvelope({
+                type: "object",
+                properties: {
+                  remittances: { type: "array", items: { type: "object" } },
+                },
+              }),
+            ),
+          },
+          ...errorResponses(401, 503),
+        },
+      },
+      post: {
+        tags: ["Admin"],
+        summary: "Start a MoMo remittance",
+        security: [{ AdminCookie: [] }],
+        requestBody: {
+          required: true,
+          ...jsonContent({
+            type: "object",
+            required: [
+              "country",
+              "currency",
+              "provider",
+              "msisdn",
+              "amount",
+              "recipient",
+              "sender",
+              "transaction",
+            ],
+            properties: {
+              label: { type: "string" },
+              country: { type: "string" },
+              currency: { type: "string" },
+              provider: { type: "string" },
+              msisdn: { type: "string" },
+              amount: { type: "number" },
+              recipient: { type: "object" },
+              sender: { type: "object" },
+              transaction: { type: "object" },
+            },
+          }),
+        },
+        responses: {
+          "201": {
+            description: "Remittance persisted and submitted",
+            ...jsonContent(dataEnvelope({ type: "object" })),
+          },
+          ...errorResponses(400, 401, 409, 503),
+        },
+      },
+    },
     "/api/admin/checkouts": {
       get: {
         tags: ["Admin"],
@@ -1300,6 +1360,39 @@ function buildPaths(): Record<string, OpenApiPathItem> {
                 type: "object",
                 properties: {
                   depositId: { type: "string" },
+                  status: { type: "string" },
+                  applied: { type: "boolean" },
+                },
+              }),
+            ),
+          },
+          ...errorResponses(400, 401, 404, 503),
+        },
+      },
+    },
+    "/api/pawapay/remittance-callback": {
+      post: {
+        tags: ["Webhooks"],
+        summary: "PawaPay remittance callback",
+        description:
+          "Signed when PAWAPAY_VERIFY_CALLBACKS=true. Register this URL in the PawaPay dashboard for remittances.",
+        security: [],
+        requestBody: {
+          required: true,
+          ...jsonContent({
+            type: "object",
+            additionalProperties: true,
+            description: "Direct remittance payload or { status: FOUND, data }",
+          }),
+        },
+        responses: {
+          "200": {
+            description: "Applied or idempotent skip",
+            ...jsonContent(
+              dataEnvelope({
+                type: "object",
+                properties: {
+                  remittanceId: { type: "string" },
                   status: { type: "string" },
                   applied: { type: "boolean" },
                 },
