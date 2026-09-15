@@ -5,7 +5,10 @@ import { DEFAULT_FX_CURRENCY } from "@/lib/fx-currencies";
 import { isAborted, listQuoteCurrencies, requestQuote } from "@/lib/pay-api";
 import { PREVIEW_MAX_USDT } from "@/lib/quote-limits";
 import { formatLocalAmount, formatUsdt } from "@/lib/rates";
-import { defaultCountryForCurrency } from "@/lib/settlement/corridor-fee-defaults";
+import {
+  defaultCountryForCurrency,
+  RWANDA_MTN_PROVIDER,
+} from "@/lib/settlement/corridor-fee-defaults";
 
 const DEBOUNCE_MS = 400;
 const DEFAULT_AMOUNT = "100";
@@ -125,12 +128,15 @@ export function RateCalculator() {
       }));
 
       const country = defaultCountryForCurrency(currency);
+      const provider =
+        currency.toUpperCase() === "RWF" ? RWANDA_MTN_PROVIDER : undefined;
       const result = sendingUsdt
         ? await requestQuote({
             usdtAmount: parsed,
             chain: "base",
             currency,
             country,
+            provider,
             preview: true,
             signal: controller.signal,
           })
@@ -139,6 +145,7 @@ export function RateCalculator() {
             chain: "base",
             currency,
             country,
+            provider,
             preview: true,
             signal: controller.signal,
           });

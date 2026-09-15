@@ -33,7 +33,10 @@ import {
 } from "@/lib/pay-api";
 import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
 import { netLocalForUsdt, usdtForTargetLocal } from "@/lib/settlement/quote";
-import { fallbackCorridorFees } from "@/lib/settlement/corridor-fee-defaults";
+import {
+  fallbackCorridorFees,
+  RWANDA_MTN_PROVIDER,
+} from "@/lib/settlement/corridor-fee-defaults";
 import { formatLocalAmount, formatExactUsdt, formatUsdt } from "@/lib/rates";
 import { asWalletKind, type WalletKind } from "@/lib/wallet/browser";
 import {
@@ -47,6 +50,7 @@ import { FeeLines } from "@/components/pay/fee-lines";
 type Step = 1 | 2 | 3 | 4;
 
 const FALLBACK_CORRIDOR_COUNTRY = "RWA";
+const FALLBACK_CORRIDOR_PROVIDER = RWANDA_MTN_PROVIDER;
 
 export type CheckoutPrefill = {
   token: string;
@@ -117,7 +121,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     checkout?.currency ?? "RWF",
   );
   const [corridorProvider, setCorridorProvider] = useState(
-    checkout?.provider ?? "",
+    checkout?.provider ?? FALLBACK_CORRIDOR_PROVIDER,
   );
   const [corridorProviders, setCorridorProviders] = useState<
     CorridorProviderOption[]
