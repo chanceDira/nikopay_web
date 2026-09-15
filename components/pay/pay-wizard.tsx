@@ -232,6 +232,13 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once when entering step 2
   }, [step]);
 
+  // Scroll to top of the page when advancing or going back between steps
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+  }, [step]);
+
   const selectedCountry =
     corridorCountries.find((row) => row.country === corridorCountry) ?? null;
   const dialPrefix = selectedCountry?.prefix ?? "";
