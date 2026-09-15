@@ -162,7 +162,7 @@ export function AdminFxForm() {
             >
               USDT to {currency} rate
             </label>
-            <div className="relative rounded-md border border-niko-border bg-background px-3 py-2 focus-within:border-niko-teal/50 transition-colors">
+            <div className="niko-field relative rounded-md px-3 py-2">
               <input
                 id="fx-rate"
                 type="number"
@@ -186,7 +186,7 @@ export function AdminFxForm() {
             >
               Fee
             </label>
-            <div className="relative rounded-md border border-niko-border bg-background px-3 py-2 focus-within:border-niko-teal/50 transition-colors">
+            <div className="niko-field relative rounded-md px-3 py-2">
               <input
                 id="fx-fee"
                 type="number"
@@ -210,7 +210,7 @@ export function AdminFxForm() {
             >
               Minimum USDT
             </label>
-            <div className="relative rounded-md border border-niko-border bg-background px-3 py-2 focus-within:border-niko-teal/50 transition-colors">
+            <div className="niko-field relative rounded-md px-3 py-2">
               <input
                 id="fx-min"
                 type="number"
@@ -242,7 +242,7 @@ export function AdminFxForm() {
           <button
             type="submit"
             disabled={formState === "saving"}
-            className="w-full py-2.5 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all shadow-md flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="w-full py-2.5 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold rounded-md transition-all shadow-md flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {formState === "saving" ? (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-niko-navy border-t-transparent" />

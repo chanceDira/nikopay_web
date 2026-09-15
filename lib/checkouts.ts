@@ -81,28 +81,10 @@ export function checkoutAvailability(
 
 export function checkoutLocksMatch(
   row: CheckoutLinkRow,
-  input: {
-    usdtAmount: number;
-    country: string;
-    currency: string;
-    provider: string;
-    msisdn: string;
-  },
+  input: { usdtAmount: number },
 ): { ok: true } | { ok: false; reason: string } {
   if (Math.abs(toNumber(row.usdt_amount) - input.usdtAmount) > USDT_EPS) {
     return { ok: false, reason: "amount does not match this checkout" };
-  }
-  if (row.country !== input.country) {
-    return { ok: false, reason: "corridor does not match this checkout" };
-  }
-  if (row.currency !== input.currency) {
-    return { ok: false, reason: "corridor does not match this checkout" };
-  }
-  if (row.provider !== input.provider) {
-    return { ok: false, reason: "corridor does not match this checkout" };
-  }
-  if (row.msisdn !== input.msisdn) {
-    return { ok: false, reason: "recipient does not match this checkout" };
   }
   return { ok: true };
 }
@@ -396,10 +378,6 @@ export async function loadPublicCheckout(
 export async function resolveCheckoutForIntent(input: {
   token: unknown;
   usdtAmount: number;
-  country: string;
-  currency: string;
-  provider: string;
-  msisdn: string;
 }): Promise<
   | { ok: true; checkoutId: string }
   | { ok: false; reason: string; status: number }

@@ -155,10 +155,6 @@ export async function createPaymentIntent(input: {
     const checkout = await resolveCheckoutForIntent({
       token: input.checkoutToken,
       usdtAmount: quoted.quote.usdtAmount,
-      country: country.country,
-      currency: currency.currency,
-      provider: provider.provider,
-      msisdn: msisdn.msisdn,
     });
     if (!checkout.ok) {
       return checkout;

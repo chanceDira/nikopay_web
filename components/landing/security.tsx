@@ -1,65 +1,46 @@
 const securityItems = [
   {
-    title: "Encrypted data storage",
-    description: "All sensitive data encrypted at rest and in transit.",
+    title: "Encrypted storage",
+    description: "Sensitive fields are encrypted in transit and at rest.",
   },
   {
-    title: "Role-based access control",
-    description: "Granular permissions for admin and operational teams.",
+    title: "Limited admin access",
+    description: "Ops tools are behind a signed admin session, not public.",
   },
   {
-    title: "Full audit logging",
-    description: "Every action recorded for compliance and reconciliation.",
+    title: "Audit log",
+    description: "Admin actions and payout state changes are recorded.",
   },
   {
-    title: "Fraud monitoring",
-    description: "Automated risk detection and manual review workflows.",
+    title: "Review queue",
+    description:
+      "Mismatched deposits go to manual review. They are not paid silently.",
   },
 ];
 
 export function Security() {
   return (
-    <section className="border-y border-niko-border bg-niko-navy/20 px-4 py-20 sm:px-6 sm:py-28">
+    <section className="px-4 py-20 sm:px-6 sm:py-28">
       <div className="mx-auto max-w-6xl">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
+        <div className="grid items-start gap-12 lg:grid-cols-2">
           <div>
             <p className="text-sm font-medium uppercase tracking-wider text-niko-teal">
-              Trust &amp; Security
+              Trust and security
             </p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Enterprise-grade protection
+              How we settle
             </h2>
-            <p className="mt-4 text-niko-muted">
-              NikoPay is built with security at its core. From wallet
-              connectivity to Mobile Money settlement, every layer is designed
-              for compliance, transparency, and reliability.
+            <p className="mt-4 text-niko-muted leading-relaxed">
+              You send USDT from your wallet. We match it on treasury and pay
+              out on mobile money. Access is limited. Payouts are logged.
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             {securityItems.map((item) => (
-              <div
-                key={item.title}
-                className="rounded-md border border-niko-border bg-niko-surface p-5"
-              >
-                <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-niko-teal/10">
-                  <svg
-                    className="h-4 w-4 text-niko-teal"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
+              <div key={item.title} className="niko-panel p-5">
                 <h3 className="font-semibold">{item.title}</h3>
-                <p className="mt-1 text-sm text-niko-muted">
+                <p className="mt-1 text-sm leading-relaxed text-niko-muted">
                   {item.description}
                 </p>
               </div>

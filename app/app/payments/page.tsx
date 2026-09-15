@@ -143,7 +143,7 @@ export default function PaymentsHistoryPage() {
           </p>
           <Link
             href="/app/pay"
-            className="inline-block px-4 py-2 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold text-xs rounded-xl transition-all shadow-[0_0_15px_rgba(0,212,200,0.1)]"
+            className="inline-block px-4 py-2 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold text-xs rounded-xl transition-all shadow-[0_0_15px_rgba(0,212,200,0.1)]"
           >
             Create New Payment
           </Link>

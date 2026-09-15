@@ -1,23 +1,18 @@
 import type { Metadata } from "next";
 import { DownloadApp } from "@/components/landing/download-app";
-import { Footer } from "@/components/landing/footer";
-import { Navbar } from "@/components/landing/navbar";
+import { MarketingShell } from "@/components/shared/marketing-shell";
 
 export const metadata: Metadata = {
   title: "Download the app",
   description:
-    "Get the NikoPay mobile app for iOS and Android. Send USDT and pay out RWF on mobile money.",
+    "Get the NikoPay iOS and Android app as it rolls out. Send USDT, pay out local currency on mobile money.",
   alternates: { canonical: "/download" },
 };
 
 export default function DownloadPage() {
   return (
-    <>
-      <Navbar />
-      <main>
-        <DownloadApp />
-      </main>
-      <Footer />
-    </>
+    <MarketingShell>
+      <DownloadApp />
+    </MarketingShell>
   );
 }

@@ -4,39 +4,44 @@ import { useState } from "react";
 
 const faqs = [
   {
-    question: "What stablecoins do you support?",
+    question: "What can I send?",
     answer:
-      "At launch, NikoPay supports USDT on the TRON network (TRC20). We plan to add USDC, Polygon-based stablecoins, and Bitcoin Lightning in future releases.",
+      "USDT on Polygon and Base today. USDC is planned. You send from your own wallet. Other coins and chains are not available yet.",
   },
   {
-    question: "Is NikoPay a wallet or exchange?",
+    question: "Is NikoPay a wallet or an exchange?",
     answer:
-      "No. NikoPay is a payment bridge, not a custodial wallet, exchange, or trading platform. You retain custody of your assets until you initiate a transaction.",
+      "Neither. You keep your USDT in your wallet until you pay. When you confirm, that amount goes to the NikoPay treasury and we pay out local currency on mobile money. We do not hold a balance for you between payments.",
   },
   {
-    question: "Which mobile money networks are supported?",
+    question: "Which countries and networks?",
     answer:
-      "We launch with mobile money in Rwanda. Additional providers and countries across Africa are on our roadmap.",
+      "Supported countries and mobile money providers are listed when you pay, on web and in the app. You pick the country, then the network (for example MTN or Airtel). Corridors follow what the rail has open.",
   },
   {
-    question: "How fast are payouts?",
+    question: "How fast is the payout?",
     answer:
-      "Once your USDT transfer is confirmed on-chain, mobile money payouts are processed in near real-time. You can track status at every step.",
+      "After the USDT deposit confirms on-chain, most payouts complete in minutes. If a network is delayed, the transfer can sit in a queue. The payment page shows the current status.",
   },
   {
     question: "What are the fees?",
     answer:
-      "NikoPay charges a transparent service fee on each transaction. The exact rate and net payout are displayed before you confirm. No hidden spreads.",
+      "A service fee is taken from the quoted amount. The rate, fee, and net payout are shown before you send. What you confirm is what we settle, not a client-supplied price.",
   },
   {
-    question: "Is my crypto safe?",
+    question: "What happens to the USDT I send?",
     answer:
-      "Yes. NikoPay does not hold your assets. You connect your own wallet and only send USDT when you choose to. Our treasury handles settlement separately.",
+      "It is sent to the NikoPay treasury for that chain. We do not ask for your seed phrase. Only send the exact amount shown. Rounding can delay matching.",
   },
   {
-    question: "When are you launching?",
+    question: "Can I pay someone in another African country?",
     answer:
-      "We're launching first in Rwanda. Join the waitlist to be notified when NikoPay goes live and get early access.",
+      "Yes, if that corridor is open. Choose the recipient's country and mobile money network, then send. New corridors appear when the rail enables them.",
+  },
+  {
+    question: "Is there a mobile app?",
+    answer:
+      "Yes. The iOS and Android app is rolling out. You can pay in the browser today. Both use the same flow: send USDT, recipient gets local currency on mobile money.",
   },
 ];
 
@@ -47,37 +52,33 @@ export function Faq() {
     <section id="faq" className="px-4 py-20 sm:px-6 sm:py-28">
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-16 items-start">
-          {/* Left Column - Section Info */}
-          <div className="lg:col-span-5 text-left lg:sticky lg:top-24">
+          <div className="lg:col-span-5 text-left lg:sticky lg:top-28">
             <p className="text-sm font-medium uppercase tracking-wider text-niko-teal">
-              Common questions
+              FAQ
             </p>
             <h2 className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-4xl text-foreground">
-              Everything You Need to know, All in One Place
+              Questions
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-niko-muted">
-              Discover quick and comprehensive answers to common questions about
-              our platform, services, and features.
+              Short answers about sending USDT and paying out on mobile money.
             </p>
           </div>
 
-          {/* Right Column - Accordions */}
           <div className="lg:col-span-7 space-y-3">
             {faqs.map((faq, index) => {
               const isOpen = openIndex === index;
               return (
                 <div
                   key={faq.question}
-                  className="rounded-md border border-niko-border bg-niko-surface overflow-hidden transition-colors"
+                  className="niko-panel overflow-hidden transition-colors"
                 >
                   <button
                     type="button"
-                    className="flex w-full min-h-12 items-center justify-between gap-4 px-5 py-4 text-left font-semibold text-foreground transition-colors hover:bg-niko-navy/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-niko-teal"
+                    className="flex w-full min-h-12 items-center justify-between gap-4 px-5 py-4 text-left font-semibold text-foreground transition-colors hover:bg-niko-teal/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-niko-teal"
                     aria-expanded={isOpen}
                     onClick={() => setOpenIndex(isOpen ? null : index)}
                   >
                     <span className="text-sm sm:text-base">{faq.question}</span>
-                    {/* Plus icon that rotates to become an x icon */}
                     <svg
                       className={`h-5 w-5 shrink-0 text-niko-teal transition-transform duration-300 ${
                         isOpen ? "rotate-45" : ""
@@ -95,7 +96,6 @@ export function Faq() {
                       />
                     </svg>
                   </button>
-                  {/* Smooth height expansion placeholder (native transition helper) */}
                   <div
                     className={`grid transition-all duration-300 ease-in-out ${
                       isOpen

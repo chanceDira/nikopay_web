@@ -99,7 +99,7 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
         <button
           type="button"
           onClick={handlePrint}
-          className="flex items-center gap-1.5 px-4 py-2 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy text-xs font-bold rounded-md transition-all"
+          className="flex items-center gap-1.5 px-4 py-2 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent text-xs font-bold rounded-md transition-all"
         >
           <svg
             className="h-4 w-4"

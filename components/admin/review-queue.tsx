@@ -170,7 +170,7 @@ function ReviewCard(props: {
             <button
               type="button"
               onClick={() => props.onConfirm(confirmTarget)}
-              className="flex-1 md:flex-none px-4 py-2 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy text-xs font-bold rounded-md transition-all cursor-pointer"
+              className="flex-1 md:flex-none px-4 py-2 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent text-xs font-bold rounded-md transition-all cursor-pointer"
             >
               {confirmLabel}
             </button>

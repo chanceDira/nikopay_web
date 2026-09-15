@@ -25,14 +25,14 @@ export default function Home() {
         <section id="waitlist" className="px-4 py-20 sm:px-6 sm:py-28">
           <div className="mx-auto max-w-2xl text-left">
             <p className="text-sm font-medium uppercase tracking-wider text-niko-teal">
-              Early Access
+              Updates
             </p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              Be first when we launch
+              Get notes by email
             </h2>
             <p className="mt-4 text-niko-muted leading-relaxed">
-              Join the waitlist for early access to NikoPay in Rwanda. No spam,
-              just a launch notification.
+              Payments are live on the web. The mobile app is rolling out. Leave
+              an email for corridor notes and when store listings open.
             </p>
             <div className="mt-8">
               <WaitlistForm />

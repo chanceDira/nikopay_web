@@ -5,7 +5,7 @@ import { FormEvent, useState } from "react";
 const roles = [
   { value: "", label: "I am a..." },
   { value: "freelancer", label: "Freelancer" },
-  { value: "remote-worker", label: "Remote Worker" },
+  { value: "remote-worker", label: "Remote worker" },
   { value: "business", label: "Business" },
   { value: "investor", label: "Investor" },
   { value: "other", label: "Other" },
@@ -54,7 +54,7 @@ export function WaitlistForm({ compact = false }: WaitlistFormProps) {
   if (status === "success" && compact) {
     return (
       <p className="rounded-md border border-niko-teal/30 bg-niko-teal/10 px-4 py-3 text-sm text-niko-teal">
-        You&apos;re on the list! We&apos;ll notify you at launch.
+        You&apos;re on the list. We only email when there is something to read.
       </p>
     );
   }
@@ -82,7 +82,8 @@ export function WaitlistForm({ compact = false }: WaitlistFormProps) {
           You&apos;re on the list
         </h3>
         <p className="mt-2 text-niko-muted">
-          We&apos;ll notify you when NikoPay launches in Rwanda.
+          We email when a corridor opens, the app listing moves, or the product
+          changes.
         </p>
       </div>
     );
@@ -120,11 +121,11 @@ export function WaitlistForm({ compact = false }: WaitlistFormProps) {
         <button
           type="submit"
           disabled={status === "loading"}
-          className={`rounded-md bg-niko-teal font-semibold text-niko-navy transition-colors hover:bg-niko-teal-bright disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-niko-teal ${
+          className={`rounded-md bg-niko-teal font-semibold text-niko-on-accent transition-colors hover:bg-niko-teal-bright disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-niko-teal ${
             compact ? "h-11 shrink-0 px-5 text-sm" : "h-12 sm:col-span-2"
           }`}
         >
-          {status === "loading" ? "Joining..." : "Join Waitlist"}
+          {status === "loading" ? "Joining..." : "Join the list"}
         </button>
       </div>
       {status === "error" && (

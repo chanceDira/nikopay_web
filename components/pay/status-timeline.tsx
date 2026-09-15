@@ -160,7 +160,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
   const getStepStyles = (state: string) => {
     switch (state) {
       case "completed":
-        return "bg-niko-teal text-niko-navy border-niko-teal";
+        return "bg-niko-teal text-niko-on-accent border-niko-teal";
       case "active":
         return "bg-niko-teal/10 text-niko-teal border-niko-teal animate-pulse shadow-[0_0_12px_rgba(0,212,200,0.3)]";
       case "error":
@@ -317,7 +317,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
         {intent.status === "paid" && (
           <Link
             href={`/app/payments/${id}/receipt`}
-            className="self-center px-3.5 py-1.5 bg-niko-teal text-niko-navy font-bold text-xs rounded-md hover:bg-niko-teal-bright transition-colors"
+            className="self-center px-3.5 py-1.5 bg-niko-teal text-niko-on-accent font-bold text-xs rounded-md hover:bg-niko-teal-bright transition-colors"
           >
             Receipt
           </Link>

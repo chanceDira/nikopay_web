@@ -239,6 +239,27 @@ export async function requestQuote(
   });
 }
 
+function isQuoteCurrenciesPayload(
+  value: unknown,
+): value is { currencies: string[] } {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const row = value as Record<string, unknown>;
+  return (
+    Array.isArray(row.currencies) &&
+    row.currencies.every((code) => typeof code === "string")
+  );
+}
+
+export async function listQuoteCurrencies(
+  signal?: AbortSignal,
+): Promise<ApiResult<{ currencies: string[] }>> {
+  return requestJson("/api/quotes/currencies", isQuoteCurrenciesPayload, {
+    signal,
+  });
+}
+
 export async function createLiveIntent(input: {
   usdtAmount: number;
   chain: Quote["chain"];

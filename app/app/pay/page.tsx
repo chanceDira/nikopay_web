@@ -5,7 +5,7 @@ export default function PayPage() {
   return (
     <PageHeader
       title="New payment"
-      description="Create a USDT to mobile money payment"
+      description="Send USDT. Recipient gets local currency on mobile money."
     >
       <PayWizard />
     </PageHeader>

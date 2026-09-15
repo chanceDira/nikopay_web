@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { isAborted, requestQuote } from "@/lib/pay-api";
+import { MAX_USDT } from "@/lib/quote-limits";
 import { usdtForTargetLocal } from "@/lib/settlement/quote";
 import type { ChainId, Quote } from "@/lib/settlement/types";
 
@@ -124,6 +125,19 @@ export function useLiveQuote(input: {
           return;
         }
         usdt = derived;
+      }
+
+      if (usdt > MAX_USDT) {
+        setSnapshot({
+          key: requestKey,
+          chain,
+          currency,
+          quote: null,
+          fx: liveFx,
+          status: "error",
+          error: `Amount must be at most ${MAX_USDT.toLocaleString()} USDT.`,
+        });
+        return;
       }
 
       const quoted = await requestQuote(

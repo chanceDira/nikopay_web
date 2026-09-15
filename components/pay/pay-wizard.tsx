@@ -59,7 +59,7 @@ export type CheckoutPrefill = {
 
 const CheckIcon = () => (
   <svg
-    className="h-4 w-4 text-niko-navy"
+    className="h-4 w-4 text-niko-on-accent"
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
@@ -80,7 +80,7 @@ function formatUsdtInput(value: number): string {
 
 export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   const router = useRouter();
-  const locked = Boolean(checkout);
+  const amountLocked = Boolean(checkout);
   const {
     walletConnected,
     walletAddress,
@@ -99,13 +99,9 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   const [amountUsdt, setAmountUsdt] = useState<string>(
     checkout ? formatUsdtInput(checkout.usdtAmount) : "",
   );
-  const [msisdn, setMsisdn] = useState<string>(checkout?.msisdn ?? "");
-  const [formattedMsisdn, setFormattedMsisdn] = useState<string>(
-    checkout ? formatMsisdnDisplay(checkout.msisdn) : "",
-  );
-  const [verifiedMsisdn, setVerifiedMsisdn] = useState<string>(
-    checkout?.msisdn ?? "",
-  );
+  const [msisdn, setMsisdn] = useState<string>("");
+  const [formattedMsisdn, setFormattedMsisdn] = useState<string>("");
+  const [verifiedMsisdn, setVerifiedMsisdn] = useState<string>("");
   const [recipientName, setRecipientName] = useState<string | null>(null);
   const [recipientNameStatus, setRecipientNameStatus] = useState<
     "idle" | "loading" | "found" | "not_found" | "unavailable"
@@ -223,6 +219,14 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
       if (selected) {
         setCorridorCurrency(selected.currency);
       }
+      if (checkout?.msisdn) {
+        const prefix =
+          countries.find((row) => row.country === preferred.country)?.prefix ??
+          preferred.prefix;
+        if (prefix) {
+          setMsisdn(nationalNumberDigits(checkout.msisdn, prefix));
+        }
+      }
     };
 
     void load();
@@ -236,17 +240,12 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     corridorCountries.find((row) => row.country === corridorCountry) ?? null;
   const dialPrefix = selectedCountry?.prefix ?? "";
   const knownPrefixes = corridorCountries.map((row) => row.prefix);
-  const msisdnInput =
-    locked && checkout && dialPrefix
-      ? nationalNumberDigits(checkout.msisdn, dialPrefix)
-      : msisdn;
-  const shownFormatted =
-    locked && checkout
-      ? formatMsisdnDisplay(checkout.msisdn, dialPrefix)
-      : formattedMsisdn;
 
   const selectedCorridor =
     corridorProviders.find((row) => row.provider === corridorProvider) ?? null;
+  const providerHint = corridorLoading
+    ? "Loading providers from PawaPay…"
+    : `${selectedCountry?.displayName ?? corridorCountry} · amounts in ${corridorCurrency}`;
 
   const clearRecipientName = () => {
     setRecipientName(null);
@@ -514,20 +513,6 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
       return null;
     }
 
-    if (locked) {
-      setVerifiedMsisdn(predicted.data.phoneNumber);
-      setFormattedMsisdn(
-        formatMsisdnDisplay(predicted.data.phoneNumber, dialPrefix),
-      );
-      setMsisdnError("");
-      void loadRecipientName({
-        msisdn: checkout?.msisdn ?? predicted.data.phoneNumber,
-        country: corridorCountry,
-        provider: corridorProvider,
-      });
-      return predicted.data.phoneNumber;
-    }
-
     const match = corridorCountries.find(
       (row) => row.country === predicted.data.country,
     );
@@ -575,9 +560,6 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   };
 
   const handleCountryChange = (country: string) => {
-    if (locked) {
-      return;
-    }
     setCorridorError("");
     setVerifiedMsisdn("");
     setFormattedMsisdn("");
@@ -607,9 +589,6 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   };
 
   const handleMsisdnChange = (value: string) => {
-    if (locked) {
-      return;
-    }
     setVerifiedMsisdn("");
     setFormattedMsisdn("");
     clearRecipientName();
@@ -876,7 +855,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           <span
             className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
               step >= 1
-                ? "bg-niko-teal text-niko-navy shadow-[0_0_12px_rgba(0,212,200,0.4)]"
+                ? "bg-niko-teal text-niko-on-accent shadow-[0_0_12px_rgba(0,212,200,0.4)]"
                 : "bg-niko-surface border border-niko-border text-niko-muted"
             }`}
           >
@@ -893,7 +872,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           <span
             className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
               step >= 2
-                ? "bg-niko-teal text-niko-navy shadow-[0_0_12px_rgba(0,212,200,0.4)]"
+                ? "bg-niko-teal text-niko-on-accent shadow-[0_0_12px_rgba(0,212,200,0.4)]"
                 : "bg-niko-surface border border-niko-border text-niko-muted"
             }`}
           >
@@ -910,7 +889,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           <span
             className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
               step === 3
-                ? "bg-niko-teal text-niko-navy shadow-[0_0_12px_rgba(0,212,200,0.4)]"
+                ? "bg-niko-teal text-niko-on-accent shadow-[0_0_12px_rgba(0,212,200,0.4)]"
                 : "bg-niko-surface border border-niko-border text-niko-muted"
             }`}
           >
@@ -977,73 +956,99 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="rwf-input"
-                className="text-sm font-medium text-foreground"
-              >
-                Recipient receives ({displayCurrency})
-              </label>
-              <div
-                className={`relative mt-2 flex items-center rounded-md border bg-background px-4 py-3.5 transition-colors ${
-                  amountEntry === "local"
-                    ? "border-niko-teal/50"
-                    : "border-niko-border focus-within:border-niko-teal/50"
-                }`}
-              >
-                <input
-                  id="rwf-input"
-                  type="text"
-                  inputMode="numeric"
-                  value={amountRwf}
-                  disabled={locked}
-                  onChange={(e) => handleRwfChange(e.target.value)}
-                  onBlur={validateAmount}
-                  className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40 disabled:opacity-60"
-                  placeholder="0"
-                />
-                <span className="ml-3 font-semibold text-niko-teal text-sm">
-                  {displayCurrency}
-                </span>
-              </div>
-            </div>
+            {amountLocked && checkout ? (
+              <>
+                <div className="rounded-md border border-niko-border bg-background px-4 py-3.5">
+                  <p className="text-sm font-medium text-foreground">
+                    You send
+                  </p>
+                  <p className="mt-2 font-mono text-xl font-bold text-foreground">
+                    {formatUsdtInput(checkout.usdtAmount)}{" "}
+                    <span className="text-sm font-semibold text-niko-teal">
+                      USDT
+                    </span>
+                  </p>
+                  <p className="mt-1 text-xs text-niko-muted">
+                    Amount is set by this pay link
+                  </p>
+                </div>
+                <div className="rounded-md border border-niko-teal/40 bg-niko-teal/5 px-4 py-3.5">
+                  <p className="text-sm font-medium text-foreground">
+                    Recipient receives
+                  </p>
+                  <p className="mt-2 font-mono text-xl font-bold text-foreground">
+                    {hasAmount && hasLiveRate ? formatPayout(netRwf) : "—"}{" "}
+                    <span className="text-sm font-semibold text-niko-teal">
+                      {displayCurrency}
+                    </span>
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label
+                    htmlFor="rwf-input"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Recipient receives ({displayCurrency})
+                  </label>
+                  <div
+                    className={`niko-field relative mt-2 flex items-center rounded-md px-4 py-3.5 ${
+                      amountEntry === "local" ? "niko-field-active" : ""
+                    }`}
+                  >
+                    <input
+                      id="rwf-input"
+                      type="text"
+                      inputMode="numeric"
+                      value={amountRwf}
+                      onChange={(e) => handleRwfChange(e.target.value)}
+                      onBlur={validateAmount}
+                      className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40"
+                      placeholder="0"
+                    />
+                    <span className="ml-3 font-semibold text-niko-teal text-sm">
+                      {displayCurrency}
+                    </span>
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-3 text-xs text-niko-muted">
-              <div className="h-px flex-1 bg-niko-border/60" />
-              <span>or enter USDT to sell</span>
-              <div className="h-px flex-1 bg-niko-border/60" />
-            </div>
+                <div className="flex items-center gap-3 text-xs text-niko-muted">
+                  <div className="h-px flex-1 bg-niko-border/60" />
+                  <span>or enter USDT to sell</span>
+                  <div className="h-px flex-1 bg-niko-border/60" />
+                </div>
 
-            <div>
-              <label
-                htmlFor="usdt-input"
-                className="text-sm font-medium text-foreground"
-              >
-                You send (USDT)
-              </label>
-              <div
-                className={`relative mt-2 flex items-center rounded-md border bg-background px-4 py-3.5 transition-colors ${
-                  amountEntry === "usdt"
-                    ? "border-niko-teal/50"
-                    : "border-niko-border focus-within:border-niko-teal/50"
-                }`}
-              >
-                <input
-                  id="usdt-input"
-                  type="text"
-                  inputMode="decimal"
-                  value={amountUsdt}
-                  disabled={locked}
-                  onChange={(e) => handleUsdtChange(e.target.value)}
-                  onBlur={validateAmount}
-                  className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40 disabled:opacity-60"
-                  placeholder="0.00"
-                />
-                <span className="ml-3 font-semibold text-niko-teal text-sm">
-                  USDT
-                </span>
-              </div>
-            </div>
+                <div>
+                  <label
+                    htmlFor="usdt-input"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    You send (USDT)
+                  </label>
+                  <div
+                    className={`niko-field relative mt-2 flex items-center rounded-md px-4 py-3.5 ${
+                      amountEntry === "usdt" ? "niko-field-active" : ""
+                    }`}
+                  >
+                    <input
+                      id="usdt-input"
+                      type="text"
+                      inputMode="decimal"
+                      value={amountUsdt}
+                      onChange={(e) => handleUsdtChange(e.target.value)}
+                      onBlur={validateAmount}
+                      className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40"
+                      placeholder="0.00"
+                    />
+                    <span className="ml-3 font-semibold text-niko-teal text-sm">
+                      USDT
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
 
             {amountError && (
               <p className="text-xs text-red-400">{amountError}</p>
@@ -1094,7 +1099,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
             type="button"
             onClick={handleNextStep}
             disabled={!amountQuoteReady || !chainPayReady}
-            className="w-full py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold rounded-md transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {quoteStatus === "loading" && hasAmount
               ? "Fetching live quote..."
@@ -1132,9 +1137,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
             <select
               id="country-select"
               value={corridorCountry}
-              disabled={
-                locked || corridorLoading || corridorCountries.length === 0
-              }
+              disabled={corridorLoading || corridorCountries.length === 0}
               onChange={(e) => handleCountryChange(e.target.value)}
               className="mt-3 w-full rounded-md border border-niko-border bg-background px-4 py-3.5 text-sm text-foreground outline-none focus:border-niko-teal/50 disabled:opacity-50"
             >
@@ -1158,10 +1161,11 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
               Recipient mobile money number
             </label>
             <p className="text-xs text-niko-muted mt-1">
-              Enter the local number without the country code. Pasting +… can
-              switch country. We validate with PawaPay before continuing.
+              {checkout
+                ? "Enter the number. We detect the mobile money provider automatically."
+                : "Enter the local number without the country code. Pasting +… can switch country. We validate with PawaPay before continuing."}
             </p>
-            <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
+            <div className="niko-field relative mt-3 flex items-center rounded-md px-4 py-3.5">
               {dialPrefix ? (
                 <span className="mr-2 font-mono text-sm font-semibold text-niko-muted shrink-0">
                   +{dialPrefix}
@@ -1171,8 +1175,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
                 id="msisdn-input"
                 type="text"
                 inputMode="tel"
-                value={msisdnInput}
-                disabled={locked}
+                value={msisdn}
                 onChange={(e) => {
                   const val = e.target.value;
                   if (/^[+\d\s-]*$/.test(val)) {
@@ -1193,13 +1196,13 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
               <p className="mt-2 text-xs text-red-400">{msisdnError}</p>
             )}
 
-            {shownFormatted && verifiedMsisdn && !msisdnError && (
+            {formattedMsisdn && verifiedMsisdn && !msisdnError && (
               <div className="mt-3 p-3 rounded-lg bg-niko-surface/80 border border-niko-border/40 flex justify-between items-center">
                 <span className="text-xs text-niko-muted">
                   Validated number
                 </span>
                 <span className="text-xs font-mono font-bold text-niko-teal-bright">
-                  {shownFormatted}
+                  {formattedMsisdn}
                 </span>
               </div>
             )}
@@ -1219,17 +1222,11 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
             >
               Mobile money provider
             </label>
-            <p className="text-xs text-niko-muted mt-1">
-              {corridorLoading
-                ? "Loading providers from PawaPay…"
-                : `${selectedCountry?.displayName ?? corridorCountry} · amounts in ${corridorCurrency}`}
-            </p>
+            <p className="text-xs text-niko-muted mt-1">{providerHint}</p>
             <select
               id="provider-select"
               value={corridorProvider}
-              disabled={
-                locked || corridorLoading || corridorProviders.length === 0
-              }
+              disabled={corridorLoading || corridorProviders.length === 0}
               onChange={(e) => {
                 const next = corridorProviders.find(
                   (row) => row.provider === e.target.value,
@@ -1307,7 +1304,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
               We email you when the mobile money payout completes or failed. No
               account required.
             </p>
-            <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
+            <div className="niko-field relative mt-3 flex items-center rounded-md px-4 py-3.5">
               <input
                 id="notify-email-input"
                 type="email"
@@ -1365,7 +1362,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
                 selectedCorridor?.rateConfigured === false ||
                 !amountQuoteReady
               }
-              className="w-2/3 py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all shadow-[0_0_20px_rgba(0,212,200,0.15)] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-2/3 py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold rounded-md transition-all shadow-[0_0_20px_rgba(0,212,200,0.15)] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Review Payment
               <svg
@@ -1464,7 +1461,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
 
               <div className="text-niko-muted">Mobile money number</div>
               <div className="font-mono font-bold text-right text-foreground">
-                {shownFormatted}
+                {formattedMsisdn}
               </div>
 
               {recipientNameStatus === "found" && recipientName ? (
@@ -1545,7 +1542,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
               <button
                 type="button"
                 onClick={handleConnectWallet}
-                className="shrink-0 py-2.5 px-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all flex items-center gap-1.5 text-xs"
+                className="shrink-0 py-2.5 px-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold rounded-md transition-all flex items-center gap-1.5 text-xs"
               >
                 Connect Wallet
                 <svg
@@ -1595,7 +1592,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
               onClick={handleConfirmTransfer}
               className={`w-2/3 py-4 font-bold rounded-md transition-all flex justify-center items-center gap-2 text-sm ${
                 walletConnected && !creatingIntent && amountQuoteReady
-                  ? "bg-niko-teal hover:bg-niko-teal-bright text-niko-navy cursor-pointer"
+                  ? "bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent cursor-pointer"
                   : "bg-niko-surface border border-niko-border text-niko-muted opacity-50 cursor-not-allowed"
               }`}
             >
@@ -1722,7 +1719,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
                     type="button"
                     onClick={() => void handleModalConfirm()}
                     disabled={modalState !== "confirm"}
-                    className="w-1/2 py-2.5 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md text-xs transition-all"
+                    className="w-1/2 py-2.5 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold rounded-md text-xs transition-all"
                   >
                     Sign + send USDT
                   </button>

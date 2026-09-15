@@ -1,69 +1,60 @@
 import Image from "next/image";
 
-const wallets = [
+const items = [
   { name: "Trust Wallet", src: "/logos/trustwallet-logo.webp" },
   { name: "MetaMask", src: "/logos/metamask-logo.png" },
   { name: "Coinbase Wallet", src: "/logos/coinbase-logo.webp" },
   { name: "WalletConnect", src: "/logos/walletconnect-logo.png" },
-];
+  { name: "Mobile money", src: "/logos/mtn-logo.jpg", rounded: true },
+  { name: "USDT", src: "/logos/usdt-logo.png" },
+  { name: "USDC", src: "/logos/usdc-logo.webp" },
+] as const;
+
+type TrustItem = {
+  name: string;
+  src: string;
+  rounded?: boolean;
+};
+
+function TrustChip({ name, src, rounded }: TrustItem) {
+  return (
+    <div className="flex shrink-0 items-center gap-3 rounded-md border border-niko-border/25 bg-niko-surface px-4 py-2.5 shadow-sm">
+      <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md bg-niko-well/80 p-1.5">
+        <Image
+          src={src}
+          alt=""
+          width={24}
+          height={24}
+          className={`object-contain ${rounded ? "rounded-sm" : ""}`}
+        />
+      </div>
+      <span className="text-sm font-medium text-foreground">{name}</span>
+    </div>
+  );
+}
 
 export function TrustBar() {
+  const sequence = [...items, ...items];
+  const track = [...sequence, ...sequence];
+
   return (
-    <section className="border-y border-niko-border bg-niko-surface/50 py-8">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <p className="mb-6 text-center text-xs font-medium uppercase tracking-wider text-niko-muted">
-          Compatible with leading wallets &amp; networks
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10">
-          {wallets.map((wallet) => (
-            <div
-              key={wallet.name}
-              className="flex items-center gap-2.5 text-niko-muted hover:text-foreground transition-colors group"
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-niko-border bg-niko-navy/60 overflow-hidden p-1.5 transition-all group-hover:border-niko-teal/30 group-hover:shadow-[0_0_8px_rgba(0,212,200,0.15)]">
-                <Image
-                  src={wallet.src}
-                  alt={wallet.name}
-                  width={24}
-                  height={24}
-                  className="object-contain"
-                />
-              </div>
-              <span className="hidden text-sm sm:inline font-medium">
-                {wallet.name}
-              </span>
-            </div>
+    <section
+      className="border-y border-niko-border/40 py-4 sm:py-5"
+      aria-label="Supported wallets and rails"
+    >
+      <div className="relative overflow-hidden">
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-background to-transparent sm:w-20"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-background to-transparent sm:w-20"
+          aria-hidden
+        />
+        <div className="niko-marquee flex w-max gap-4 py-1 sm:gap-5">
+          {track.map((item, index) => (
+            <TrustChip key={`${item.name}-${index}`} {...item} />
           ))}
-
-          {/* MTN Mobile Money */}
-          <div className="flex items-center gap-2.5 text-niko-muted hover:text-foreground transition-colors group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-niko-border bg-niko-navy/60 overflow-hidden p-1.5 transition-all group-hover:border-niko-teal/30 group-hover:shadow-[0_0_8px_rgba(0,212,200,0.15)]">
-              <Image
-                src="/logos/mtn-logo.jpg"
-                alt="MTN Mobile Money"
-                width={24}
-                height={24}
-                className="object-contain rounded-sm"
-              />
-            </div>
-            <span className="hidden text-sm sm:inline font-medium">
-              MTN Mobile Money
-            </span>
-          </div>
-
-          {/* USDT Stablecoin */}
-          <div className="flex items-center gap-2.5 text-niko-muted hover:text-foreground transition-colors group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-niko-border bg-niko-navy/60 overflow-hidden p-1.5 transition-all group-hover:border-niko-teal/30 group-hover:shadow-[0_0_8px_rgba(0,212,200,0.15)]">
-              <Image
-                src="/logos/usdt-logo.png"
-                alt="USDT"
-                width={24}
-                height={24}
-                className="object-contain"
-              />
-            </div>
-            <span className="hidden text-sm sm:inline font-medium">USDT</span>
-          </div>
         </div>
       </div>
     </section>
