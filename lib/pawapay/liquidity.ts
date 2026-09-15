@@ -2,9 +2,14 @@ import { toNumber } from "@/lib/numbers";
 import { getWalletBalances } from "@/lib/pawapay/client";
 import { getPawapayConfig, type PawapayConfig } from "@/lib/pawapay/config";
 import type { WalletBalance } from "@/lib/pawapay/types";
+import { formatLocalAmount } from "@/lib/rates";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export const PAYOUTS_PAUSED_REASON = "Payouts are paused. Try again shortly.";
+export const PAYOUT_AMOUNT_UNAVAILABLE_REASON =
+  "This amount is currently unavailable.";
+
+/** @deprecated Use payoutAmountUnavailableReason. */
+export const PAYOUTS_PAUSED_REASON = PAYOUT_AMOUNT_UNAVAILABLE_REASON;
 
 const BALANCE_TTL_MS = 15_000;
 
@@ -127,6 +132,30 @@ export function canCoverPayout(
   );
 }
 
+export function payoutAmountUnavailableReason(
+  currency: string,
+  spendable?: number | null,
+): string {
+  if (spendable == null || !Number.isFinite(spendable) || spendable <= 0) {
+    return PAYOUT_AMOUNT_UNAVAILABLE_REASON;
+  }
+
+  const shown = floorSpendable(spendable, currency);
+  if (shown <= 0) {
+    return PAYOUT_AMOUNT_UNAVAILABLE_REASON;
+  }
+
+  return `${PAYOUT_AMOUNT_UNAVAILABLE_REASON} Up to ${formatLocalAmount(shown, currency)} is available now.`;
+}
+
+function floorSpendable(amount: number, currency: string): number {
+  const code = currency.trim().toUpperCase();
+  if (code === "RWF" || code === "UGX") {
+    return Math.floor(amount);
+  }
+  return Math.floor(amount * 100) / 100;
+}
+
 export type PayoutLiquidityView = {
   country: string;
   currency: string;
@@ -159,7 +188,11 @@ export async function assertPayoutFunds(input: {
     input.currency,
   );
   if (!wallets.ok) {
-    return { ok: false, reason: PAYOUTS_PAUSED_REASON, status: 503 };
+    return {
+      ok: false,
+      reason: PAYOUT_AMOUNT_UNAVAILABLE_REASON,
+      status: 503,
+    };
   }
 
   const available = walletAvailableForCorridor(
@@ -168,16 +201,31 @@ export async function assertPayoutFunds(input: {
     input.currency,
   );
   if (available == null) {
-    return { ok: false, reason: PAYOUTS_PAUSED_REASON, status: 409 };
+    return {
+      ok: false,
+      reason: PAYOUT_AMOUNT_UNAVAILABLE_REASON,
+      status: 409,
+    };
   }
 
   const reserved = await loadReservedPayoutTotal(input.country, input.currency);
   if (!reserved.ok) {
-    return { ok: false, reason: PAYOUTS_PAUSED_REASON, status: 503 };
+    return {
+      ok: false,
+      reason: PAYOUT_AMOUNT_UNAVAILABLE_REASON,
+      status: 503,
+    };
   }
 
   if (!canCoverPayout(available, reserved.amount, input.amount)) {
-    return { ok: false, reason: PAYOUTS_PAUSED_REASON, status: 409 };
+    return {
+      ok: false,
+      reason: payoutAmountUnavailableReason(
+        input.currency,
+        Math.max(0, available - reserved.amount),
+      ),
+      status: 409,
+    };
   }
 
   return { ok: true };

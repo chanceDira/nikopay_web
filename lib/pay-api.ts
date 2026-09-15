@@ -34,6 +34,12 @@ export function parseApiPayload<T>(
   return { ok: false, reason, status };
 }
 
+function optionalFinite(value: unknown): boolean {
+  return (
+    value === undefined || (typeof value === "number" && Number.isFinite(value))
+  );
+}
+
 export function isQuotePayload(value: unknown): value is Quote {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return false;
@@ -57,7 +63,22 @@ export function isQuotePayload(value: unknown): value is Quote {
     typeof quote.netRwf === "number" &&
     Number.isFinite(quote.netRwf) &&
     isChainId(quote.chain) &&
-    typeof quote.expiresAt === "string"
+    typeof quote.expiresAt === "string" &&
+    typeof quote.pawapayPercent === "number" &&
+    Number.isFinite(quote.pawapayPercent) &&
+    typeof quote.mnoFixed === "number" &&
+    Number.isFinite(quote.mnoFixed) &&
+    typeof quote.pawapayFeeLocal === "number" &&
+    Number.isFinite(quote.pawapayFeeLocal) &&
+    typeof quote.mnoFeeLocal === "number" &&
+    Number.isFinite(quote.mnoFeeLocal) &&
+    typeof quote.nikopayFeeLocal === "number" &&
+    Number.isFinite(quote.nikopayFeeLocal) &&
+    typeof quote.grossLocal === "number" &&
+    Number.isFinite(quote.grossLocal) &&
+    (quote.available === undefined || typeof quote.available === "boolean") &&
+    (quote.availableReason === undefined ||
+      typeof quote.availableReason === "string")
   );
 }
 
@@ -91,7 +112,13 @@ export function isPaymentIntentPayload(value: unknown): value is PaymentIntent {
     typeof intent.treasuryAddress === "string" &&
     typeof intent.expiresAt === "string" &&
     typeof intent.createdAt === "string" &&
-    typeof intent.updatedAt === "string";
+    typeof intent.updatedAt === "string" &&
+    optionalFinite(intent.pawapayPercent) &&
+    optionalFinite(intent.mnoFixed) &&
+    optionalFinite(intent.pawapayFeeLocal) &&
+    optionalFinite(intent.mnoFeeLocal) &&
+    optionalFinite(intent.nikopayFeeLocal) &&
+    optionalFinite(intent.grossLocal);
 
   if (!baseOk) {
     return false;
@@ -219,28 +246,73 @@ export function isAborted(result: ApiResult<unknown>): boolean {
   return !result.ok && result.reason === "aborted";
 }
 
-export async function requestQuote(
-  usdtAmount: number,
-  chain: Quote["chain"],
-  signal?: AbortSignal,
-  currency = "RWF",
-  country?: string,
-): Promise<ApiResult<Quote>> {
+export async function requestQuote(input: {
+  chain: Quote["chain"];
+  currency?: string;
+  country?: string;
+  provider?: string;
+  usdtAmount?: number;
+  netLocal?: number;
+  checkFunds?: boolean;
+  /** Homepage hero only. Allows up to PREVIEW_MAX_USDT. */
+  preview?: boolean;
+  signal?: AbortSignal;
+}): Promise<ApiResult<Quote>> {
+  const body: Record<string, unknown> = {
+    chain: input.chain,
+    currency: input.currency ?? "RWF",
+  };
+  if (input.usdtAmount != null) {
+    body.usdtAmount = input.usdtAmount;
+  }
+  if (input.netLocal != null) {
+    body.netLocal = input.netLocal;
+  }
+  if (input.country) {
+    body.country = input.country;
+  }
+  if (input.provider) {
+    body.provider = input.provider;
+  }
+  if (input.checkFunds === false) {
+    body.checkFunds = false;
+  }
+  if (input.preview) {
+    body.preview = true;
+  }
+
   return requestJson("/api/quotes", isQuotePayload, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      usdtAmount,
-      chain,
-      currency,
-      ...(country ? { country } : {}),
-    }),
+    body: JSON.stringify(body),
+    signal: input.signal,
+  });
+}
+
+function isQuoteCurrenciesPayload(
+  value: unknown,
+): value is { currencies: string[] } {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const row = value as Record<string, unknown>;
+  return (
+    Array.isArray(row.currencies) &&
+    row.currencies.every((code) => typeof code === "string")
+  );
+}
+
+export async function listQuoteCurrencies(
+  signal?: AbortSignal,
+): Promise<ApiResult<{ currencies: string[] }>> {
+  return requestJson("/api/quotes/currencies", isQuoteCurrenciesPayload, {
     signal,
   });
 }
 
 export async function createLiveIntent(input: {
   usdtAmount: number;
+  netLocal?: number;
   chain: Quote["chain"];
   msisdn: string;
   walletAddress: string;
@@ -251,6 +323,76 @@ export async function createLiveIntent(input: {
   checkoutToken?: string;
 }): Promise<ApiResult<PaymentIntent>> {
   return requestJson("/api/intents", isPaymentIntentPayload, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+export type UserCheckoutLink = {
+  id: string;
+  token: string;
+  label: string | null;
+  usdtAmount: number;
+  country: string;
+  currency: string;
+  provider: string;
+  msisdn: string;
+  path: string;
+  url: string;
+  status: "active" | "used" | "revoked" | "expired";
+  expiresAt: string | null;
+  intentId: string | null;
+  createdAt: string;
+};
+
+function isUserCheckoutLink(value: unknown): value is UserCheckoutLink {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.id === "string" &&
+    typeof row.token === "string" &&
+    (row.label === null || typeof row.label === "string") &&
+    typeof row.usdtAmount === "number" &&
+    Number.isFinite(row.usdtAmount) &&
+    typeof row.country === "string" &&
+    typeof row.currency === "string" &&
+    typeof row.provider === "string" &&
+    typeof row.msisdn === "string" &&
+    typeof row.path === "string" &&
+    typeof row.url === "string" &&
+    (row.status === "active" ||
+      row.status === "used" ||
+      row.status === "revoked" ||
+      row.status === "expired") &&
+    (row.expiresAt === null || typeof row.expiresAt === "string") &&
+    (row.intentId === null || typeof row.intentId === "string") &&
+    typeof row.createdAt === "string"
+  );
+}
+
+function isCheckoutCreatedPayload(
+  value: unknown,
+): value is { checkout: UserCheckoutLink } {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const row = value as Record<string, unknown>;
+  return isUserCheckoutLink(row.checkout);
+}
+
+export async function createUserCheckout(input: {
+  label?: string | null;
+  usdtAmount: number;
+  country: string;
+  currency: string;
+  provider: string;
+  msisdn: string;
+  expiresHours?: number;
+}): Promise<ApiResult<{ checkout: UserCheckoutLink }>> {
+  return requestJson("/api/checkouts", isCheckoutCreatedPayload, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),

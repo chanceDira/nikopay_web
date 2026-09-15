@@ -8,6 +8,11 @@ import {
   type CorridorProviderOption,
 } from "@/lib/pay-api";
 import { formatLocalAmount } from "@/lib/rates";
+import { paginate } from "@/lib/paginate";
+import {
+  PaginationControls,
+  TABLE_PAGE_SIZE,
+} from "@/components/shared/pagination-controls";
 
 type BulkItemView = {
   payoutId: string;
@@ -35,7 +40,7 @@ const HEADERS = { "Content-Type": "application/json" };
 const FALLBACK_COUNTRY = "RWA";
 const MAX_ITEMS = 20;
 const FIELD_CLASS =
-  "mt-1 w-full rounded-md border border-niko-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-niko-teal/50";
+  "niko-field mt-1 w-full rounded-md px-3 py-2 font-mono text-sm outline-none";
 
 function emptyRow(): DraftRow {
   return { msisdn: "", amount: "" };
@@ -54,6 +59,7 @@ export function AdminBulkPayouts() {
   const [retryingId, setRetryingId] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [corridorLoading, setCorridorLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   const loadBatches = async () => {
     const res = await fetch("/api/admin/bulk");
@@ -199,10 +205,14 @@ export function AdminBulkPayouts() {
   };
 
   const busy = saving || corridorLoading;
+  const paged = paginate(batches, page, TABLE_PAGE_SIZE);
 
   return (
-    <div className="space-y-8">
-      <form onSubmit={handleCreate} className="grid gap-4 sm:grid-cols-2">
+    <div className="space-y-6">
+      <form
+        onSubmit={handleCreate}
+        className="niko-panel grid gap-4 p-5 sm:grid-cols-2 sm:p-6"
+      >
         <label className="text-sm">
           Label (optional)
           <input
@@ -298,7 +308,7 @@ export function AdminBulkPayouts() {
           <button
             type="submit"
             disabled={busy || !country || !provider}
-            className="rounded-md border border-niko-teal/40 bg-niko-teal/10 px-4 py-2 text-sm text-niko-teal hover:border-niko-teal disabled:opacity-50"
+            className="w-full rounded-md bg-niko-teal px-4 py-2.5 text-sm font-semibold text-niko-on-accent transition-colors hover:bg-niko-teal-bright disabled:opacity-50 sm:w-auto"
           >
             {saving ? "Submitting..." : "Submit bulk"}
           </button>
@@ -307,65 +317,80 @@ export function AdminBulkPayouts() {
 
       {errorMsg ? <p className="text-sm text-red-400">{errorMsg}</p> : null}
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {batches.length === 0 ? (
-          <p className="text-sm text-niko-muted">No bulk payouts yet</p>
+          <div className="niko-panel px-5 py-10 text-center text-sm text-niko-muted">
+            No bulk payouts yet
+          </div>
         ) : (
-          batches.map((batch) => {
-            const pending = batch.items.some((row) => row.status === "pending");
-            return (
-              <div
-                key={batch.id}
-                className="rounded-md border border-niko-border/40 p-4 space-y-3"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="font-mono text-xs text-niko-muted">
-                      {batch.country} · {batch.currency} · {batch.provider}
-                    </p>
-                    <p className="text-sm mt-1">
-                      {batch.label ?? "Untitled batch"} · {batch.itemCount}{" "}
-                      items ·{" "}
-                      {formatLocalAmount(batch.totalAmount, batch.currency)}
-                    </p>
-                  </div>
-                  {pending ? (
-                    <button
-                      type="button"
-                      disabled={retryingId === batch.id}
-                      onClick={() => void handleRetry(batch.id)}
-                      className="text-xs text-niko-teal hover:underline disabled:opacity-50"
-                    >
-                      {retryingId === batch.id
-                        ? "Retrying..."
-                        : "Retry pending"}
-                    </button>
-                  ) : null}
-                </div>
-                <table className="w-full text-left text-xs">
-                  <tbody>
-                    {batch.items.map((item) => (
-                      <tr
-                        key={item.payoutId}
-                        className="border-t border-niko-border/30"
+          <>
+            {paged.items.map((batch) => {
+              const pending = batch.items.some(
+                (row) => row.status === "pending",
+              );
+              return (
+                <div key={batch.id} className="niko-panel space-y-3 p-4 sm:p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-mono text-xs text-niko-muted">
+                        {batch.country} · {batch.currency} · {batch.provider}
+                      </p>
+                      <p className="mt-1 text-sm">
+                        {batch.label ?? "Untitled batch"} · {batch.itemCount}{" "}
+                        items ·{" "}
+                        {formatLocalAmount(batch.totalAmount, batch.currency)}
+                      </p>
+                    </div>
+                    {pending ? (
+                      <button
+                        type="button"
+                        disabled={retryingId === batch.id}
+                        onClick={() => void handleRetry(batch.id)}
+                        className="text-xs text-niko-teal hover:underline disabled:opacity-50"
                       >
-                        <td className="py-2 pr-3 font-mono">{item.msisdn}</td>
-                        <td className="py-2 pr-3 font-mono">
-                          {formatLocalAmount(item.amount, batch.currency)}
-                        </td>
-                        <td className="py-2 font-mono text-niko-muted">
-                          {item.status}
-                          {item.providerReason
-                            ? ` · ${item.providerReason}`
-                            : ""}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            );
-          })
+                        {retryingId === batch.id
+                          ? "Retrying..."
+                          : "Retry pending"}
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[28rem] text-left text-xs">
+                      <tbody>
+                        {batch.items.map((item) => (
+                          <tr
+                            key={item.payoutId}
+                            className="border-t border-niko-border/30"
+                          >
+                            <td className="py-2 pr-3 font-mono">
+                              {item.msisdn}
+                            </td>
+                            <td className="py-2 pr-3 font-mono">
+                              {formatLocalAmount(item.amount, batch.currency)}
+                            </td>
+                            <td className="py-2 font-mono text-niko-muted">
+                              {item.status}
+                              {item.providerReason
+                                ? ` · ${item.providerReason}`
+                                : ""}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
+            <PaginationControls
+              page={paged.page}
+              totalPages={paged.totalPages}
+              total={paged.total}
+              label="batches"
+              onPrev={() => setPage((current) => Math.max(1, current - 1))}
+              onNext={() => setPage((current) => current + 1)}
+            />
+          </>
         )}
       </div>
     </div>

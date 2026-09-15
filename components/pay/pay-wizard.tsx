@@ -21,6 +21,7 @@ import {
 } from "@/lib/identity";
 import {
   createLiveIntent,
+  createUserCheckout,
   fetchCorridorCountries,
   fetchCorridorProviders,
   fetchRecipientNamePreview,
@@ -28,13 +29,14 @@ import {
   reportIntentDepositWhenReady,
   type CorridorCountryOption,
   type CorridorProviderOption,
+  type UserCheckoutLink,
 } from "@/lib/pay-api";
 import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
+import { netLocalForUsdt, usdtForTargetLocal } from "@/lib/settlement/quote";
 import {
-  netLocalForUsdt,
-  usdtForTargetLocal,
-  feeUsdtForAmount,
-} from "@/lib/settlement/quote";
+  fallbackCorridorFees,
+  RWANDA_MTN_PROVIDER,
+} from "@/lib/settlement/corridor-fee-defaults";
 import { formatLocalAmount, formatExactUsdt, formatUsdt } from "@/lib/rates";
 import { asWalletKind, type WalletKind } from "@/lib/wallet/browser";
 import {
@@ -42,10 +44,13 @@ import {
   consentAndTransferUsdt,
 } from "@/lib/wallet/offramp";
 import { sameWalletAddress, shortAddress } from "@/lib/wallet-session";
+import { ensureWalletSession } from "@/lib/wallet/user";
+import { FeeLines } from "@/components/pay/fee-lines";
 
 type Step = 1 | 2 | 3 | 4;
 
 const FALLBACK_CORRIDOR_COUNTRY = "RWA";
+const FALLBACK_CORRIDOR_PROVIDER = RWANDA_MTN_PROVIDER;
 
 export type CheckoutPrefill = {
   token: string;
@@ -59,7 +64,7 @@ export type CheckoutPrefill = {
 
 const CheckIcon = () => (
   <svg
-    className="h-4 w-4 text-niko-navy"
+    className="h-4 w-4 text-niko-on-accent"
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
@@ -80,7 +85,7 @@ function formatUsdtInput(value: number): string {
 
 export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   const router = useRouter();
-  const locked = Boolean(checkout);
+  const amountLocked = Boolean(checkout);
   const {
     walletConnected,
     walletAddress,
@@ -99,13 +104,9 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   const [amountUsdt, setAmountUsdt] = useState<string>(
     checkout ? formatUsdtInput(checkout.usdtAmount) : "",
   );
-  const [msisdn, setMsisdn] = useState<string>(checkout?.msisdn ?? "");
-  const [formattedMsisdn, setFormattedMsisdn] = useState<string>(
-    checkout ? formatMsisdnDisplay(checkout.msisdn) : "",
-  );
-  const [verifiedMsisdn, setVerifiedMsisdn] = useState<string>(
-    checkout?.msisdn ?? "",
-  );
+  const [msisdn, setMsisdn] = useState<string>("");
+  const [formattedMsisdn, setFormattedMsisdn] = useState<string>("");
+  const [verifiedMsisdn, setVerifiedMsisdn] = useState<string>("");
   const [recipientName, setRecipientName] = useState<string | null>(null);
   const [recipientNameStatus, setRecipientNameStatus] = useState<
     "idle" | "loading" | "found" | "not_found" | "unavailable"
@@ -120,7 +121,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     checkout?.currency ?? "RWF",
   );
   const [corridorProvider, setCorridorProvider] = useState(
-    checkout?.provider ?? "",
+    checkout?.provider ?? FALLBACK_CORRIDOR_PROVIDER,
   );
   const [corridorProviders, setCorridorProviders] = useState<
     CorridorProviderOption[]
@@ -136,10 +137,12 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     fx,
     status: quoteStatus,
     error: quoteError,
+    fundsError,
   } = useLiveQuote({
     chain,
     currency: corridorCurrency,
     country: corridorCountry,
+    provider: corridorProvider,
     entry: amountEntry,
     localPayout: rwfPayout,
     usdtSell,
@@ -163,6 +166,12 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     useState<WalletKind | null>(null);
   const [gateError, setGateError] = useState("");
   const [payError, setPayError] = useState("");
+  const [fulfillment, setFulfillment] = useState<"choose" | "pay" | "link">(
+    checkout ? "pay" : "choose",
+  );
+  const [createdLink, setCreatedLink] = useState<UserCheckoutLink | null>(null);
+  const [creatingLink, setCreatingLink] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
     if (step !== 2) {
@@ -223,6 +232,14 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
       if (selected) {
         setCorridorCurrency(selected.currency);
       }
+      if (checkout?.msisdn) {
+        const prefix =
+          countries.find((row) => row.country === preferred.country)?.prefix ??
+          preferred.prefix;
+        if (prefix) {
+          setMsisdn(nationalNumberDigits(checkout.msisdn, prefix));
+        }
+      }
     };
 
     void load();
@@ -243,17 +260,12 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     corridorCountries.find((row) => row.country === corridorCountry) ?? null;
   const dialPrefix = selectedCountry?.prefix ?? "";
   const knownPrefixes = corridorCountries.map((row) => row.prefix);
-  const msisdnInput =
-    locked && checkout && dialPrefix
-      ? nationalNumberDigits(checkout.msisdn, dialPrefix)
-      : msisdn;
-  const shownFormatted =
-    locked && checkout
-      ? formatMsisdnDisplay(checkout.msisdn, dialPrefix)
-      : formattedMsisdn;
 
   const selectedCorridor =
     corridorProviders.find((row) => row.provider === corridorProvider) ?? null;
+  const providerHint = corridorLoading
+    ? "Loading providers from PawaPay…"
+    : `${selectedCountry?.displayName ?? corridorCountry} · amounts in ${corridorCurrency}`;
 
   const clearRecipientName = () => {
     setRecipientName(null);
@@ -313,17 +325,33 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     Number.isFinite(displayRate) &&
     displayFeePercent != null &&
     Number.isFinite(displayFeePercent);
+  const liveFees =
+    quote != null
+      ? {
+          pawapayPercent: quote.pawapayPercent,
+          mnoFixed: quote.mnoFixed,
+          nikopayPercent: quote.feePercent,
+        }
+      : (fx?.fees ??
+        (displayFeePercent != null
+          ? fallbackCorridorFees({
+              currency: corridorCurrency,
+              nikopayPercent: displayFeePercent,
+              country: corridorCountry,
+              provider: corridorProvider,
+            })
+          : null));
   const estimatedUsdt =
     amountEntry === "usdt"
       ? usdtSell
-      : hasLiveRate
-        ? rwfPayout / (displayRate * (1 - displayFeePercent / 100))
+      : hasLiveRate && liveFees
+        ? (usdtForTargetLocal(rwfPayout, displayRate, liveFees) ?? 0)
         : 0;
   const estimatedNetRwf =
     amountEntry === "local"
       ? rwfPayout
-      : hasLiveRate
-        ? usdtSell * displayRate * (1 - displayFeePercent / 100)
+      : hasLiveRate && liveFees
+        ? (netLocalForUsdt(usdtSell, displayRate, liveFees) ?? 0)
         : 0;
   const amountQuoteReady =
     hasAmount && quoteStatus === "ready" && quote != null;
@@ -343,7 +371,25 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   const treasuryAddress = liveIntent?.treasuryAddress ?? "";
 
   const previewRate = fx?.rate ?? displayRate;
-  const previewFee = fx?.feePercent ?? displayFeePercent;
+  const previewFees = liveFees;
+  const fundsBlocked = Boolean(fundsError);
+  const quoteNotice = amountError || fundsError || quoteError;
+  const rwfInputValue =
+    amountEntry === "local"
+      ? amountRwf
+      : quote
+        ? String(Math.round(quote.netLocal))
+        : estimatedNetRwf > 0
+          ? String(Math.round(estimatedNetRwf))
+          : "";
+  const usdtInputValue =
+    amountEntry === "usdt"
+      ? amountUsdt
+      : quote
+        ? formatUsdtInput(quote.usdtAmount)
+        : estimatedUsdt > 0
+          ? formatUsdtInput(estimatedUsdt)
+          : "";
 
   const handleRwfChange = (value: string) => {
     if (!/^\d*$/.test(value)) {
@@ -358,11 +404,11 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
       setAmountUsdt("");
       return;
     }
-    if (previewRate == null || previewFee == null) {
+    if (previewRate == null || previewFees == null) {
       setAmountUsdt("");
       return;
     }
-    const usdt = usdtForTargetLocal(parsed, previewRate, previewFee);
+    const usdt = usdtForTargetLocal(parsed, previewRate, previewFees);
     setAmountUsdt(usdt != null ? formatUsdtInput(usdt) : "");
   };
 
@@ -379,11 +425,11 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
       setAmountRwf("");
       return;
     }
-    if (previewRate == null || previewFee == null) {
+    if (previewRate == null || previewFees == null) {
       setAmountRwf("");
       return;
     }
-    const local = netLocalForUsdt(parsed, previewRate, previewFee);
+    const local = netLocalForUsdt(parsed, previewRate, previewFees);
     setAmountRwf(local != null ? String(Math.round(local)) : "");
   };
 
@@ -521,20 +567,6 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
       return null;
     }
 
-    if (locked) {
-      setVerifiedMsisdn(predicted.data.phoneNumber);
-      setFormattedMsisdn(
-        formatMsisdnDisplay(predicted.data.phoneNumber, dialPrefix),
-      );
-      setMsisdnError("");
-      void loadRecipientName({
-        msisdn: checkout?.msisdn ?? predicted.data.phoneNumber,
-        country: corridorCountry,
-        provider: corridorProvider,
-      });
-      return predicted.data.phoneNumber;
-    }
-
     const match = corridorCountries.find(
       (row) => row.country === predicted.data.country,
     );
@@ -582,9 +614,6 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   };
 
   const handleCountryChange = (country: string) => {
-    if (locked) {
-      return;
-    }
     setCorridorError("");
     setVerifiedMsisdn("");
     setFormattedMsisdn("");
@@ -614,9 +643,6 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   };
 
   const handleMsisdnChange = (value: string) => {
-    if (locked) {
-      return;
-    }
     setVerifiedMsisdn("");
     setFormattedMsisdn("");
     clearRecipientName();
@@ -664,8 +690,8 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
       if (!validateAmount()) {
         return;
       }
-      if (!amountQuoteReady) {
-        setAmountError(quoteError || "Waiting for a live quote");
+      if (!amountQuoteReady || fundsBlocked) {
+        setAmountError(quoteNotice || "Waiting for a live quote");
         return;
       }
       setLiveIntent(null);
@@ -699,9 +725,9 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
             return;
           }
         }
-        if (!amountQuoteReady) {
+        if (!amountQuoteReady || fundsBlocked) {
           setCorridorError(
-            quoteError || "Waiting for a live NikoPay rate for this corridor",
+            quoteNotice || "Waiting for a live NikoPay rate for this corridor",
           );
           return;
         }
@@ -709,6 +735,8 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           setMsisdnError("");
           setLiveIntent(null);
           setIntentError("");
+          setCreatedLink(null);
+          setFulfillment(checkout ? "pay" : "choose");
           setStep(3);
         }
       })();
@@ -716,9 +744,17 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   };
 
   const handlePrevStep = () => {
+    if (step === 3 && fulfillment !== "choose" && !checkout) {
+      setLiveIntent(null);
+      setIntentError("");
+      setCreatedLink(null);
+      setFulfillment("choose");
+      return;
+    }
     if (step > 1) {
       setLiveIntent(null);
       setIntentError("");
+      setCreatedLink(null);
       setStep((prev) => (prev - 1) as Step);
     }
   };
@@ -763,8 +799,8 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     }
     setIntentError("");
 
-    if (!quote || !amountQuoteReady) {
-      setIntentError(quoteError || "Waiting for a live quote");
+    if (!quote || !amountQuoteReady || fundsBlocked) {
+      setIntentError(quoteNotice || "Waiting for a live quote");
       return;
     }
 
@@ -805,6 +841,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     setCreatingIntent(true);
     const result = await createLiveIntent({
       usdtAmount: quote.usdtAmount,
+      netLocal: amountEntry === "local" ? rwfPayout : undefined,
       chain,
       msisdn: resolved.msisdn,
       walletAddress: activeAddress,
@@ -824,6 +861,44 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     setLiveIntent(result.data);
     setShowWalletModal(true);
     setModalState("confirm");
+  };
+
+  const handleCreatePayoutLink = async () => {
+    if (creatingLink || !quote || !amountQuoteReady || fundsBlocked) {
+      setIntentError(quoteNotice || "Waiting for a live quote");
+      return;
+    }
+
+    const resolved = resolveMsisdn();
+    if (!resolved.ok) {
+      setIntentError(resolved.reason);
+      return;
+    }
+
+    const session = await ensureWalletSession(asWalletKind(walletName));
+    if (!session.ok) {
+      setIntentError(session.reason);
+      return;
+    }
+
+    setCreatingLink(true);
+    setIntentError("");
+    const result = await createUserCheckout({
+      usdtAmount: quote.usdtAmount,
+      country: corridorCountry,
+      currency: corridorCurrency,
+      provider: corridorProvider,
+      msisdn: resolved.msisdn,
+    });
+    setCreatingLink(false);
+
+    if (!result.ok) {
+      setIntentError(result.reason);
+      return;
+    }
+
+    setCreatedLink(result.data.checkout);
+    setFulfillment("link");
   };
 
   const handleModalConfirm = async () => {
@@ -883,7 +958,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           <span
             className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
               step >= 1
-                ? "bg-niko-teal text-niko-navy shadow-[0_0_12px_rgba(0,212,200,0.4)]"
+                ? "bg-niko-teal text-niko-on-accent shadow-[0_0_12px_rgba(0,212,200,0.4)]"
                 : "bg-niko-surface border border-niko-border text-niko-muted"
             }`}
           >
@@ -900,7 +975,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           <span
             className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
               step >= 2
-                ? "bg-niko-teal text-niko-navy shadow-[0_0_12px_rgba(0,212,200,0.4)]"
+                ? "bg-niko-teal text-niko-on-accent shadow-[0_0_12px_rgba(0,212,200,0.4)]"
                 : "bg-niko-surface border border-niko-border text-niko-muted"
             }`}
           >
@@ -917,7 +992,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           <span
             className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
               step === 3
-                ? "bg-niko-teal text-niko-navy shadow-[0_0_12px_rgba(0,212,200,0.4)]"
+                ? "bg-niko-teal text-niko-on-accent shadow-[0_0_12px_rgba(0,212,200,0.4)]"
                 : "bg-niko-surface border border-niko-border text-niko-muted"
             }`}
           >
@@ -926,7 +1001,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           <span
             className={`text-xs font-medium ${step === 3 ? "text-foreground" : "text-niko-muted"}`}
           >
-            Confirm & Pay
+            Confirm
           </span>
         </div>
       </div>
@@ -984,85 +1059,108 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="rwf-input"
-                className="text-sm font-medium text-foreground"
-              >
-                Recipient receives ({displayCurrency})
-              </label>
-              <div
-                className={`relative mt-2 flex items-center rounded-md border bg-background px-4 py-3.5 transition-colors ${
-                  amountEntry === "local"
-                    ? "border-niko-teal/50"
-                    : "border-niko-border focus-within:border-niko-teal/50"
-                }`}
-              >
-                <input
-                  id="rwf-input"
-                  type="text"
-                  inputMode="numeric"
-                  value={amountRwf}
-                  disabled={locked}
-                  onChange={(e) => handleRwfChange(e.target.value)}
-                  onBlur={validateAmount}
-                  className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40 disabled:opacity-60"
-                  placeholder="0"
-                />
-                <span className="ml-3 font-semibold text-niko-teal text-sm">
-                  {displayCurrency}
-                </span>
-              </div>
-            </div>
+            {amountLocked && checkout ? (
+              <>
+                <div className="rounded-md border border-niko-border bg-background px-4 py-3.5">
+                  <p className="text-sm font-medium text-foreground">
+                    You send
+                  </p>
+                  <p className="mt-2 font-mono text-xl font-bold text-foreground">
+                    {formatUsdtInput(checkout.usdtAmount)}{" "}
+                    <span className="text-sm font-semibold text-niko-teal">
+                      USDT
+                    </span>
+                  </p>
+                  <p className="mt-1 text-xs text-niko-muted">
+                    Amount is set by this pay link
+                  </p>
+                </div>
+                <div className="rounded-md border border-niko-teal/40 bg-niko-teal/5 px-4 py-3.5">
+                  <p className="text-sm font-medium text-foreground">
+                    Recipient receives
+                  </p>
+                  <p className="mt-2 font-mono text-xl font-bold text-foreground">
+                    {hasAmount && hasLiveRate ? formatPayout(netRwf) : "—"}{" "}
+                    <span className="text-sm font-semibold text-niko-teal">
+                      {displayCurrency}
+                    </span>
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label
+                    htmlFor="rwf-input"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Recipient receives ({displayCurrency})
+                  </label>
+                  <div
+                    className={`niko-field relative mt-2 flex items-center rounded-md px-4 py-3.5 ${
+                      amountEntry === "local" ? "niko-field-active" : ""
+                    }`}
+                  >
+                    <input
+                      id="rwf-input"
+                      type="text"
+                      inputMode="numeric"
+                      value={rwfInputValue}
+                      onChange={(e) => handleRwfChange(e.target.value)}
+                      onBlur={validateAmount}
+                      className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40"
+                      placeholder="0"
+                    />
+                    <span className="ml-3 font-semibold text-niko-teal text-sm">
+                      {displayCurrency}
+                    </span>
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-3 text-xs text-niko-muted">
-              <div className="h-px flex-1 bg-niko-border/60" />
-              <span>or enter USDT to sell</span>
-              <div className="h-px flex-1 bg-niko-border/60" />
-            </div>
+                <div className="flex items-center gap-3 text-xs text-niko-muted">
+                  <div className="h-px flex-1 bg-niko-border/60" />
+                  <span>or enter USDT to sell</span>
+                  <div className="h-px flex-1 bg-niko-border/60" />
+                </div>
 
-            <div>
-              <label
-                htmlFor="usdt-input"
-                className="text-sm font-medium text-foreground"
-              >
-                You send (USDT)
-              </label>
-              <div
-                className={`relative mt-2 flex items-center rounded-md border bg-background px-4 py-3.5 transition-colors ${
-                  amountEntry === "usdt"
-                    ? "border-niko-teal/50"
-                    : "border-niko-border focus-within:border-niko-teal/50"
-                }`}
-              >
-                <input
-                  id="usdt-input"
-                  type="text"
-                  inputMode="decimal"
-                  value={amountUsdt}
-                  disabled={locked}
-                  onChange={(e) => handleUsdtChange(e.target.value)}
-                  onBlur={validateAmount}
-                  className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40 disabled:opacity-60"
-                  placeholder="0.00"
-                />
-                <span className="ml-3 font-semibold text-niko-teal text-sm">
-                  USDT
-                </span>
-              </div>
-            </div>
-
-            {amountError && (
-              <p className="text-xs text-red-400">{amountError}</p>
+                <div>
+                  <label
+                    htmlFor="usdt-input"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    You send (USDT)
+                  </label>
+                  <div
+                    className={`niko-field relative mt-2 flex items-center rounded-md px-4 py-3.5 ${
+                      amountEntry === "usdt" ? "niko-field-active" : ""
+                    }`}
+                  >
+                    <input
+                      id="usdt-input"
+                      type="text"
+                      inputMode="decimal"
+                      value={usdtInputValue}
+                      onChange={(e) => handleUsdtChange(e.target.value)}
+                      onBlur={validateAmount}
+                      className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40"
+                      placeholder="0.00"
+                    />
+                    <span className="ml-3 font-semibold text-niko-teal text-sm">
+                      USDT
+                    </span>
+                  </div>
+                </div>
+              </>
             )}
-            {quoteError && !amountError && (
-              <p className="text-xs text-red-400">{quoteError}</p>
-            )}
+
+            {quoteNotice ? (
+              <p className="text-xs text-red-400">{quoteNotice}</p>
+            ) : null}
             <p className="text-xs text-niko-muted flex items-center gap-1.5">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-niko-teal" />
               {hasLiveRate
                 ? `1 USDT = ${displayRate.toLocaleString()} ${displayCurrency}`
-                : quoteError || "Waiting for a live rate"}
+                : "Waiting for a live rate"}
               {hasLiveRate && quote ? " (live rate)" : ""}
               {quoteStatus === "loading" && hasAmount ? " · updating" : ""}
             </p>
@@ -1070,26 +1168,43 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
 
           <div className="rounded-md border border-niko-teal/10 bg-niko-teal/5 p-4 space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-niko-muted">Recipient Receives</span>
+              <span className="text-niko-muted">Recipient receives</span>
               <span className="font-mono text-foreground font-semibold">
                 {hasAmount ? formatPayout(netRwf) : "-"}
               </span>
             </div>
+            {quote && quote.pawapayFeeLocal > 0 ? (
+              <div className="flex justify-between text-sm">
+                <span className="text-niko-muted">PawaPay fee</span>
+                <span className="font-mono text-niko-muted">
+                  {formatPayout(quote.pawapayFeeLocal)}
+                </span>
+              </div>
+            ) : null}
+            {quote && quote.mnoFeeLocal > 0 ? (
+              <div className="flex justify-between text-sm">
+                <span className="text-niko-muted">Mobile money fee</span>
+                <span className="font-mono text-niko-muted">
+                  {formatPayout(quote.mnoFeeLocal)}
+                </span>
+              </div>
+            ) : null}
             <div className="flex justify-between text-sm">
               <span className="text-niko-muted">
-                NikoPay fee ({hasLiveRate ? `${displayFeePercent}%` : "—"} of
-                USDT)
+                NikoPay fee ({hasLiveRate ? `${displayFeePercent}%` : "—"})
               </span>
               <span className="font-mono text-niko-muted">
-                {hasAmount && hasLiveRate
-                  ? `${formatUsdt(feeUsdtForAmount(usdtAmount, displayFeePercent) ?? 0)} (${formatPayout(feeRwf)})`
-                  : "-"}
+                {quote
+                  ? formatPayout(quote.nikopayFeeLocal)
+                  : hasAmount && hasLiveRate
+                    ? formatPayout(feeRwf)
+                    : "-"}
               </span>
             </div>
             <div className="h-px bg-niko-border/40 my-1" />
             <div className="flex justify-between items-baseline">
               <span className="text-sm font-medium text-foreground">
-                Total USDT You Send (from wallet)
+                Total USDT you send
               </span>
               <span className="text-lg font-bold text-niko-teal-bright font-mono">
                 {hasAmount ? formatUsdt(usdtAmount) : "-"}
@@ -1100,8 +1215,8 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           <button
             type="button"
             onClick={handleNextStep}
-            disabled={!amountQuoteReady || !chainPayReady}
-            className="w-full py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!amountQuoteReady || !chainPayReady || fundsBlocked}
+            className="w-full py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold rounded-md transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {quoteStatus === "loading" && hasAmount
               ? "Fetching live quote..."
@@ -1139,9 +1254,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
             <select
               id="country-select"
               value={corridorCountry}
-              disabled={
-                locked || corridorLoading || corridorCountries.length === 0
-              }
+              disabled={corridorLoading || corridorCountries.length === 0}
               onChange={(e) => handleCountryChange(e.target.value)}
               className="mt-3 w-full rounded-md border border-niko-border bg-background px-4 py-3.5 text-sm text-foreground outline-none focus:border-niko-teal/50 disabled:opacity-50"
             >
@@ -1165,10 +1278,11 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
               Recipient mobile money number
             </label>
             <p className="text-xs text-niko-muted mt-1">
-              Enter the local number without the country code. Pasting +… can
-              switch country. We validate with PawaPay before continuing.
+              {checkout
+                ? "Enter the number. We detect the mobile money provider automatically."
+                : "Enter the local number without the country code. Pasting +… can switch country. We validate with PawaPay before continuing."}
             </p>
-            <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
+            <div className="niko-field relative mt-3 flex items-center rounded-md px-4 py-3.5">
               {dialPrefix ? (
                 <span className="mr-2 font-mono text-sm font-semibold text-niko-muted shrink-0">
                   +{dialPrefix}
@@ -1178,8 +1292,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
                 id="msisdn-input"
                 type="text"
                 inputMode="tel"
-                value={msisdnInput}
-                disabled={locked}
+                value={msisdn}
                 onChange={(e) => {
                   const val = e.target.value;
                   if (/^[+\d\s-]*$/.test(val)) {
@@ -1200,13 +1313,13 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
               <p className="mt-2 text-xs text-red-400">{msisdnError}</p>
             )}
 
-            {shownFormatted && verifiedMsisdn && !msisdnError && (
+            {formattedMsisdn && verifiedMsisdn && !msisdnError && (
               <div className="mt-3 p-3 rounded-lg bg-niko-surface/80 border border-niko-border/40 flex justify-between items-center">
                 <span className="text-xs text-niko-muted">
                   Validated number
                 </span>
                 <span className="text-xs font-mono font-bold text-niko-teal-bright">
-                  {shownFormatted}
+                  {formattedMsisdn}
                 </span>
               </div>
             )}
@@ -1226,17 +1339,11 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
             >
               Mobile money provider
             </label>
-            <p className="text-xs text-niko-muted mt-1">
-              {corridorLoading
-                ? "Loading providers from PawaPay…"
-                : `${selectedCountry?.displayName ?? corridorCountry} · amounts in ${corridorCurrency}`}
-            </p>
+            <p className="text-xs text-niko-muted mt-1">{providerHint}</p>
             <select
               id="provider-select"
               value={corridorProvider}
-              disabled={
-                locked || corridorLoading || corridorProviders.length === 0
-              }
+              disabled={corridorLoading || corridorProviders.length === 0}
               onChange={(e) => {
                 const next = corridorProviders.find(
                   (row) => row.provider === e.target.value,
@@ -1314,7 +1421,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
               We email you when the mobile money payout completes or failed. No
               account required.
             </p>
-            <div className="relative mt-3 flex items-center rounded-md border border-niko-border bg-background px-4 py-3.5 focus-within:border-niko-teal/50 transition-colors">
+            <div className="niko-field relative mt-3 flex items-center rounded-md px-4 py-3.5">
               <input
                 id="notify-email-input"
                 type="email"
@@ -1370,9 +1477,10 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
               disabled={
                 selectedCorridor?.payoutStatus === "CLOSED" ||
                 selectedCorridor?.rateConfigured === false ||
-                !amountQuoteReady
+                !amountQuoteReady ||
+                fundsBlocked
               }
-              className="w-2/3 py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all shadow-[0_0_20px_rgba(0,212,200,0.15)] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-2/3 py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold rounded-md transition-all shadow-[0_0_20px_rgba(0,212,200,0.15)] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Review Payment
               <svg
@@ -1393,12 +1501,110 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
         </div>
       )}
 
-      {step === 3 && (
+      {step === 3 && fulfillment === "choose" && !checkout && (
         <div className="space-y-6">
-          <div className="rounded-md border border-niko-border bg-background p-6 space-y-5">
+          <div>
+            <h3 className="text-base font-semibold text-foreground">
+              How do you want to continue?
+            </h3>
+            <p className="mt-1 text-sm text-niko-muted">
+              Pay now from this wallet, or create a payout link someone else can
+              open.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setFulfillment("pay")}
+              className="niko-panel p-5 text-left transition-colors hover:border-niko-teal/40"
+            >
+              <p className="text-sm font-semibold text-foreground">Pay now</p>
+              <p className="mt-2 text-xs leading-relaxed text-niko-muted">
+                Send USDT from the connected wallet. Recipient gets{" "}
+                {amountQuoteReady ? formatPayout(netRwf) : "mobile money"} now.
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleCreatePayoutLink()}
+              disabled={creatingLink || !amountQuoteReady || fundsBlocked}
+              className="niko-panel p-5 text-left transition-colors hover:border-niko-teal/40 disabled:opacity-50"
+            >
+              <p className="text-sm font-semibold text-foreground">
+                Create a payout link
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-niko-muted">
+                Share a one-time link. The payer sends USDT; your recipient
+                still gets this amount.
+              </p>
+              {creatingLink ? (
+                <p className="mt-3 text-xs text-niko-teal">Creating link...</p>
+              ) : null}
+            </button>
+          </div>
+          {intentError ? (
+            <p className="text-xs text-red-400">{intentError}</p>
+          ) : null}
+          <button
+            type="button"
+            onClick={handlePrevStep}
+            className="w-full rounded-md border border-niko-border py-3 text-sm font-semibold text-foreground hover:bg-niko-surface/40 sm:w-1/3"
+          >
+            Back
+          </button>
+        </div>
+      )}
+
+      {step === 3 && fulfillment === "link" && createdLink && (
+        <div className="space-y-6">
+          <div className="niko-panel space-y-4 p-6">
+            <h3 className="text-sm font-semibold text-foreground">
+              Payout link ready
+            </h3>
+            <p className="text-sm text-niko-muted">
+              Share this URL. It is tied to your wallet, so only you will see it
+              under Links.
+            </p>
+            <div className="niko-field break-all p-3 font-mono text-xs text-niko-teal">
+              {createdLink.url}
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard.writeText(createdLink.url);
+                  setCopiedLink(true);
+                  window.setTimeout(() => setCopiedLink(false), 2000);
+                }}
+                className="rounded-md bg-niko-teal px-4 py-2 text-xs font-semibold text-niko-on-accent hover:bg-niko-teal-bright"
+              >
+                {copiedLink ? "Copied" : "Copy link"}
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/app/links")}
+                className="rounded-md border border-niko-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-niko-surface/40"
+              >
+                View my links
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handlePrevStep}
+            className="w-full rounded-md border border-niko-border py-3 text-sm font-semibold text-foreground hover:bg-niko-surface/40 sm:w-1/3"
+          >
+            Back
+          </button>
+        </div>
+      )}
+
+      {step === 3 && fulfillment === "pay" && (
+        <div className="space-y-6">
+          <div className="niko-panel space-y-5 p-6">
             <div className="flex justify-between items-center border-b border-niko-border/60 pb-3">
               <h3 className="text-sm font-semibold text-niko-teal uppercase tracking-wider">
-                Transaction Details
+                Transaction details
               </h3>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5">
@@ -1436,29 +1642,32 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
                 </>
               )}
 
-              <div className="text-niko-muted">Recipient Receives</div>
-              <div className="font-semibold text-right text-foreground font-mono">
-                {amountQuoteReady ? formatPayout(netRwf) : "—"}
-              </div>
-
-              <div className="text-niko-muted">Exchange Rate</div>
+              <div className="text-niko-muted">Exchange rate</div>
               <div className="text-right font-mono text-foreground">
                 {hasLiveRate
                   ? `1 USDT = ${displayRate.toLocaleString()} ${displayCurrency}`
                   : quoteError || "No live rate"}
               </div>
 
-              <div className="text-niko-muted">
-                NikoPay fee ({hasLiveRate ? `${displayFeePercent}%` : "—"} of
-                USDT)
-              </div>
-              <div className="text-right font-mono text-niko-muted">
-                {amountQuoteReady
-                  ? `${formatUsdt(
-                      feeUsdtForAmount(usdtAmount, displayFeePercent ?? 0) ?? 0,
-                    )} (${formatPayout(feeRwf)})`
-                  : "—"}
-              </div>
+              {quote ? (
+                <FeeLines
+                  currency={displayCurrency}
+                  feePercent={displayFeePercent ?? quote.feePercent}
+                  feeLocal={quote.feeLocal}
+                  netLocal={quote.netLocal}
+                  pawapayPercent={quote.pawapayPercent}
+                  pawapayFeeLocal={quote.pawapayFeeLocal}
+                  mnoFeeLocal={quote.mnoFeeLocal}
+                  nikopayFeeLocal={quote.nikopayFeeLocal}
+                />
+              ) : (
+                <>
+                  <div className="text-niko-muted">Recipient receives</div>
+                  <div className="font-semibold text-right text-foreground font-mono">
+                    {amountQuoteReady ? formatPayout(netRwf) : "—"}
+                  </div>
+                </>
+              )}
 
               <div className="col-span-2 h-px bg-niko-border/60 my-1" />
 
@@ -1471,7 +1680,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
 
               <div className="text-niko-muted">Mobile money number</div>
               <div className="font-mono font-bold text-right text-foreground">
-                {shownFormatted}
+                {formattedMsisdn}
               </div>
 
               {recipientNameStatus === "found" && recipientName ? (
@@ -1552,7 +1761,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
               <button
                 type="button"
                 onClick={handleConnectWallet}
-                className="shrink-0 py-2.5 px-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all flex items-center gap-1.5 text-xs"
+                className="shrink-0 py-2.5 px-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold rounded-md transition-all flex items-center gap-1.5 text-xs"
               >
                 Connect Wallet
                 <svg
@@ -1598,11 +1807,19 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
             </button>
             <button
               type="button"
-              disabled={!walletConnected || creatingIntent || !amountQuoteReady}
+              disabled={
+                !walletConnected ||
+                creatingIntent ||
+                !amountQuoteReady ||
+                fundsBlocked
+              }
               onClick={handleConfirmTransfer}
               className={`w-2/3 py-4 font-bold rounded-md transition-all flex justify-center items-center gap-2 text-sm ${
-                walletConnected && !creatingIntent && amountQuoteReady
-                  ? "bg-niko-teal hover:bg-niko-teal-bright text-niko-navy cursor-pointer"
+                walletConnected &&
+                !creatingIntent &&
+                amountQuoteReady &&
+                !fundsBlocked
+                  ? "bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent cursor-pointer"
                   : "bg-niko-surface border border-niko-border text-niko-muted opacity-50 cursor-not-allowed"
               }`}
             >
@@ -1729,7 +1946,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
                     type="button"
                     onClick={() => void handleModalConfirm()}
                     disabled={modalState !== "confirm"}
-                    className="w-1/2 py-2.5 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md text-xs transition-all"
+                    className="w-1/2 py-2.5 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold rounded-md text-xs transition-all"
                   >
                     Sign + send USDT
                   </button>

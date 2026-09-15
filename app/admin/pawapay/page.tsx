@@ -1,10 +1,10 @@
 import { AdminPawapayDashboard } from "@/components/admin/pawapay-dashboard";
-import { PageHeader } from "@/components/shared/page-header";
+import { AdminPage } from "@/components/admin/admin-page";
 
 export default function AdminPawapayPage() {
   return (
-    <PageHeader title="PawaPay" description="Balances, corridors, payouts">
+    <AdminPage title="PawaPay" description="Balances, corridors, payouts">
       <AdminPawapayDashboard />
-    </PageHeader>
+    </AdminPage>
   );
 }

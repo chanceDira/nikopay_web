@@ -14,50 +14,51 @@ export function Hero() {
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
         <div className="animate-fade-up">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-niko-border bg-niko-surface px-4 py-1.5 text-sm">
-            <span className="text-lg" aria-hidden>
-              🇷🇼
-            </span>
-            <span className="text-niko-muted">
-              Launching in{" "}
-              <span className="font-medium text-foreground">Rwanda</span>
-            </span>
-          </div>
-
           <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-            Making <span className="niko-gradient-text">Stablecoins</span>{" "}
-            Spendable
+            Making <span className="niko-gradient-text">stablecoins</span>{" "}
+            spendable
           </h1>
 
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-niko-muted">
-            Bridge your USDT to Rwandan Francs through mobile money.
-            Non-custodial, transparent rates, and instant local payouts.
+            Send stablecoins from your wallet. We pay the recipient in local
+            currency on mobile money. Rate and fee are shown before you confirm.
+          </p>
+          <p className="mt-3 text-sm text-niko-muted">
+            USDT is live. USDC is next.
           </p>
 
           <div className="mt-8 flex flex-col gap-6 sm:items-start">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
-                href="/download"
-                className="inline-flex h-12 items-center justify-center rounded-md bg-niko-teal px-8 text-sm font-semibold text-niko-navy transition-colors hover:bg-niko-teal-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-niko-teal"
+                href="/auth/sign-in"
+                className="inline-flex h-12 items-center justify-center rounded-md bg-niko-teal px-8 text-sm font-semibold text-niko-on-accent transition-colors hover:bg-niko-teal-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-niko-teal"
               >
-                Launch App
+                Pay now
               </Link>
               <a
                 href="#how-it-works"
                 className="inline-flex h-12 items-center justify-center rounded-md border border-niko-border px-8 text-sm font-medium text-foreground transition-colors hover:border-niko-teal/50 hover:bg-niko-surface"
               >
-                See How It Works
+                How it works
               </a>
             </div>
 
             <p className="text-sm text-niko-muted">
-              Do not have a Web3 wallet yet?{" "}
+              Get the{" "}
+              <Link
+                href="/download"
+                className="text-niko-teal underline underline-offset-4 hover:text-niko-teal-bright transition-colors"
+              >
+                iOS and Android app
+              </Link>
+              {" as it rolls out, or "}
               <a
                 href="#waitlist"
                 className="text-niko-teal underline underline-offset-4 hover:text-niko-teal-bright transition-colors"
               >
-                Subscribe for email updates
+                get notes by email
               </a>
+              .
             </p>
           </div>
         </div>

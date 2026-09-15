@@ -31,6 +31,15 @@ export type FxConfig = {
   minUsdt: number;
 };
 
+export type QuoteFeeBreakdown = {
+  pawapayPercent: number;
+  mnoFixed: number;
+  pawapayFeeLocal: number;
+  mnoFeeLocal: number;
+  nikopayFeeLocal: number;
+  grossLocal: number;
+};
+
 export type Quote = {
   usdtAmount: number;
   rate: number;
@@ -42,7 +51,9 @@ export type Quote = {
   netRwf: number;
   chain: ChainId;
   expiresAt: string;
-};
+  available?: boolean;
+  availableReason?: string;
+} & QuoteFeeBreakdown;
 
 export type IntentPayout = {
   status: "pending" | "enqueued" | "successful" | "failed" | "timeout";
@@ -67,6 +78,12 @@ export type PaymentIntent = {
   feePercent: number;
   feeRwf: number;
   netRwf: number;
+  pawapayPercent?: number;
+  mnoFixed?: number;
+  pawapayFeeLocal?: number;
+  mnoFeeLocal?: number;
+  nikopayFeeLocal?: number;
+  grossLocal?: number;
   treasuryAddress: string;
   expiresAt: string;
   createdAt: string;

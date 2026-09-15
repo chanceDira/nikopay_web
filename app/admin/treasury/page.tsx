@@ -1,10 +1,10 @@
 import { AdminTreasuryCards } from "@/components/admin/treasury-cards";
-import { PageHeader } from "@/components/shared/page-header";
+import { AdminPage } from "@/components/admin/admin-page";
 
 export default function AdminTreasuryPage() {
   return (
-    <PageHeader title="Treasury" description="Vaults and PawaPay balance">
+    <AdminPage title="Treasury" description="Vaults and PawaPay balance">
       <AdminTreasuryCards />
-    </PageHeader>
+    </AdminPage>
   );
 }

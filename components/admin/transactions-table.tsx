@@ -3,7 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAdminIntents } from "@/components/admin/use-admin-intents";
+import {
+  PaginationControls,
+  TABLE_PAGE_SIZE,
+} from "@/components/shared/pagination-controls";
 import { formatLocalAmount } from "@/lib/rates";
+import { paginate } from "@/lib/paginate";
 import {
   formatDurationMicros,
   settlementDurations,
@@ -14,6 +19,7 @@ export function AdminTransactionsTable() {
   const { intents, loading } = useAdminIntents();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
 
   const filtered = intents.filter((intent) => {
     const matchesSearch =
@@ -26,6 +32,7 @@ export function AdminTransactionsTable() {
     return matchesSearch && matchesStatus;
   });
 
+  const paged = paginate(filtered, page, TABLE_PAGE_SIZE);
   const getStatusBadge = (status: PaymentStatus) => {
     switch (status) {
       case "paid":
@@ -95,24 +102,29 @@ export function AdminTransactionsTable() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Search & Filter bar */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-[var(--niko-card-bg)] backdrop-blur-md border border-niko-border/40 p-4 rounded-md">
+    <div className="space-y-4">
+      <div className="niko-panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-xs">
           <input
             type="text"
             placeholder="ID or phone"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-background border border-niko-border text-foreground px-4 py-2 text-sm rounded-md outline-none focus:border-niko-teal/50 transition-colors"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="niko-field w-full rounded-md px-4 py-2.5 text-sm text-foreground outline-none"
           />
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+        <div className="flex w-full items-center justify-end gap-3 sm:w-auto">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-background border border-niko-border text-foreground px-3 py-2 text-sm rounded-md outline-none focus:border-niko-teal/50 transition-colors cursor-pointer"
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            className="niko-field cursor-pointer rounded-md px-3 py-2.5 text-sm text-foreground outline-none"
           >
             <option value="all">All</option>
             <option value="awaiting_payment">Awaiting</option>
@@ -127,27 +139,33 @@ export function AdminTransactionsTable() {
         </div>
       </div>
 
-      <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md overflow-hidden shadow-md">
+      <div className="niko-panel overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full min-w-[64rem] border-collapse text-left">
             <thead>
-              <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs text-niko-muted">
-                <th className="px-6 py-4 font-medium">ID</th>
-                <th className="px-6 py-4 font-medium">Date</th>
-                <th className="px-6 py-4 font-medium">Recipient</th>
-                <th className="px-6 py-4 font-medium text-right">USDT</th>
-                <th className="px-6 py-4 font-medium text-right">Payout</th>
-                <th className="px-6 py-4 font-medium">Network</th>
-                <th className="px-6 py-4 font-medium text-right">USDT→paid</th>
-                <th className="px-6 py-4 font-medium">Status</th>
+              <tr className="border-b border-niko-border/40 bg-niko-well/50 text-xs text-niko-muted">
+                <th className="px-5 py-3.5 font-medium sm:px-6">ID</th>
+                <th className="px-5 py-3.5 font-medium sm:px-6">Date</th>
+                <th className="px-5 py-3.5 font-medium sm:px-6">Recipient</th>
+                <th className="px-5 py-3.5 text-right font-medium sm:px-6">
+                  USDT
+                </th>
+                <th className="px-5 py-3.5 text-right font-medium sm:px-6">
+                  Payout
+                </th>
+                <th className="px-5 py-3.5 font-medium sm:px-6">Network</th>
+                <th className="px-5 py-3.5 text-right font-medium sm:px-6">
+                  USDT→paid
+                </th>
+                <th className="px-5 py-3.5 font-medium sm:px-6">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-niko-border/10 text-sm">
+            <tbody className="divide-y divide-niko-border/20 text-sm">
               {loading && filtered.length === 0 ? (
                 <tr>
                   <td
                     colSpan={8}
-                    className="px-6 py-12 text-center text-niko-muted font-sans"
+                    className="px-6 py-12 text-center text-niko-muted"
                   >
                     Loading...
                   </td>
@@ -156,49 +174,50 @@ export function AdminTransactionsTable() {
                 <tr>
                   <td
                     colSpan={8}
-                    className="px-6 py-12 text-center text-niko-muted font-sans"
+                    className="px-6 py-12 text-center text-niko-muted"
                   >
                     No transactions found.
                   </td>
                 </tr>
               ) : (
-                filtered.map((intent) => (
+                paged.items.map((intent) => (
                   <tr
                     key={intent.id}
-                    className="hover:bg-niko-surface/10 transition-colors"
+                    className="transition-colors hover:bg-niko-well/40"
                   >
-                    <td className="px-6 py-4 font-mono font-bold text-niko-teal">
+                    <td className="px-5 py-4 font-mono text-sm font-semibold text-niko-teal sm:px-6">
                       <Link
                         href={`/admin/transactions/${intent.id}`}
                         className="hover:underline"
+                        title={intent.id}
                       >
                         {intent.id}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 text-foreground/80 font-sans">
+                    <td className="px-5 py-4 text-foreground/80 sm:px-6">
                       {formatDate(intent.createdAt)}
                     </td>
-                    <td className="px-6 py-4 font-mono text-foreground">
+                    <td className="px-5 py-4 font-mono text-foreground sm:px-6">
                       {intent.msisdn}
                     </td>
-                    <td className="px-6 py-4 font-mono font-semibold text-foreground text-right tabular-nums">
+                    <td className="px-5 py-4 text-right font-mono font-semibold tabular-nums text-foreground sm:px-6">
                       {intent.usdtAmount.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 font-mono font-semibold text-niko-teal-bright text-right tabular-nums">
+                    <td className="px-5 py-4 text-right font-mono font-semibold tabular-nums text-niko-teal-bright sm:px-6">
                       {formatLocalAmount(intent.netRwf, intent.currency)}
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 text-xs text-foreground/80 font-mono capitalize">
+                    <td className="px-5 py-4 sm:px-6">
+                      <span className="inline-flex items-center gap-1.5 font-mono text-xs capitalize text-foreground/80">
                         <span
                           className={`h-2 w-2 rounded-full ${intent.chain === "polygon" ? "bg-indigo-500" : "bg-sky-400"}`}
                         />
                         {intent.chain}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-mono text-xs text-right tabular-nums text-foreground">
+                    <td className="px-5 py-4 text-right font-mono text-xs tabular-nums text-foreground sm:px-6">
                       {settleDuration(intent)}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-4 sm:px-6">
                       {getStatusBadge(intent.status)}
                     </td>
                   </tr>
@@ -206,6 +225,16 @@ export function AdminTransactionsTable() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="border-t border-niko-border/40 px-5 py-4 sm:px-6">
+          <PaginationControls
+            page={paged.page}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            label="transactions"
+            onPrev={() => setPage((current) => Math.max(1, current - 1))}
+            onNext={() => setPage((current) => current + 1)}
+          />
         </div>
       </div>
     </div>

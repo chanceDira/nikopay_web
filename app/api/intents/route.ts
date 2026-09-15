@@ -42,8 +42,21 @@ export async function POST(request: Request) {
     return jsonError(amount.reason, 400);
   }
 
+  const netLocal =
+    body.netLocal == null
+      ? undefined
+      : typeof body.netLocal === "number" &&
+          Number.isFinite(body.netLocal) &&
+          body.netLocal > 0
+        ? body.netLocal
+        : null;
+  if (netLocal === null) {
+    return jsonError("recipient amount must be a positive number", 400);
+  }
+
   const result = await createPaymentIntent({
     usdtAmount: amount.amount,
+    netLocal,
     chain: body.chain,
     msisdn: body.msisdn,
     walletAddress: body.walletAddress,

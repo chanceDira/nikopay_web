@@ -184,6 +184,11 @@ export type Database = {
           fee_percent: number;
           fee_rwf: number;
           net_rwf: number;
+          pawapay_fee_local: number | null;
+          mno_fee_local: number | null;
+          nikopay_fee_local: number | null;
+          gross_local: number | null;
+          pawapay_percent: number | null;
           treasury_address: string;
           expires_at: string;
           deposit_tx: string | null;
@@ -223,6 +228,11 @@ export type Database = {
           fee_percent: number;
           fee_rwf: number;
           net_rwf: number;
+          pawapay_fee_local?: number | null;
+          mno_fee_local?: number | null;
+          nikopay_fee_local?: number | null;
+          gross_local?: number | null;
+          pawapay_percent?: number | null;
           treasury_address: string;
           expires_at: string;
           deposit_tx?: string | null;
@@ -262,6 +272,11 @@ export type Database = {
           fee_percent?: number;
           fee_rwf?: number;
           net_rwf?: number;
+          pawapay_fee_local?: number | null;
+          mno_fee_local?: number | null;
+          nikopay_fee_local?: number | null;
+          gross_local?: number | null;
+          pawapay_percent?: number | null;
           treasury_address?: string;
           expires_at?: string;
           deposit_tx?: string | null;
@@ -274,6 +289,39 @@ export type Database = {
           payout_started_at?: string | null;
           paid_at?: string | null;
           checkout_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      corridor_fee_schedules: {
+        Row: {
+          id: string;
+          country: string;
+          currency: string;
+          provider: string | null;
+          pawapay_percent: number;
+          mno_fixed: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          country: string;
+          currency: string;
+          provider?: string | null;
+          pawapay_percent?: number;
+          mno_fixed?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          country?: string;
+          currency?: string;
+          provider?: string | null;
+          pawapay_percent?: number;
+          mno_fixed?: number;
           created_at?: string;
           updated_at?: string;
         };

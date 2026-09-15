@@ -7,28 +7,46 @@
   --niko-blue: #1e4a7a;
   --niko-teal: #00d4c8;
   --niko-teal-bright: #00f2ff;
+  --niko-on-accent: #0b1f3a;
   --niko-surface: #0d1117;
-  --niko-muted: #8b9cb3;
+  --niko-band: #080b12;
+  --niko-well: #111827;
+  --niko-muted: #a3b4c8;
   --niko-border: rgba(0, 212, 200, 0.12);
-  --niko-card-bg: rgba(19, 27, 46, 0.15);
+  --niko-field-bg: #111827;
+  --niko-field-border: rgba(0, 212, 200, 0.28);
+  --niko-field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  --niko-card-bg: #0d1117;
+  --niko-panel-shadow: 0 0 0 1px rgba(0, 212, 200, 0.06);
+  --niko-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a3b4c8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
   --niko-warning-bg: rgba(245, 158, 11, 0.05);
   --niko-warning-border: rgba(245, 158, 11, 0.1);
   --niko-warning-text: #fcd34d;
 }
 
 .light {
-  --background: #b0c0d0;
+  --background: #f4f5f7;
   --foreground: #0f172a;
-  --niko-navy: #a4b6c7;
-  --niko-blue: #7e95a9;
-  --niko-teal: #0891b2;
-  --niko-teal-bright: #0e7490;
-  --niko-surface: #c4d1db;
-  --niko-muted: #2c3e50;
-  --niko-border: rgba(8, 145, 178, 0.25);
-  --niko-card-bg: rgba(196, 209, 219, 0.95);
-  --niko-warning-bg: rgba(146, 64, 14, 0.1);
-  --niko-warning-border: rgba(146, 64, 14, 0.25);
+  --niko-navy: #0b1f3a;
+  --niko-blue: #1e4a7a;
+  --niko-teal: #0e7490;
+  --niko-teal-bright: #0f766e;
+  --niko-on-accent: #ffffff;
+  --niko-surface: #ffffff;
+  --niko-band: #eceef1;
+  --niko-well: #ffffff;
+  --niko-muted: #475569;
+  --niko-border: rgba(15, 23, 42, 0.16);
+  --niko-field-bg: #ffffff;
+  --niko-field-border: rgba(15, 23, 42, 0.22);
+  --niko-field-shadow:
+    inset 0 1px 1px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --niko-card-bg: #ffffff;
+  --niko-panel-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.06), 0 10px 28px rgba(15, 23, 42, 0.09);
+  --niko-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  --niko-warning-bg: rgba(146, 64, 14, 0.08);
+  --niko-warning-border: rgba(146, 64, 14, 0.2);
   --niko-warning-text: #92400e;
 }
 
@@ -39,32 +57,32 @@
   --color-niko-blue: var(--niko-blue);
   --color-niko-teal: var(--niko-teal);
   --color-niko-teal-bright: var(--niko-teal-bright);
+  --color-niko-on-accent: var(--niko-on-accent);
   --color-niko-surface: var(--niko-surface);
+  --color-niko-band: var(--niko-band);
+  --color-niko-well: var(--niko-well);
   --color-niko-muted: var(--niko-muted);
   --color-niko-border: var(--niko-border);
-  --font-sans: var(--font-afacad);
+  --color-niko-card: var(--niko-card-bg);
+  --font-sans: var(--font-outfit);
   --font-heading: var(--font-outfit);
-  --font-mono: var(--font-afacad);
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+}
+
+html {
+  text-rendering: optimizeLegibility;
+  scroll-padding-top: 7rem;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
-}
-
-.niko-logo-light {
-  display: none;
-}
-
-.light .niko-logo-dark {
-  display: none;
-}
-
-.light .niko-logo-light {
-  display: block;
-  transform: scale(0.92);
-  transform-origin: center;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  line-height: 1.6;
 }
 
 h1,
@@ -74,11 +92,136 @@ h4,
 h5,
 h6 {
   font-family: var(--font-heading), sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+.font-mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.niko-logo-light {
+  display: none;
+}
+
+html:not(.light) .niko-theme-moon {
+  display: none;
+}
+
+.light .niko-logo-dark {
+  display: none;
+}
+
+.light .niko-logo-light {
+  display: block;
+}
+
+html.light .niko-theme-sun {
+  display: none;
+}
+
+.niko-field,
+input:not(.bg-transparent):not([type="button"]):not([type="submit"]):not(
+    [type="reset"]
+  ):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not(
+    [type="file"]
+  ):not([type="range"]):not([type="color"]):not([type="image"]),
+select,
+textarea {
+  background-color: var(--niko-field-bg);
+  border: 1px solid var(--niko-field-border);
+  box-shadow: var(--niko-field-shadow);
+}
+
+.niko-field:focus-within,
+.niko-field-active,
+input:not(.bg-transparent):not([type="button"]):not([type="submit"]):not(
+    [type="reset"]
+  ):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not(
+    [type="file"]
+  ):focus,
+select:focus,
+textarea:focus {
+  border-color: var(--niko-teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--niko-teal) 18%, transparent);
+  outline: none;
+}
+
+input.bg-transparent,
+textarea.bg-transparent {
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+input.bg-transparent:focus,
+textarea.bg-transparent:focus {
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+@layer base {
+  select {
+    appearance: none;
+    background-image: var(--niko-select-chevron);
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem 1rem;
+    padding-right: 2.25rem;
+    line-height: 1.25;
+  }
+
+  select.bg-transparent {
+    background-color: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    background-image: var(--niko-select-chevron);
+    background-repeat: no-repeat;
+    background-position: right 0.1rem center;
+    background-size: 0.875rem 0.875rem;
+    padding-right: 1.4rem;
+  }
+
+  select.bg-transparent:focus {
+    border-color: transparent;
+    box-shadow: none;
+    outline: none;
+  }
 }
 
 @layer utilities {
+  .niko-panel {
+    border-radius: 0.375rem;
+    border: 1px solid var(--niko-border);
+    background: var(--niko-card-bg);
+    box-shadow: var(--niko-panel-shadow);
+  }
+
+  .light .niko-panel {
+    border-color: rgba(15, 23, 42, 0.12);
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      0 12px 32px rgba(15, 23, 42, 0.1);
+  }
+
   .niko-glow {
     box-shadow: 0 0 60px rgba(0, 212, 200, 0.15);
+  }
+
+  .light .niko-glow {
+    box-shadow:
+      0 0 0 1px rgba(15, 23, 42, 0.12),
+      0 8px 24px rgba(15, 23, 42, 0.1);
   }
 
   .niko-gradient-text {
@@ -102,6 +245,16 @@ h6 {
       transparent
     );
   }
+
+  .niko-marquee {
+    animation: niko-marquee 35s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .niko-marquee {
+      animation: none;
+    }
+  }
 }
 
 @keyframes fade-up {
@@ -112,6 +265,15 @@ h6 {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes niko-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
   }
 }
 
@@ -163,7 +325,7 @@ textarea:-webkit-autofill:focus,
 select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px var(--background) inset !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--niko-field-bg) inset !important;
   -webkit-text-fill-color: var(--foreground) !important;
   transition: background-color 5000s ease-in-out 0s;
 }

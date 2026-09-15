@@ -5,7 +5,12 @@ import Link from "next/link";
 import { fetchLiveIntentsByWallet, isAborted } from "@/lib/pay-api";
 import type { PaymentIntentSummary } from "@/lib/settlement/types";
 import { formatLocalAmount, formatUsdt } from "@/lib/rates";
+import { paginate } from "@/lib/paginate";
 import { PageHeader } from "@/components/shared/page-header";
+import {
+  PaginationControls,
+  TABLE_PAGE_SIZE,
+} from "@/components/shared/pagination-controls";
 import { useWalletSession } from "@/components/pay/use-wallet-session";
 
 const HISTORY_POLL_MS = 2000;
@@ -14,6 +19,7 @@ export default function PaymentsHistoryPage() {
   const { walletAddress, hydrated } = useWalletSession();
   const [intents, setIntents] = useState<PaymentIntentSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (!hydrated || !walletAddress) {
@@ -45,6 +51,7 @@ export default function PaymentsHistoryPage() {
 
   const visibleIntents = walletAddress ? intents : [];
   const visibleLoading = !hydrated || (Boolean(walletAddress) && loading);
+  const paged = paginate(visibleIntents, page, TABLE_PAGE_SIZE);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -143,82 +150,92 @@ export default function PaymentsHistoryPage() {
           </p>
           <Link
             href="/app/pay"
-            className="inline-block px-4 py-2 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold text-xs rounded-xl transition-all shadow-[0_0_15px_rgba(0,212,200,0.1)]"
+            className="inline-block px-4 py-2 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold text-xs rounded-xl transition-all shadow-[0_0_15px_rgba(0,212,200,0.1)]"
           >
             Create New Payment
           </Link>
         </div>
       ) : (
-        <div className="overflow-x-auto -mx-6 sm:mx-0">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-niko-border/60 text-xs font-semibold uppercase tracking-wider text-niko-muted">
-                <th className="px-4 py-3 sm:px-6">Date</th>
-                <th className="px-4 py-3 sm:px-6">ID</th>
-                <th className="px-4 py-3 sm:px-6">Network</th>
-                <th className="px-4 py-3 sm:px-6">Send Amount</th>
-                <th className="px-4 py-3 sm:px-6">Payout</th>
-                <th className="px-4 py-3 sm:px-6">Status</th>
-                <th className="px-4 py-3 sm:px-6 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-niko-border/30 text-sm">
-              {visibleIntents.map((intent) => {
-                const date = new Date(intent.createdAt).toLocaleDateString(
-                  "en-RW",
-                  {
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  },
-                );
-                return (
-                  <tr
-                    key={intent.id}
-                    className="hover:bg-niko-surface/20 transition-colors"
-                  >
-                    <td className="px-4 py-4 sm:px-6 text-niko-muted font-medium">
-                      {date}
-                    </td>
-                    <td className="px-4 py-4 sm:px-6 font-mono text-xs text-foreground font-bold">
-                      {intent.id}
-                    </td>
-                    <td className="px-4 py-4 sm:px-6 capitalize text-foreground font-medium">
-                      {intent.chain}
-                    </td>
-                    <td className="px-4 py-4 sm:px-6 font-mono text-foreground font-semibold">
-                      {formatUsdt(intent.usdtAmount)}
-                    </td>
-                    <td className="px-4 py-4 sm:px-6 space-y-0.5">
-                      <p className="font-mono text-foreground font-bold">
-                        {formatLocalAmount(intent.netRwf, intent.currency)}
-                      </p>
-                    </td>
-                    <td className="px-4 py-4 sm:px-6">
-                      {getStatusBadge(intent.status)}
-                    </td>
-                    <td className="px-4 py-4 sm:px-6 text-right space-x-3">
-                      <Link
-                        href={`/app/payments/${intent.id}`}
-                        className="text-xs font-semibold text-niko-teal hover:text-niko-teal-bright hover:underline transition-colors"
-                      >
-                        Track
-                      </Link>
-                      {intent.status === "paid" && (
+        <div className="space-y-4">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="w-full min-w-[48rem] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-niko-border/60 text-xs font-semibold uppercase tracking-wider text-niko-muted">
+                  <th className="px-4 py-3 sm:px-6">Date</th>
+                  <th className="px-4 py-3 sm:px-6">ID</th>
+                  <th className="px-4 py-3 sm:px-6">Network</th>
+                  <th className="px-4 py-3 sm:px-6">Send Amount</th>
+                  <th className="px-4 py-3 sm:px-6">Payout</th>
+                  <th className="px-4 py-3 sm:px-6">Status</th>
+                  <th className="px-4 py-3 text-right sm:px-6">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-niko-border/30 text-sm">
+                {paged.items.map((intent) => {
+                  const date = new Date(intent.createdAt).toLocaleDateString(
+                    "en-RW",
+                    {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
+                  );
+                  return (
+                    <tr
+                      key={intent.id}
+                      className="transition-colors hover:bg-niko-surface/20"
+                    >
+                      <td className="px-4 py-4 font-medium text-niko-muted sm:px-6">
+                        {date}
+                      </td>
+                      <td className="px-4 py-4 font-mono text-xs font-bold text-foreground sm:px-6">
+                        {intent.id}
+                      </td>
+                      <td className="px-4 py-4 font-medium capitalize text-foreground sm:px-6">
+                        {intent.chain}
+                      </td>
+                      <td className="px-4 py-4 font-mono font-semibold text-foreground sm:px-6">
+                        {formatUsdt(intent.usdtAmount)}
+                      </td>
+                      <td className="space-y-0.5 px-4 py-4 sm:px-6">
+                        <p className="font-mono font-bold text-foreground">
+                          {formatLocalAmount(intent.netRwf, intent.currency)}
+                        </p>
+                      </td>
+                      <td className="px-4 py-4 sm:px-6">
+                        {getStatusBadge(intent.status)}
+                      </td>
+                      <td className="space-x-3 px-4 py-4 text-right sm:px-6">
                         <Link
-                          href={`/app/payments/${intent.id}/receipt`}
-                          className="text-xs font-semibold text-niko-muted hover:text-foreground hover:underline transition-colors"
+                          href={`/app/payments/${intent.id}`}
+                          className="text-xs font-semibold text-niko-teal transition-colors hover:text-niko-teal-bright hover:underline"
                         >
-                          Receipt
+                          Track
                         </Link>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                        {intent.status === "paid" && (
+                          <Link
+                            href={`/app/payments/${intent.id}/receipt`}
+                            className="text-xs font-semibold text-niko-muted transition-colors hover:text-foreground hover:underline"
+                          >
+                            Receipt
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <PaginationControls
+            page={paged.page}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            label="payments"
+            onPrev={() => setPage((current) => Math.max(1, current - 1))}
+            onNext={() => setPage((current) => current + 1)}
+          />
         </div>
       )}
     </PageHeader>

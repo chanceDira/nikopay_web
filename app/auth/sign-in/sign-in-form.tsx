@@ -54,11 +54,12 @@ export default function SignInPage() {
             <BrandLogo width={160} height={45} className="h-10" priority />
           </Link>
         </div>
-        <h2 className="text-center text-3xl tracking-tight text-foreground">
+        <h2 className="text-center text-3xl font-bold tracking-tight text-foreground">
           Sign in to NikoPay
         </h2>
         <p className="mt-2 text-center text-sm text-niko-muted">
-          Connect a wallet to send USDT and pay out on mobile money.
+          Connect a wallet to send USDT. The recipient gets local currency on
+          mobile money.
         </p>
       </div>
 

@@ -1,135 +1,95 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
-
 const steps = [
   {
-    number: "01",
+    number: "1",
     label: "First",
     title: "Connect your wallet",
     description:
-      "Link your WalletConnect-compatible wallet (Trust Wallet, MetaMask, or Coinbase Wallet). You keep custody until you send.",
+      "Use WalletConnect, MetaMask, Trust Wallet, or Coinbase Wallet. You send from that wallet. We never ask for a seed phrase.",
   },
   {
-    number: "02",
+    number: "2",
     label: "Next",
-    title: "Send USDT",
+    title: "Send the quoted USDT",
     description:
-      "Enter the recipient's Mobile Money number, review the transparent exchange rate and fees, then confirm your USDT transfer.",
+      "Enter the recipient's mobile money number and country. Check the rate and fee, then send the exact USDT amount shown.",
   },
   {
-    number: "03",
+    number: "3",
     label: "Finally",
-    title: "Recipient gets RWF",
+    title: "Recipient gets local currency",
     description:
-      "RWF lands on the recipient's mobile money account. Track status in real time and download your receipt.",
+      "We pay out to their mobile money wallet. Watch the payment until it completes or fails.",
   },
 ];
 
 export function HowItWorks() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [activeStep, setActiveStep] = useState(0);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const index = Number(entry.target.getAttribute("data-step"));
-            if (!Number.isNaN(index)) setActiveStep(index);
-          }
-        });
-      },
-      { threshold: 0.6, rootMargin: "-20% 0px" },
-    );
-
-    const stepEls = section.querySelectorAll("[data-step]");
-    stepEls.forEach((el) => observer.observe(el));
-
-    return () => observer.disconnect();
-  }, []);
-
-  const progress = ((activeStep + 1) / steps.length) * 100;
-
   return (
     <section
       id="how-it-works"
-      ref={sectionRef}
-      className="px-4 py-20 sm:px-6 sm:py-28"
+      className="bg-niko-band px-4 py-20 sm:px-6 sm:py-28"
     >
       <div className="mx-auto max-w-6xl">
         <div className="text-left">
           <p className="text-sm font-medium uppercase tracking-wider text-niko-teal">
-            How it Works
+            How it works
           </p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            Three steps to spendable money
+            Three steps
           </h2>
           <p className="mt-4 max-w-2xl text-niko-muted leading-relaxed">
-            From your crypto wallet to a Mobile Money account in Rwanda. No
-            exchange accounts, no bank delays.
+            Wallet send, then mobile money payout in the recipient&apos;s
+            country. No exchange account required.
           </p>
         </div>
 
         <div className="relative mt-16 hidden md:block">
-          <div className="absolute left-0 right-0 top-8 h-0.5 bg-niko-border" />
           <div
-            className="bridge-progress absolute left-0 top-8 h-0.5 niko-bridge-line origin-left transition-transform duration-700 ease-out"
-            style={{ width: `${progress}%`, transform: `scaleX(1)` }}
+            className="absolute top-4 right-[16.666%] left-[16.666%] h-0.5 bg-niko-teal"
+            aria-hidden
           />
-          <div className="grid grid-cols-3 gap-8">
-            {steps.map((step, i) => (
-              <div
-                key={step.number}
-                data-step={i}
-                className={`relative pt-16 transition-opacity duration-500 ${
-                  i <= activeStep ? "opacity-100" : "opacity-40"
-                }`}
-              >
-                <div
-                  className={`absolute left-1/2 top-4 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full border-2 transition-colors ${
-                    i <= activeStep
-                      ? "border-niko-teal bg-niko-teal text-niko-navy"
-                      : "border-niko-border bg-niko-surface text-niko-muted"
-                  }`}
-                >
-                  <span className="text-xs font-bold">{i + 1}</span>
+          <ol className="grid grid-cols-3 gap-8">
+            {steps.map((step) => (
+              <li key={step.number} className="relative pt-12">
+                <div className="absolute left-1/2 top-0 z-10 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-niko-teal text-niko-on-accent">
+                  <span className="text-xs font-bold">{step.number}</span>
                 </div>
-                <div className="rounded-md border border-niko-border bg-niko-surface p-6">
-                  <div className="mb-3 text-xs font-bold uppercase tracking-wider text-niko-teal">
+                <article className="niko-panel p-6">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-wider text-niko-teal">
                     {step.label}
-                  </div>
+                  </p>
                   <h3 className="text-lg font-semibold">{step.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-niko-muted">
                     {step.description}
                   </p>
-                </div>
-              </div>
+                </article>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
 
-        <div className="mt-12 space-y-6 md:hidden">
-          {steps.map((step, i) => (
-            <div
-              key={step.number}
-              data-step={i}
-              className="rounded-md border border-niko-border bg-niko-surface p-6"
-            >
-              <div>
-                <div className="mb-2 text-xs font-bold uppercase tracking-wider text-niko-teal">
-                  {step.label}
+        <div className="relative mt-12 md:hidden">
+          <div
+            className="absolute top-6 bottom-6 left-[15px] w-0.5 bg-niko-teal"
+            aria-hidden
+          />
+          <ol className="space-y-6">
+            {steps.map((step) => (
+              <li key={step.number} className="relative pl-12">
+                <div className="absolute top-6 left-0 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-niko-teal text-niko-on-accent">
+                  <span className="text-xs font-bold">{step.number}</span>
                 </div>
-                <h3 className="text-lg font-semibold">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-niko-muted">
-                  {step.description}
-                </p>
-              </div>
-            </div>
-          ))}
+                <article className="niko-panel p-6">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-niko-teal">
+                    {step.label}
+                  </p>
+                  <h3 className="text-lg font-semibold">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-niko-muted">
+                    {step.description}
+                  </p>
+                </article>
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
     </section>

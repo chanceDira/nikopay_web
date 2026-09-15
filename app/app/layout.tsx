@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Footer } from "@/components/landing/footer";
 import { AppNav } from "@/components/shared/app-nav";
 
 export const metadata: Metadata = {
@@ -17,7 +18,8 @@ export default function AppLayout({
   return (
     <div className="flex min-h-full flex-col">
       <AppNav />
-      <main className="flex-1 pt-36 pb-12 px-4 sm:px-6">{children}</main>
+      <main className="flex-1 px-4 pt-36 pb-12 sm:px-6">{children}</main>
+      <Footer />
     </div>
   );
 }

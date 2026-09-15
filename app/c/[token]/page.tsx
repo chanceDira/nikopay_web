@@ -22,7 +22,7 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
   return (
     <PageHeader
       title="Pay"
-      description="Send USDT. Recipient gets mobile money."
+      description="Send USDT. Recipient gets local currency on mobile money."
     >
       <PayWizard checkout={result.checkout} />
     </PageHeader>

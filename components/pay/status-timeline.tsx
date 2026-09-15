@@ -1,8 +1,9 @@
 "use client";
 
-import { formatLocalAmount, formatExactUsdt } from "@/lib/rates";
+import { formatExactUsdt } from "@/lib/rates";
 import { displayPayoutRef } from "@/lib/payout-ref";
 import { useIntentView } from "@/components/pay/use-intent-view";
+import { FeeLines } from "@/components/pay/fee-lines";
 import { SettlementTimingFields } from "@/components/shared/settlement-timing";
 import type { IntentPayout } from "@/lib/settlement/types";
 import Link from "next/link";
@@ -160,9 +161,9 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
   const getStepStyles = (state: string) => {
     switch (state) {
       case "completed":
-        return "bg-niko-teal text-niko-navy border-niko-teal";
+        return "bg-niko-teal text-niko-on-accent border-niko-teal";
       case "active":
-        return "bg-niko-teal/10 text-niko-teal border-niko-teal animate-pulse shadow-[0_0_12px_rgba(0,212,200,0.3)]";
+        return "bg-niko-teal/10 text-niko-teal border-niko-teal";
       case "error":
         return "bg-red-500/10 text-red-400 border-red-500";
       case "warning":
@@ -262,17 +263,16 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
   const timelineDetails = getTimelineDetails();
 
   return (
-    <div className="space-y-8">
-      {/* Top Banner Alert */}
+    <div className="space-y-6">
       <div
-        className={`p-4 rounded-md border flex gap-3 ${
+        className={`niko-panel flex gap-3 p-4 ${
           intent.status === "paid"
-            ? "border-niko-teal/20 bg-niko-teal/5 text-niko-teal"
+            ? "text-niko-teal"
             : ["failed", "expired"].includes(intent.status)
-              ? "border-red-500/20 bg-red-500/5 text-red-400"
+              ? "text-red-400"
               : intent.status === "manual_review"
-                ? "border-amber-200/60 dark:border-amber-500/20 bg-[#fffbeb] dark:bg-amber-500/5 text-[#92400e] dark:text-amber-300"
-                : "border-niko-border bg-niko-surface/80 text-foreground"
+                ? "text-[#92400e] dark:text-amber-300"
+                : "text-foreground"
         }`}
       >
         {intent.status === "paid" ? (
@@ -317,27 +317,26 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
         {intent.status === "paid" && (
           <Link
             href={`/app/payments/${id}/receipt`}
-            className="self-center px-3.5 py-1.5 bg-niko-teal text-niko-navy font-bold text-xs rounded-md hover:bg-niko-teal-bright transition-colors"
+            className="self-center px-3.5 py-1.5 bg-niko-teal text-niko-on-accent font-bold text-xs rounded-md hover:bg-niko-teal-bright transition-colors"
           >
             Receipt
           </Link>
         )}
       </div>
 
-      {/* Visual Timeline Steps (Vertical style on mobile, grid-column on tablet) */}
-      <div className="relative border border-niko-border bg-background/50 rounded-md p-6 md:p-8 space-y-8">
+      <div className="niko-panel relative space-y-8 p-6 md:p-8">
         <div className="relative grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Desktop Horizontal Connecting Line */}
           <div className="absolute top-[20px] left-[12.5%] right-[12.5%] hidden md:block h-0.5 bg-niko-border/60 -z-10">
             <div
-              className="h-full bg-niko-teal transition-all duration-500 shadow-[0_0_8px_rgba(0,212,200,0.4)]"
+              className="h-full bg-niko-teal transition-all duration-500"
               style={{ width: `${lineProgress * 33.33}%` }}
             />
           </div>
 
           <div className="absolute left-[20px] top-[20px] bottom-[20px] md:hidden w-0.5 bg-niko-border/60 -z-10">
             <div
-              className="w-full bg-niko-teal transition-all duration-500 shadow-[0_0_8px_rgba(0,212,200,0.4)]"
+              className="w-full bg-niko-teal transition-all duration-500"
               style={{ height: `${lineProgress * 33.33}%` }}
             />
           </div>
@@ -351,7 +350,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
               {getStepIcon(getStepState(1), 1)}
             </div>
             <div className="space-y-1">
-              <h4 className="text-sm font-semibold">1. Deposit Awaiting</h4>
+              <h4 className="text-sm font-semibold">1. Deposit awaiting</h4>
               <p className="text-xs text-niko-muted leading-snug md:max-w-[150px]">
                 USDT sent to treasury wallet.
               </p>
@@ -383,7 +382,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
               {getStepIcon(getStepState(3), 3)}
             </div>
             <div className="space-y-1">
-              <h4 className="text-sm font-semibold">3. Payout Sent</h4>
+              <h4 className="text-sm font-semibold">3. Payout sent</h4>
               <p className="text-xs text-niko-muted leading-snug md:max-w-[150px]">
                 Mobile money transaction processed.
               </p>
@@ -410,7 +409,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
       </div>
 
       {intent.payout && (
-        <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-3">
+        <div className="niko-panel p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">
               Payout status
@@ -429,7 +428,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
               <dt className="text-niko-muted mb-1 font-sans">
                 Payout reference
               </dt>
-              <dd className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+              <dd className="niko-field p-2.5 text-foreground break-all">
                 {intent.payout.referenceId}
               </dd>
             </div>
@@ -437,7 +436,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
               <dt className="text-niko-muted mb-1 font-sans">
                 Provider financial id
               </dt>
-              <dd className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+              <dd className="niko-field break-all p-2.5 text-foreground">
                 {intent.payout.providerRef ??
                   "Waiting for provider confirmation"}
               </dd>
@@ -447,7 +446,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
                 <dt className="text-niko-muted mb-1 font-sans">
                   Provider reason
                 </dt>
-                <dd className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+                <dd className="niko-field break-all p-2.5 text-foreground">
                   {intent.payout.providerReason}
                 </dd>
               </div>
@@ -458,7 +457,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
 
       {intent.status === "paid" &&
       (intent.paidAt || intent.detectedAt || intent.payoutStartedAt) ? (
-        <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-3">
+        <div className="niko-panel p-5 space-y-3">
           <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">
             Settlement timing
           </h3>
@@ -476,52 +475,49 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
       ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-4">
+        <div className="niko-panel p-5 space-y-4">
           <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">
-            Transfer Parameters
+            Transfer parameters
           </h3>
           <dl className="grid grid-cols-2 gap-y-3 text-sm">
-            <dt className="text-niko-muted">USDT Transfer</dt>
+            <dt className="text-niko-muted">USDT transfer</dt>
             <dd className="font-mono font-semibold text-right text-foreground">
               {formatExactUsdt(intent.payUsdt)}
             </dd>
 
-            <dt className="text-niko-muted">Settlement Chain</dt>
+            <dt className="text-niko-muted">Settlement chain</dt>
             <dd className="font-semibold text-right text-foreground capitalize">
               {intent.chain}
             </dd>
 
-            <dt className="text-niko-muted">Rate Applied</dt>
+            <dt className="text-niko-muted">Rate applied</dt>
             <dd className="font-mono text-right text-foreground">
               1 USDT = {intent.rate.toLocaleString()} {intent.currency}
             </dd>
 
-            <dt className="text-niko-muted">
-              Network Fee ({intent.feePercent}%)
-            </dt>
-            <dd className="font-mono text-right text-red-400">
-              -{formatLocalAmount(intent.feeRwf, intent.currency)}
-            </dd>
-
-            <dt className="text-foreground font-semibold">
-              Recipient Receives
-            </dt>
-            <dd className="font-mono font-bold text-right text-niko-teal-bright">
-              {formatLocalAmount(intent.netRwf, intent.currency)}
-            </dd>
+            <FeeLines
+              currency={intent.currency}
+              feePercent={intent.feePercent}
+              feeLocal={intent.feeRwf}
+              netLocal={intent.netRwf}
+              pawapayPercent={intent.pawapayPercent}
+              pawapayFeeLocal={intent.pawapayFeeLocal}
+              mnoFeeLocal={intent.mnoFeeLocal}
+              nikopayFeeLocal={intent.nikopayFeeLocal}
+            />
           </dl>
         </div>
 
-        <div className="rounded-md border border-niko-border bg-niko-surface/40 p-5 space-y-4">
+        <div className="niko-panel p-5 space-y-4">
           <h3 className="text-xs font-bold text-niko-teal uppercase tracking-wider">
-            Transaction Identifiers
+            Transaction identifiers
           </h3>
           <div className="space-y-3 text-xs font-mono">
             <div>
               <p className="text-niko-muted mb-1 font-sans">
                 Payment Intent ID
               </p>
-              <p className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+              <p className="niko-field p-2.5 text-foreground break-all">
                 {intent.id}
               </p>
             </div>
@@ -531,7 +527,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
                 Treasury deposit address
               </p>
               <p
-                className="p-2.5 rounded-md bg-background border border-niko-border/60 text-niko-teal-bright break-all"
+                className="niko-field p-2.5 text-niko-teal-bright break-all"
                 title={intent.treasuryAddress}
               >
                 {intent.treasuryAddress}
@@ -542,7 +538,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
               <p className="text-niko-muted mb-1 font-sans">
                 Recipient Mobile Money
               </p>
-              <p className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground font-bold">
+              <p className="niko-field p-2.5 text-foreground font-bold">
                 {intent.msisdn}
               </p>
             </div>
@@ -552,7 +548,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
                 <p className="text-niko-muted mb-1 font-sans">
                   Payout confirmation email
                 </p>
-                <p className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground break-all">
+                <p className="niko-field p-2.5 text-foreground break-all">
                   {intent.notifyEmail}
                 </p>
               </div>
@@ -564,7 +560,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
                   On-chain Deposit Tx Hash
                 </p>
                 <p
-                  className="p-2.5 rounded-md bg-background border border-niko-border/60 text-niko-teal-bright break-all truncate hover:text-clip"
+                  className="niko-field p-2.5 text-niko-teal-bright break-all truncate hover:text-clip"
                   title={intent.depositTx}
                 >
                   {intent.depositTx}
@@ -577,7 +573,7 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
                 <p className="text-niko-muted mb-1 font-sans">
                   Payout reference
                 </p>
-                <p className="p-2.5 rounded-md bg-background border border-niko-border/60 text-foreground font-bold">
+                <p className="niko-field p-2.5 text-foreground font-bold">
                   {displayPayoutRef(intent)}
                 </p>
               </div>

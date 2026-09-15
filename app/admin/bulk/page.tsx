@@ -1,13 +1,13 @@
 import { AdminBulkPayouts } from "@/components/admin/bulk-payouts";
-import { PageHeader } from "@/components/shared/page-header";
+import { AdminPage } from "@/components/admin/admin-page";
 
 export default function AdminBulkPage() {
   return (
-    <PageHeader
+    <AdminPage
       title="Bulk payouts"
       description="Pay up to 20 recipients from the PawaPay wallet. Not a USDT checkout."
     >
       <AdminBulkPayouts />
-    </PageHeader>
+    </AdminPage>
   );
 }

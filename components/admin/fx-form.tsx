@@ -6,6 +6,11 @@ import {
   DEFAULT_FX_CURRENCY,
   latestRateForCurrency,
 } from "@/lib/fx-currencies";
+import { paginate } from "@/lib/paginate";
+import {
+  PaginationControls,
+  TABLE_PAGE_SIZE,
+} from "@/components/shared/pagination-controls";
 
 type RateRow = {
   currency: string;
@@ -124,7 +129,7 @@ export function AdminFxForm() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-1 rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md h-fit">
+      <div className="lg:col-span-1 niko-panel p-5 sm:p-6 h-fit">
         <h4 className="text-sm font-semibold text-niko-teal mb-4">Set rate</h4>
 
         <form onSubmit={handleSave} className="space-y-4">
@@ -139,7 +144,7 @@ export function AdminFxForm() {
               id="fx-currency"
               value={currency}
               onChange={(e) => handleCurrencyChange(e.target.value)}
-              className="w-full bg-background border border-niko-border text-foreground px-3 py-2 text-sm font-mono rounded-md outline-none focus:border-niko-teal/50 cursor-pointer"
+              className="niko-field w-full cursor-pointer rounded-md px-3 py-2 font-mono text-sm text-foreground outline-none"
             >
               {currencies.map((code) => (
                 <option key={code} value={code}>
@@ -162,7 +167,7 @@ export function AdminFxForm() {
             >
               USDT to {currency} rate
             </label>
-            <div className="relative rounded-md border border-niko-border bg-background px-3 py-2 focus-within:border-niko-teal/50 transition-colors">
+            <div className="niko-field relative rounded-md px-3 py-2">
               <input
                 id="fx-rate"
                 type="number"
@@ -186,7 +191,7 @@ export function AdminFxForm() {
             >
               Fee
             </label>
-            <div className="relative rounded-md border border-niko-border bg-background px-3 py-2 focus-within:border-niko-teal/50 transition-colors">
+            <div className="niko-field relative rounded-md px-3 py-2">
               <input
                 id="fx-fee"
                 type="number"
@@ -210,7 +215,7 @@ export function AdminFxForm() {
             >
               Minimum USDT
             </label>
-            <div className="relative rounded-md border border-niko-border bg-background px-3 py-2 focus-within:border-niko-teal/50 transition-colors">
+            <div className="niko-field relative rounded-md px-3 py-2">
               <input
                 id="fx-min"
                 type="number"
@@ -242,7 +247,7 @@ export function AdminFxForm() {
           <button
             type="submit"
             disabled={formState === "saving"}
-            className="w-full py-2.5 bg-niko-teal hover:bg-niko-teal-bright text-niko-navy font-bold rounded-md transition-all shadow-md flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="w-full py-2.5 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold rounded-md transition-all shadow-md flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {formState === "saving" ? (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-niko-navy border-t-transparent" />
@@ -262,7 +267,7 @@ export function AdminFxForm() {
           onSelect={handleCurrencyChange}
         />
 
-        <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
+        <div className="niko-panel p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h4 className="text-sm font-semibold text-niko-teal">History</h4>
             <select
@@ -300,7 +305,7 @@ function RateTable(props: {
   onSelect: (currency: string) => void;
 }) {
   return (
-    <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
+    <div className="niko-panel p-5 sm:p-6">
       <h4 className="text-sm font-semibold text-niko-teal mb-4">
         {props.title}
       </h4>
@@ -322,69 +327,84 @@ function RateTableBody(props: {
   onSelect: (currency: string) => void;
   showWhen?: boolean;
 }) {
+  const [page, setPage] = useState(1);
+  const paged = paginate(props.rows, page, TABLE_PAGE_SIZE);
+
   return (
-    <div className="overflow-x-auto rounded border border-niko-border/20 bg-background/50">
-      <table className="w-full text-left border-collapse text-xs">
-        <thead>
-          <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-niko-muted">
-            {props.showWhen ? (
-              <th className="px-4 py-3 font-medium">When</th>
-            ) : null}
-            <th className="px-4 py-3 font-medium">Currency</th>
-            <th className="px-4 py-3 font-medium text-right">Rate</th>
-            <th className="px-4 py-3 font-medium text-right">Fee</th>
-            <th className="px-4 py-3 font-medium text-right">Min</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-niko-border/10 font-mono text-foreground">
-          {props.rows.length === 0 ? (
-            <tr>
-              <td
-                colSpan={props.showWhen ? 5 : 4}
-                className="px-4 py-6 text-center text-niko-muted font-sans text-xs"
-              >
-                {props.empty}
-              </td>
+    <div className="overflow-hidden rounded border border-niko-border/20 bg-background/50">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[28rem] border-collapse text-left text-xs">
+          <thead>
+            <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-niko-muted">
+              {props.showWhen ? (
+                <th className="px-4 py-3 font-medium">When</th>
+              ) : null}
+              <th className="px-4 py-3 font-medium">Currency</th>
+              <th className="px-4 py-3 text-right font-medium">Rate</th>
+              <th className="px-4 py-3 text-right font-medium">Fee</th>
+              <th className="px-4 py-3 text-right font-medium">Min</th>
             </tr>
-          ) : (
-            props.rows.map((row) => {
-              const active = row.currency === props.selected;
-              return (
-                <tr
-                  key={`${row.currency}-${row.effectiveFrom}`}
-                  className={`transition-colors ${
-                    active ? "bg-niko-teal/10" : "hover:bg-niko-surface/10"
-                  }`}
+          </thead>
+          <tbody className="divide-y divide-niko-border/10 font-mono text-foreground">
+            {props.rows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={props.showWhen ? 5 : 4}
+                  className="px-4 py-6 text-center font-sans text-xs text-niko-muted"
                 >
-                  {props.showWhen ? (
-                    <td className="px-4 py-3 text-foreground/80 font-sans whitespace-nowrap">
-                      {formatDate(row.effectiveFrom)}
+                  {props.empty}
+                </td>
+              </tr>
+            ) : (
+              paged.items.map((row) => {
+                const active = row.currency === props.selected;
+                return (
+                  <tr
+                    key={`${row.currency}-${row.effectiveFrom}`}
+                    className={`transition-colors ${
+                      active ? "bg-niko-teal/10" : "hover:bg-niko-surface/10"
+                    }`}
+                  >
+                    {props.showWhen ? (
+                      <td className="whitespace-nowrap px-4 py-3 font-sans text-foreground/80">
+                        {formatDate(row.effectiveFrom)}
+                      </td>
+                    ) : null}
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => props.onSelect(row.currency)}
+                        className="cursor-pointer font-semibold text-foreground hover:text-niko-teal"
+                      >
+                        {row.currency}
+                      </button>
                     </td>
-                  ) : null}
-                  <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => props.onSelect(row.currency)}
-                      className="font-semibold text-foreground hover:text-niko-teal cursor-pointer"
-                    >
-                      {row.currency}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    {row.rate}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-niko-teal-bright">
-                    {row.feePercent}%
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums whitespace-nowrap">
-                    {row.minUsdt} USDT
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {row.rate}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-niko-teal-bright">
+                      {row.feePercent}%
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
+                      {row.minUsdt} USDT
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+      <div className="border-t border-niko-border/30 px-4 py-3">
+        <PaginationControls
+          page={paged.page}
+          totalPages={paged.totalPages}
+          total={paged.total}
+          label="rates"
+          onPrev={() => setPage((current) => Math.max(1, current - 1))}
+          onNext={() => setPage((current) => current + 1)}
+        />
+      </div>
     </div>
   );
 }

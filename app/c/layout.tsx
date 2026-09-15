@@ -20,7 +20,7 @@ export default function CheckoutLayout({
   return (
     <div className="flex min-h-full flex-col">
       <AppNav />
-      <main className="flex-1 pt-36 pb-12 px-4 sm:px-6">{children}</main>
+      <main className="flex-1 px-4 pt-36 pb-12 sm:px-6">{children}</main>
     </div>
   );
 }

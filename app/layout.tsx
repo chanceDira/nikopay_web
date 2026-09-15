@@ -1,23 +1,19 @@
 import type { Metadata } from "next";
-import { Afacad, Outfit } from "next/font/google";
+import { Outfit } from "next/font/google";
 import { resolvePublicSiteUrl } from "@/lib/site-url";
 import "./globals.css";
-
-const afacad = Afacad({
-  variable: "--font-afacad",
-  subsets: ["latin"],
-});
 
 const outfit = Outfit({
   variable: "--font-outfit",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const siteUrl = resolvePublicSiteUrl();
 
-const title = "NikoPay | Making Stablecoins Spendable";
+const title = "NikoPay | Making stablecoins spendable";
 const description =
-  "Convert USDT to local currency via mobile money across Africa. Instant, transparent, non-custodial.";
+  "Send stablecoins from your wallet. Recipients get local currency on mobile money across Africa. Transparent rates and fees before you confirm. USDT is live.";
 
 const brandImage = {
   url: "/og-image.png",
@@ -42,7 +38,6 @@ export const metadata: Metadata = {
     "stablecoin offramp",
     "crypto to mobile money",
     "Africa",
-    "Rwanda",
     "PawaPay",
   ],
   authors: [{ name: "NikoPay", url: siteUrl }],
@@ -93,7 +88,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${afacad.variable} ${outfit.variable} h-full antialiased`}
+      className={`${outfit.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

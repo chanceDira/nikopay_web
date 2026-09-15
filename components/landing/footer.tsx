@@ -4,27 +4,27 @@ import { CONTACT } from "@/lib/contact";
 
 const footerLinks = {
   product: [
-    { href: "/#how-it-works", label: "How it Works" },
+    { href: "/#how-it-works", label: "How it works" },
     { href: "/#features", label: "Features" },
     { href: "/#faq", label: "FAQ" },
+    { href: "/download", label: "Get the app" },
   ],
   legal: [
-    { href: "#", label: "Privacy Policy" },
-    { href: "#", label: "Terms of Service" },
+    { href: "/privacy", label: "Privacy policy" },
+    { href: "/terms", label: "Terms of use" },
   ],
 };
 
 export function Footer() {
   return (
-    <footer className="border-t border-niko-border bg-niko-navy/40">
+    <footer className="border-t border-niko-border bg-niko-band">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           <div className="sm:col-span-2 lg:col-span-2">
             <BrandLogo width={140} height={40} className="h-8" />
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-niko-muted">
-              Making digital assets spendable across Africa by connecting
-              stablecoins with everyday payment networks. Launching first in
-              Rwanda.
+              Send USDT, pay out local currency on mobile money in supported
+              African countries.
             </p>
           </div>
 
@@ -115,9 +115,7 @@ export function Footer() {
           <p className="text-sm text-niko-muted">
             &copy; {new Date().getFullYear()} NikoPay. All rights reserved.
           </p>
-          <p className="text-sm text-niko-muted">
-            Built for Rwanda &middot; Expanding across East Africa
-          </p>
+          <p className="text-sm text-niko-muted">Mobile money across Africa</p>
         </div>
       </div>
     </footer>

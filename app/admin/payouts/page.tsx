@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 import { AdminPayoutsTable } from "@/components/admin/payouts-table";
-import { PageHeader } from "@/components/shared/page-header";
+import { AdminPage } from "@/components/admin/admin-page";
 
 export default function AdminPayoutsPage() {
   return (
-    <PageHeader title="Payouts" description="PawaPay transfers">
+    <AdminPage title="Payouts" description="PawaPay transfers">
       <Suspense
         fallback={
           <p className="text-sm font-mono text-niko-muted">Loading...</p>
@@ -12,6 +12,6 @@ export default function AdminPayoutsPage() {
       >
         <AdminPayoutsTable />
       </Suspense>
-    </PageHeader>
+    </AdminPage>
   );
 }

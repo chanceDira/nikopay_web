@@ -1,14 +1,12 @@
-"use client";
-
 const features = [
   {
-    id: "non-custodial",
-    title: "Non-custodial",
+    id: "wallet",
+    title: "Your wallet",
     description:
-      "You retain custody of your assets until the moment you initiate a transaction. NikoPay is a bridge, not a wallet.",
+      "Connect the wallet you already use. USDT leaves it only when you confirm the send.",
     icon: (
       <svg
-        className="h-5 w-5"
+        className="h-6 w-6"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -18,7 +16,7 @@ const features = [
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={1.5}
-          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+          d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
         />
       </svg>
     ),
@@ -30,7 +28,7 @@ const features = [
       "See the exchange rate, service fee, and net payout before you confirm. No hidden spreads.",
     icon: (
       <svg
-        className="h-5 w-5"
+        className="h-6 w-6"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -40,19 +38,19 @@ const features = [
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={1.5}
-          d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
         />
       </svg>
     ),
   },
   {
-    id: "tracking",
-    title: "Real-time tracking",
+    id: "status",
+    title: "Status on every payment",
     description:
-      "Monitor every transaction from USDT sent to RWF delivered. Status updates at each stage.",
+      "Follow the deposit, then the mobile money payout, until it completes or fails.",
     icon: (
       <svg
-        className="h-5 w-5"
+        className="h-6 w-6"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -62,19 +60,19 @@ const features = [
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={1.5}
-          d="M13 10V3L4 14h7v7l9-11h-7z"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
         />
       </svg>
     ),
   },
   {
     id: "receipts",
-    title: "Downloadable receipts",
+    title: "Receipts",
     description:
-      "Access your full transaction history and download receipts for accounting or records.",
+      "Open a payment later and download a receipt for your records.",
     icon: (
       <svg
-        className="h-5 w-5"
+        className="h-6 w-6"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -90,13 +88,13 @@ const features = [
     ),
   },
   {
-    id: "security",
-    title: "Secure treasury",
+    id: "treasury",
+    title: "Treasury settlement",
     description:
-      "Enterprise-grade encryption, role-based access, and full audit trails protect every settlement.",
+      "Incoming USDT is matched on our treasury. Access is limited and payouts are logged.",
     icon: (
       <svg
-        className="h-5 w-5"
+        className="h-6 w-6"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -106,19 +104,19 @@ const features = [
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={1.5}
-          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+          d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"
         />
       </svg>
     ),
   },
   {
-    id: "rwanda",
-    title: "Rwanda-first",
+    id: "corridors",
+    title: "African corridors",
     description:
-      "Built for Rwanda's mobile money ecosystem. Expanding across East Africa next.",
+      "Pay out to mobile money in supported countries. Live networks and currencies are listed when you pay, on web and in the app.",
     icon: (
       <svg
-        className="h-5 w-5"
+        className="h-6 w-6"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -128,7 +126,7 @@ const features = [
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={1.5}
-          d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
         />
       </svg>
     ),
@@ -137,45 +135,36 @@ const features = [
 
 export function Features() {
   return (
-    <section
-      id="features"
-      className="bg-niko-surface/30 px-4 py-20 sm:px-6 sm:py-28"
-    >
+    <section id="features" className="px-4 py-20 sm:px-6 sm:py-28">
       <div className="mx-auto max-w-6xl">
         <div className="text-left">
           <p className="text-sm font-medium uppercase tracking-wider text-niko-teal">
             Features
           </p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            Built for trust and speed
+            What you get
           </h2>
           <p className="mt-4 max-w-2xl text-niko-muted leading-relaxed">
-            Everything you need to move value from blockchain to everyday
-            spending, without the complexity.
+            A quoted payout, a wallet send, and local currency on the
+            recipient&apos;s mobile money account.
           </p>
         </div>
 
-        {/* Dynamic Card Grid (3 columns on desktop, 2 on tablet, 1 on mobile) */}
         <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => (
             <div
               key={feature.id}
-              className="flex flex-col rounded-md border border-niko-border/40 bg-niko-surface p-6 hover:border-niko-teal/30 hover:shadow-[0_0_15px_rgba(0,212,200,0.04)] transition-all group"
+              className="niko-panel flex flex-col items-center px-6 py-8 text-center"
             >
-              {/* Icon container */}
-              <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-niko-teal/10 text-niko-teal group-hover:bg-niko-teal group-hover:text-niko-navy transition-all duration-300">
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-niko-teal/10 text-niko-teal">
                 {feature.icon}
               </div>
-
-              {/* Title & Description */}
-              <div className="space-y-2">
-                <h3 className="text-base font-bold text-foreground group-hover:text-niko-teal transition-colors">
-                  {feature.title}
-                </h3>
-                <p className="text-xs leading-relaxed text-niko-muted">
-                  {feature.description}
-                </p>
-              </div>
+              <h3 className="text-base font-semibold text-foreground">
+                {feature.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-niko-muted">
+                {feature.description}
+              </p>
             </div>
           ))}
         </div>

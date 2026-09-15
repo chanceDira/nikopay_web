@@ -4,11 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { AdminPawapaySnapshot } from "@/lib/admin-pawapay";
 import { formatRwf } from "@/lib/rates";
+import { paginate } from "@/lib/paginate";
+import {
+  PaginationControls,
+  TABLE_PAGE_SIZE,
+} from "@/components/shared/pagination-controls";
 
 export function AdminPawapayDashboard() {
   const [snapshot, setSnapshot] = useState<AdminPawapaySnapshot | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [payoutPage, setPayoutPage] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,10 +65,11 @@ export function AdminPawapayDashboard() {
   const paidDebit = snapshot.payouts
     .filter((row) => row.status === "successful")
     .reduce((sum, row) => sum + row.amountRwf, 0);
+  const pagedPayouts = paginate(snapshot.payouts, payoutPage, TABLE_PAGE_SIZE);
 
   return (
     <div className="space-y-8">
-      <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
+      <div className="niko-panel p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-mono uppercase tracking-widest text-niko-muted">
@@ -107,7 +114,7 @@ export function AdminPawapayDashboard() {
             {snapshot.balances.map((row) => (
               <div
                 key={`${row.country}-${row.currency}-${row.provider}`}
-                className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] p-5"
+                className="niko-panel p-5"
               >
                 <p className="text-xs font-mono uppercase tracking-widest text-niko-muted">
                   {row.country} · {row.currency}
@@ -340,70 +347,84 @@ export function AdminPawapayDashboard() {
             Paid out: {formatRwf(paidDebit)}
           </p>
         </div>
-        <div className="rounded-md border border-niko-border/40 overflow-hidden">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs text-niko-muted">
-                <th className="px-4 py-3 font-medium">Sent</th>
-                <th className="px-4 py-3 font-medium">Corridor</th>
-                <th className="px-4 py-3 font-medium text-right">Amount</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Payout id</th>
-                <th className="px-4 py-3 font-medium text-right">Intent</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-niko-border/10">
-              {snapshot.payouts.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-4 py-8 text-center text-niko-muted"
-                  >
-                    No PawaPay payouts yet.
-                  </td>
+        <div className="niko-panel overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[48rem] text-left text-sm">
+              <thead>
+                <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs text-niko-muted">
+                  <th className="px-4 py-3 font-medium">Sent</th>
+                  <th className="px-4 py-3 font-medium">Corridor</th>
+                  <th className="px-4 py-3 text-right font-medium">Amount</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Payout id</th>
+                  <th className="px-4 py-3 text-right font-medium">Intent</th>
                 </tr>
-              ) : (
-                snapshot.payouts.slice(0, 40).map((row) => (
-                  <tr key={row.id}>
-                    <td className="px-4 py-3 text-xs">
-                      {new Date(row.createdAt).toLocaleString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs">
-                      {row.country} · {row.provider ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 font-mono font-semibold text-right tabular-nums">
-                      {row.currency === "RWF"
-                        ? formatRwf(row.amountRwf)
-                        : `${row.amountRwf} ${row.currency}`}
-                    </td>
-                    <td className="px-4 py-3 text-xs">{row.status}</td>
-                    <td className="px-4 py-3 font-mono text-xs">
-                      {row.referenceId.slice(0, 8)}…
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {row.intentId ? (
-                        <Link
-                          href={`/admin/transactions/${row.intentId}`}
-                          className="font-mono text-xs text-niko-teal hover:underline"
-                        >
-                          open
-                        </Link>
-                      ) : (
-                        <span className="font-mono text-xs text-niko-muted">
-                          bulk
-                        </span>
-                      )}
+              </thead>
+              <tbody className="divide-y divide-niko-border/10">
+                {snapshot.payouts.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-4 py-8 text-center text-niko-muted"
+                    >
+                      No PawaPay payouts yet.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  pagedPayouts.items.map((row) => (
+                    <tr key={row.id}>
+                      <td className="px-4 py-3 text-xs">
+                        {new Date(row.createdAt).toLocaleString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs">
+                        {row.country} · {row.provider ?? "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums">
+                        {row.currency === "RWF"
+                          ? formatRwf(row.amountRwf)
+                          : `${row.amountRwf} ${row.currency}`}
+                      </td>
+                      <td className="px-4 py-3 text-xs">{row.status}</td>
+                      <td className="px-4 py-3 font-mono text-xs">
+                        {row.referenceId.slice(0, 8)}…
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {row.intentId ? (
+                          <Link
+                            href={`/admin/transactions/${row.intentId}`}
+                            className="font-mono text-xs text-niko-teal hover:underline"
+                          >
+                            open
+                          </Link>
+                        ) : (
+                          <span className="font-mono text-xs text-niko-muted">
+                            bulk
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="border-t border-niko-border/40 px-4 py-3">
+            <PaginationControls
+              page={pagedPayouts.page}
+              totalPages={pagedPayouts.totalPages}
+              total={pagedPayouts.total}
+              label="payouts"
+              onPrev={() =>
+                setPayoutPage((current) => Math.max(1, current - 1))
+              }
+              onNext={() => setPayoutPage((current) => current + 1)}
+            />
+          </div>
         </div>
       </section>
     </div>

@@ -8,6 +8,11 @@ import {
   type CorridorProviderOption,
 } from "@/lib/pay-api";
 import { formatLocalAmount } from "@/lib/rates";
+import { paginate } from "@/lib/paginate";
+import {
+  PaginationControls,
+  TABLE_PAGE_SIZE,
+} from "@/components/shared/pagination-controls";
 
 type CollectionView = {
   id: string;
@@ -26,7 +31,7 @@ type CollectionView = {
 const HEADERS = { "Content-Type": "application/json" };
 const FALLBACK_COUNTRY = "RWA";
 const FIELD_CLASS =
-  "mt-1 w-full rounded-md border border-niko-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-niko-teal/50";
+  "niko-field mt-1 w-full rounded-md px-3 py-2 font-mono text-sm outline-none";
 
 export function AdminCollections() {
   const [rows, setRows] = useState<CollectionView[]>([]);
@@ -41,6 +46,7 @@ export function AdminCollections() {
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [corridorLoading, setCorridorLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   const selectedCountry =
     countries.find((row) => row.country === country) ?? null;
@@ -168,10 +174,14 @@ export function AdminCollections() {
   };
 
   const busy = saving || corridorLoading;
+  const paged = paginate(rows, page, TABLE_PAGE_SIZE);
 
   return (
-    <div className="space-y-8">
-      <form onSubmit={handleCreate} className="grid gap-4 sm:grid-cols-2">
+    <div className="space-y-6">
+      <form
+        onSubmit={handleCreate}
+        className="niko-panel grid gap-4 p-5 sm:grid-cols-2 sm:p-6"
+      >
         <label className="text-sm">
           Label (optional)
           <input
@@ -269,57 +279,73 @@ export function AdminCollections() {
 
       {errorMsg ? <p className="text-sm text-red-400">{errorMsg}</p> : null}
 
-      <div className="rounded-md border border-niko-border/40 overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs font-mono uppercase tracking-wider text-niko-muted">
-              <th className="px-4 py-3">Created</th>
-              <th className="px-4 py-3">Corridor</th>
-              <th className="px-4 py-3">Payer</th>
-              <th className="px-4 py-3 text-right">Amount</th>
-              <th className="px-4 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-niko-border/10">
-            {rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-8 text-center text-niko-muted"
-                >
-                  No collections yet
-                </td>
+      <div className="niko-panel overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[48rem] text-left text-sm">
+            <thead>
+              <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs font-mono uppercase tracking-wider text-niko-muted">
+                <th className="px-4 py-3">Created</th>
+                <th className="px-4 py-3">Corridor</th>
+                <th className="px-4 py-3">Payer</th>
+                <th className="px-4 py-3 text-right">Amount</th>
+                <th className="px-4 py-3">Status</th>
               </tr>
-            ) : (
-              rows.map((row) => (
-                <tr key={row.id}>
-                  <td className="px-4 py-3 text-xs">
-                    {new Date(row.createdAt).toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs">
-                    {row.country} · {row.provider}
-                    {row.label ? (
-                      <span className="block text-niko-muted">{row.label}</span>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs">{row.msisdn}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-right">
-                    {formatLocalAmount(row.amount, row.currency)}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-niko-muted">
-                    {row.status}
-                    {row.providerReason ? ` · ${row.providerReason}` : ""}
+            </thead>
+            <tbody className="divide-y divide-niko-border/10">
+              {rows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-4 py-8 text-center text-niko-muted"
+                  >
+                    No collections yet
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                paged.items.map((row) => (
+                  <tr key={row.id}>
+                    <td className="px-4 py-3 text-xs">
+                      {new Date(row.createdAt).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs">
+                      {row.country} · {row.provider}
+                      {row.label ? (
+                        <span className="block text-niko-muted">
+                          {row.label}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs">
+                      {row.msisdn}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-right">
+                      {formatLocalAmount(row.amount, row.currency)}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-niko-muted">
+                      {row.status}
+                      {row.providerReason ? ` · ${row.providerReason}` : ""}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="border-t border-niko-border/40 px-4 py-3">
+          <PaginationControls
+            page={paged.page}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            label="collections"
+            onPrev={() => setPage((current) => Math.max(1, current - 1))}
+            onNext={() => setPage((current) => current + 1)}
+          />
+        </div>
       </div>
     </div>
   );
