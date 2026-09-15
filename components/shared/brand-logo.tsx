@@ -18,7 +18,7 @@ export function BrandLogo({
       className={`relative inline-block aspect-[790/316] shrink-0 ${className}`}
     >
       <Image
-        src="/nikopay-logo.png"
+        src="/NikoPay_logo.png"
         alt="NikoPay"
         width={width}
         height={height}
@@ -26,7 +26,7 @@ export function BrandLogo({
         priority={priority}
       />
       <Image
-        src="/nikopay-logo-light.png"
+        src="/NikoPay_light_logo.svg"
         alt=""
         width={width}
         height={height}
