@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import {
-  fetchCorridorCountries,
-  fetchCorridorProviders,
+  fetchRemittanceCorridorCountries,
+  fetchRemittanceCorridorProviders,
   type CorridorCountryOption,
   type CorridorProviderOption,
 } from "@/lib/pay-api";
@@ -126,7 +126,7 @@ export function AdminRemittances() {
   };
 
   const loadProviders = async (nextCountry: string, preferred?: string) => {
-    const result = await fetchCorridorProviders(nextCountry);
+    const result = await fetchRemittanceCorridorProviders(nextCountry);
     if (!result.ok) {
       applyProviders([]);
       return result.reason;
@@ -139,7 +139,7 @@ export function AdminRemittances() {
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       void loadRows();
-      const countriesResult = await fetchCorridorCountries();
+      const countriesResult = await fetchRemittanceCorridorCountries();
       if (cancelled) {
         return;
       }

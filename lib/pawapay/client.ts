@@ -1,5 +1,9 @@
 import { isUuid } from "@/lib/identity";
 import type { PawapayConfig } from "@/lib/pawapay/config";
+import {
+  listRemittanceCountries,
+  listRemittanceProviders,
+} from "@/lib/pawapay/corridor";
 import { asPawapayPayoutStatus } from "@/lib/pawapay/status";
 import type {
   AvailabilityCountry,
@@ -309,6 +313,8 @@ export async function getRemittance(
   return { ok: true, data: parsed };
 }
 
+export type PawapayOperationType = "PAYOUT" | "DEPOSIT" | "REMITTANCE";
+
 export async function getActiveConf(
   config: PawapayConfig,
   query: { country?: string; operationType?: string } = {},
@@ -320,6 +326,35 @@ export async function getActiveConf(
   });
 
   return getJson(config, path, "pawapay active-conf", fetchImpl);
+}
+
+export async function getActiveConfForOperation(
+  config: PawapayConfig,
+  operation: PawapayOperationType,
+  query: { country?: string } = {},
+  fetchImpl: FetchLike = fetch,
+): Promise<PawapayHttpResult<unknown>> {
+  const first = await getActiveConf(
+    config,
+    { country: query.country, operationType: operation },
+    fetchImpl,
+  );
+  if (!first.ok || operation !== "REMITTANCE") {
+    return first;
+  }
+
+  const hasCorridor = query.country
+    ? listRemittanceProviders(first.data, query.country).length > 0
+    : listRemittanceCountries(first.data).length > 0;
+  if (hasCorridor) {
+    return first;
+  }
+
+  return getActiveConf(
+    config,
+    { country: query.country, operationType: "PAYOUT" },
+    fetchImpl,
+  );
 }
 
 export async function predictProvider(

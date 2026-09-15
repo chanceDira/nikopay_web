@@ -10,7 +10,10 @@ import { asRecord } from "@/lib/http";
 import { toNumber } from "@/lib/numbers";
 import { formatPayoutAmount } from "@/lib/pawapay/amount";
 import { assertPayoutProviderOpen } from "@/lib/pawapay/availability-gate";
-import { getActiveConf, initiateRemittance } from "@/lib/pawapay/client";
+import {
+  getActiveConfForOperation,
+  initiateRemittance,
+} from "@/lib/pawapay/client";
 import { getPawapayConfig } from "@/lib/pawapay/config";
 import {
   listRemittanceCountries,
@@ -350,6 +353,29 @@ export async function applyRemittanceUpdate(input: {
     ok: true,
     applied: updated.applied,
     status: updated.applied ? input.status : loaded.row.status,
+  };
+}
+
+export async function listOpenRemittances(
+  limit: number,
+): Promise<
+  { ok: true; remittanceIds: string[] } | { ok: false; reason: string }
+> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("remittances")
+    .select("remittance_id")
+    .in("status", ["pending", "enqueued"])
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    return { ok: false, reason: "unable to load remittances" };
+  }
+
+  return {
+    ok: true,
+    remittanceIds: (data ?? []).map((row) => row.remittance_id),
   };
 }
 
@@ -839,7 +865,7 @@ async function loadRemittanceCorridor(
     return { ok: false, reason: configured.reason, status: 503 };
   }
 
-  const conf = await getActiveConf(configured.config);
+  const conf = await getActiveConfForOperation(configured.config, "REMITTANCE");
   if (!conf.ok) {
     return { ok: false, reason: conf.reason, status: 503 };
   }

@@ -417,6 +417,29 @@ export async function fetchDepositCorridorProviders(
   );
 }
 
+export async function fetchRemittanceCorridorCountries(
+  signal?: AbortSignal,
+): Promise<ApiResult<{ countries: CorridorCountryOption[] }>> {
+  return requestJson(
+    "/api/corridors?operation=REMITTANCE",
+    isCorridorCountriesPayload,
+    { signal },
+  );
+}
+
+export async function fetchRemittanceCorridorProviders(
+  country: string,
+  signal?: AbortSignal,
+): Promise<
+  ApiResult<{ country: string; providers: CorridorProviderOption[] }>
+> {
+  return requestJson(
+    `/api/corridors?operation=REMITTANCE&country=${encodeURIComponent(country)}`,
+    isCorridorProvidersPayload,
+    { signal },
+  );
+}
+
 export type RecipientNamePreview = {
   status: "found" | "not_found" | "unavailable";
   displayName: string | null;

@@ -237,6 +237,27 @@ export async function applyDepositCollectionUpdate(input: {
   };
 }
 
+export async function listOpenCollections(
+  limit: number,
+): Promise<{ ok: true; depositIds: string[] } | { ok: false; reason: string }> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("deposit_collections")
+    .select("deposit_id")
+    .in("status", ["pending", "enqueued"])
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    return { ok: false, reason: "unable to load collections" };
+  }
+
+  return {
+    ok: true,
+    depositIds: (data ?? []).map((row) => row.deposit_id),
+  };
+}
+
 export function mapDepositCallbackStatus(
   value: unknown,
 ): DepositCollectionRow["status"] | null {

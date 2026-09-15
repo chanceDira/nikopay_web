@@ -21,9 +21,18 @@ export function flattenDepositAvailability(
   return flattenOperationAvailability(countries, "DEPOSIT");
 }
 
+export function flattenRemittanceAvailability(
+  countries: AvailabilityCountry[],
+): PayoutAvailabilityRow[] {
+  const remittance = flattenOperationAvailability(countries, "REMITTANCE");
+  return remittance.length > 0
+    ? remittance
+    : flattenPayoutAvailability(countries);
+}
+
 function flattenOperationAvailability(
   countries: AvailabilityCountry[],
-  operation: "PAYOUT" | "DEPOSIT",
+  operation: "PAYOUT" | "DEPOSIT" | "REMITTANCE",
 ): PayoutAvailabilityRow[] {
   const rows: PayoutAvailabilityRow[] = [];
   for (const country of countries) {
