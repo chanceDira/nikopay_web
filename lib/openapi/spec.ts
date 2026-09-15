@@ -177,6 +177,8 @@ const quoteSchema: JsonSchema = {
     grossLocal: { type: "number" },
     chain: chainSchema,
     expiresAt: { type: "string", format: "date-time" },
+    available: { type: "boolean" },
+    availableReason: { type: "string" },
   },
 };
 
@@ -277,12 +279,24 @@ function buildPaths(): Record<string, OpenApiPathItem> {
                 minLength: 3,
                 maxLength: 3,
                 description:
-                  "ISO-3 corridor country. Rwanda (RWA) is the first live corridor. When set, the quote is refused if the PawaPay wallet cannot cover the payout.",
+                  "ISO-3 corridor country. Used for fee schedule and optional float check.",
               },
               provider: {
                 type: "string",
                 description:
                   "PawaPay provider code. Rwanda MTN uses a 60 RWF mobile money fee.",
+              },
+              checkFunds: {
+                type: "boolean",
+                default: true,
+                description:
+                  "When false, skip PawaPay float check. Used for FX probes. Intent create still requires funds.",
+              },
+              preview: {
+                type: "boolean",
+                default: false,
+                description:
+                  "Homepage calculator only. Allows up to 100000 USDT for display. Payments stay on the lower ceiling.",
               },
             },
           }),

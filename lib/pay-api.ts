@@ -75,7 +75,10 @@ export function isQuotePayload(value: unknown): value is Quote {
     typeof quote.nikopayFeeLocal === "number" &&
     Number.isFinite(quote.nikopayFeeLocal) &&
     typeof quote.grossLocal === "number" &&
-    Number.isFinite(quote.grossLocal)
+    Number.isFinite(quote.grossLocal) &&
+    (quote.available === undefined || typeof quote.available === "boolean") &&
+    (quote.availableReason === undefined ||
+      typeof quote.availableReason === "string")
   );
 }
 
@@ -250,6 +253,9 @@ export async function requestQuote(input: {
   provider?: string;
   usdtAmount?: number;
   netLocal?: number;
+  checkFunds?: boolean;
+  /** Homepage hero only. Allows up to PREVIEW_MAX_USDT. */
+  preview?: boolean;
   signal?: AbortSignal;
 }): Promise<ApiResult<Quote>> {
   const body: Record<string, unknown> = {
@@ -267,6 +273,12 @@ export async function requestQuote(input: {
   }
   if (input.provider) {
     body.provider = input.provider;
+  }
+  if (input.checkFunds === false) {
+    body.checkFunds = false;
+  }
+  if (input.preview) {
+    body.preview = true;
   }
 
   return requestJson("/api/quotes", isQuotePayload, {

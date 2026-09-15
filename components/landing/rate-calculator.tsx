@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { DEFAULT_FX_CURRENCY } from "@/lib/fx-currencies";
 import { isAborted, listQuoteCurrencies, requestQuote } from "@/lib/pay-api";
-import { MAX_USDT } from "@/lib/quote-limits";
+import { PREVIEW_MAX_USDT } from "@/lib/quote-limits";
 import { formatLocalAmount, formatUsdt } from "@/lib/rates";
 import { defaultCountryForCurrency } from "@/lib/settlement/corridor-fee-defaults";
 
@@ -23,6 +23,7 @@ type State = {
   payout: Payout | null;
   loading: boolean;
   error: string | null;
+  fundsNote: string | null;
 };
 
 export function RateCalculator() {
@@ -34,6 +35,7 @@ export function RateCalculator() {
     payout: null,
     loading: false,
     error: null,
+    fundsNote: null,
   });
 
   const parsed = parseFloat(amount) || 0;
@@ -66,20 +68,31 @@ export function RateCalculator() {
 
     const timer = window.setTimeout(async () => {
       if (parsed <= 0) {
-        setState({ payout: null, loading: false, error: null });
-        return;
-      }
-
-      if (sendingUsdt && parsed > MAX_USDT) {
         setState({
           payout: null,
           loading: false,
-          error: `Enter up to ${MAX_USDT.toLocaleString()} USDT.`,
+          error: null,
+          fundsNote: null,
         });
         return;
       }
 
-      setState((prev) => ({ ...prev, loading: true, error: null }));
+      if (sendingUsdt && parsed > PREVIEW_MAX_USDT) {
+        setState({
+          payout: null,
+          loading: false,
+          error: `Enter up to ${PREVIEW_MAX_USDT.toLocaleString()} USDT.`,
+          fundsNote: null,
+        });
+        return;
+      }
+
+      setState((prev) => ({
+        ...prev,
+        loading: true,
+        error: null,
+        fundsNote: null,
+      }));
 
       const country = defaultCountryForCurrency(currency);
       const result = sendingUsdt
@@ -88,6 +101,7 @@ export function RateCalculator() {
             chain: "base",
             currency,
             country,
+            preview: true,
             signal: controller.signal,
           })
         : await requestQuote({
@@ -95,6 +109,7 @@ export function RateCalculator() {
             chain: "base",
             currency,
             country,
+            preview: true,
             signal: controller.signal,
           });
       if (cancelled || controller.signal.aborted || isAborted(result)) {
@@ -102,9 +117,24 @@ export function RateCalculator() {
       }
 
       if (result.ok) {
+        if (result.data.usdtAmount > PREVIEW_MAX_USDT) {
+          setState({
+            payout: null,
+            loading: false,
+            error: `Enter up to ${PREVIEW_MAX_USDT.toLocaleString()} USDT.`,
+            fundsNote: null,
+          });
+          return;
+        }
+
         setState({
           loading: false,
           error: null,
+          fundsNote:
+            result.data.available === false
+              ? (result.data.availableReason ??
+                "This amount is currently unavailable.")
+              : null,
           payout: {
             usdtAmount: result.data.usdtAmount,
             netLocal: result.data.netLocal,
@@ -119,6 +149,7 @@ export function RateCalculator() {
         payout: null,
         loading: false,
         error: result.reason || "Unable to get a quote for that amount.",
+        fundsNote: null,
       });
     }, delay);
 
@@ -129,13 +160,18 @@ export function RateCalculator() {
     };
   }, [parsed, sendingUsdt, currency]);
 
-  const { payout, loading, error } = state;
+  const { payout, loading, error, fundsNote } = state;
 
   const changeCurrency = (next: string) => {
     if (next === currency) {
       return;
     }
-    setState({ payout: null, error: null, loading: true });
+    setState({
+      payout: null,
+      error: null,
+      fundsNote: null,
+      loading: true,
+    });
     setCurrency(next);
   };
 
@@ -176,7 +212,7 @@ export function RateCalculator() {
           id="calc-amount"
           type="number"
           min={1}
-          max={sendingUsdt ? MAX_USDT : undefined}
+          max={sendingUsdt ? PREVIEW_MAX_USDT : undefined}
           step={sendingUsdt ? "0.01" : "1"}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
@@ -258,6 +294,12 @@ export function RateCalculator() {
         </p>
       ) : null}
 
+      {fundsNote ? (
+        <p className="mt-3 text-sm text-red-500" role="status">
+          {fundsNote}
+        </p>
+      ) : null}
+
       {payout ? (
         <p className="mt-3 font-mono text-sm text-niko-muted">
           1 USDT = {payout.rate.toLocaleString()} {payout.currency}
@@ -265,8 +307,8 @@ export function RateCalculator() {
       ) : null}
 
       <p className="mt-4 text-xs leading-relaxed text-niko-muted">
-        Preview only. Quotes up to {MAX_USDT.toLocaleString()} USDT. Rate locks
-        when you confirm.
+        Preview only. Try amounts up to {PREVIEW_MAX_USDT.toLocaleString()}{" "}
+        USDT. Paying on the app is capped lower. Rate locks when you confirm.
       </p>
     </div>
   );

@@ -73,21 +73,30 @@ export async function POST(request: Request) {
     currency: body.currency ?? "RWF",
     country: country.ok ? country.country : undefined,
     provider: provider.ok ? provider.provider : undefined,
+    preview: body.preview === true,
   });
   if (!result.ok) {
     return jsonError(result.reason, result.status);
   }
 
-  if (country.ok) {
+  const checkFunds = body.checkFunds !== false;
+  if (country.ok && checkFunds) {
     const funds = await assertPayoutFunds({
       country: country.country,
       currency: result.quote.currency,
       amount: result.quote.netRwf,
     });
     if (!funds.ok) {
-      return jsonError(funds.reason, funds.status);
+      return jsonData(
+        {
+          ...result.quote,
+          available: false,
+          availableReason: funds.reason,
+        },
+        201,
+      );
     }
   }
 
-  return jsonData(result.quote, 201);
+  return jsonData({ ...result.quote, available: true }, 201);
 }

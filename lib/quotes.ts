@@ -2,7 +2,7 @@ import { loadCorridorFees } from "@/lib/corridor-fees";
 import { normalizeCorridorCurrency } from "@/lib/corridor";
 import { DEFAULT_FX_CURRENCY } from "@/lib/fx-currencies";
 import { toNumber } from "@/lib/numbers";
-import { MAX_USDT } from "@/lib/quote-limits";
+import { MAX_USDT, PREVIEW_MAX_USDT } from "@/lib/quote-limits";
 import { defaultCountryForCurrency } from "@/lib/settlement/corridor-fee-defaults";
 import { createQuote, localDecimalsForCurrency } from "@/lib/settlement/quote";
 import {
@@ -101,6 +101,8 @@ export async function createServerQuote(input: {
   provider?: unknown;
   usdtAmount?: number;
   netLocal?: number;
+  /** Homepage calculator only. Raises the USDT ceiling; payments stay on MAX_USDT. */
+  preview?: boolean;
 }): Promise<
   { ok: true; quote: Quote } | { ok: false; reason: string; status: number }
 > {
@@ -129,10 +131,11 @@ export async function createServerQuote(input: {
     };
   }
 
-  if (input.usdtAmount != null && input.usdtAmount > MAX_USDT) {
+  const maxUsdt = input.preview ? PREVIEW_MAX_USDT : MAX_USDT;
+  if (input.usdtAmount != null && input.usdtAmount > maxUsdt) {
     return {
       ok: false,
-      reason: `usdt amount must be at most ${MAX_USDT}`,
+      reason: `usdt amount must be at most ${maxUsdt}`,
       status: 400,
     };
   }
@@ -179,10 +182,10 @@ export async function createServerQuote(input: {
     return { ok: false, reason: quoted.reason, status: 400 };
   }
 
-  if (quoted.quote.usdtAmount > MAX_USDT) {
+  if (quoted.quote.usdtAmount > maxUsdt) {
     return {
       ok: false,
-      reason: `usdt amount must be at most ${MAX_USDT}`,
+      reason: `usdt amount must be at most ${maxUsdt}`,
       status: 400,
     };
   }

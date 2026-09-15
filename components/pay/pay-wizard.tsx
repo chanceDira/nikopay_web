@@ -133,6 +133,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     fx,
     status: quoteStatus,
     error: quoteError,
+    fundsError,
   } = useLiveQuote({
     chain,
     currency: corridorCurrency,
@@ -360,6 +361,24 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
 
   const previewRate = fx?.rate ?? displayRate;
   const previewFees = liveFees;
+  const fundsBlocked = Boolean(fundsError);
+  const quoteNotice = amountError || fundsError || quoteError;
+  const rwfInputValue =
+    amountEntry === "local"
+      ? amountRwf
+      : quote
+        ? String(Math.round(quote.netLocal))
+        : estimatedNetRwf > 0
+          ? String(Math.round(estimatedNetRwf))
+          : "";
+  const usdtInputValue =
+    amountEntry === "usdt"
+      ? amountUsdt
+      : quote
+        ? formatUsdtInput(quote.usdtAmount)
+        : estimatedUsdt > 0
+          ? formatUsdtInput(estimatedUsdt)
+          : "";
 
   const handleRwfChange = (value: string) => {
     if (!/^\d*$/.test(value)) {
@@ -660,8 +679,8 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
       if (!validateAmount()) {
         return;
       }
-      if (!amountQuoteReady) {
-        setAmountError(quoteError || "Waiting for a live quote");
+      if (!amountQuoteReady || fundsBlocked) {
+        setAmountError(quoteNotice || "Waiting for a live quote");
         return;
       }
       setLiveIntent(null);
@@ -695,9 +714,9 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
             return;
           }
         }
-        if (!amountQuoteReady) {
+        if (!amountQuoteReady || fundsBlocked) {
           setCorridorError(
-            quoteError || "Waiting for a live NikoPay rate for this corridor",
+            quoteNotice || "Waiting for a live NikoPay rate for this corridor",
           );
           return;
         }
@@ -769,8 +788,8 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     }
     setIntentError("");
 
-    if (!quote || !amountQuoteReady) {
-      setIntentError(quoteError || "Waiting for a live quote");
+    if (!quote || !amountQuoteReady || fundsBlocked) {
+      setIntentError(quoteNotice || "Waiting for a live quote");
       return;
     }
 
@@ -834,8 +853,8 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   };
 
   const handleCreatePayoutLink = async () => {
-    if (creatingLink || !quote || !amountQuoteReady) {
-      setIntentError(quoteError || "Waiting for a live quote");
+    if (creatingLink || !quote || !amountQuoteReady || fundsBlocked) {
+      setIntentError(quoteNotice || "Waiting for a live quote");
       return;
     }
 
@@ -1075,7 +1094,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
                       id="rwf-input"
                       type="text"
                       inputMode="numeric"
-                      value={amountRwf}
+                      value={rwfInputValue}
                       onChange={(e) => handleRwfChange(e.target.value)}
                       onBlur={validateAmount}
                       className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40"
@@ -1109,7 +1128,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
                       id="usdt-input"
                       type="text"
                       inputMode="decimal"
-                      value={amountUsdt}
+                      value={usdtInputValue}
                       onChange={(e) => handleUsdtChange(e.target.value)}
                       onBlur={validateAmount}
                       className="w-full bg-transparent font-mono text-xl font-bold text-foreground outline-none placeholder:text-niko-muted/40"
@@ -1123,17 +1142,14 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
               </>
             )}
 
-            {amountError && (
-              <p className="text-xs text-red-400">{amountError}</p>
-            )}
-            {quoteError && !amountError && (
-              <p className="text-xs text-red-400">{quoteError}</p>
-            )}
+            {quoteNotice ? (
+              <p className="text-xs text-red-400">{quoteNotice}</p>
+            ) : null}
             <p className="text-xs text-niko-muted flex items-center gap-1.5">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-niko-teal" />
               {hasLiveRate
                 ? `1 USDT = ${displayRate.toLocaleString()} ${displayCurrency}`
-                : quoteError || "Waiting for a live rate"}
+                : "Waiting for a live rate"}
               {hasLiveRate && quote ? " (live rate)" : ""}
               {quoteStatus === "loading" && hasAmount ? " · updating" : ""}
             </p>
@@ -1188,7 +1204,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           <button
             type="button"
             onClick={handleNextStep}
-            disabled={!amountQuoteReady || !chainPayReady}
+            disabled={!amountQuoteReady || !chainPayReady || fundsBlocked}
             className="w-full py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold rounded-md transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {quoteStatus === "loading" && hasAmount
@@ -1450,7 +1466,8 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
               disabled={
                 selectedCorridor?.payoutStatus === "CLOSED" ||
                 selectedCorridor?.rateConfigured === false ||
-                !amountQuoteReady
+                !amountQuoteReady ||
+                fundsBlocked
               }
               className="w-2/3 py-4 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent font-bold rounded-md transition-all shadow-[0_0_20px_rgba(0,212,200,0.15)] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -1499,7 +1516,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
             <button
               type="button"
               onClick={() => void handleCreatePayoutLink()}
-              disabled={creatingLink || !amountQuoteReady}
+              disabled={creatingLink || !amountQuoteReady || fundsBlocked}
               className="niko-panel p-5 text-left transition-colors hover:border-niko-teal/40 disabled:opacity-50"
             >
               <p className="text-sm font-semibold text-foreground">
@@ -1779,10 +1796,18 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
             </button>
             <button
               type="button"
-              disabled={!walletConnected || creatingIntent || !amountQuoteReady}
+              disabled={
+                !walletConnected ||
+                creatingIntent ||
+                !amountQuoteReady ||
+                fundsBlocked
+              }
               onClick={handleConfirmTransfer}
               className={`w-2/3 py-4 font-bold rounded-md transition-all flex justify-center items-center gap-2 text-sm ${
-                walletConnected && !creatingIntent && amountQuoteReady
+                walletConnected &&
+                !creatingIntent &&
+                amountQuoteReady &&
+                !fundsBlocked
                   ? "bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent cursor-pointer"
                   : "bg-niko-surface border border-niko-border text-niko-muted opacity-50 cursor-not-allowed"
               }`}

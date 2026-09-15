@@ -31,6 +31,7 @@ type Snapshot = {
   fx: LiveFx | null;
   status: QuoteStatus;
   error: string;
+  fundsError: string;
 };
 
 function feesFromQuote(quote: Quote): CorridorFees {
@@ -77,6 +78,7 @@ export function useLiveQuote(input: {
     fx: null,
     status: "idle",
     error: "",
+    fundsError: "",
   });
 
   useEffect(() => {
@@ -90,6 +92,7 @@ export function useLiveQuote(input: {
         currency,
         country: country || undefined,
         provider: provider || undefined,
+        checkFunds: false,
         signal: controller.signal,
       });
       if (controller.signal.aborted || isAborted(probe)) {
@@ -104,6 +107,7 @@ export function useLiveQuote(input: {
           fx: null,
           status: "error",
           error: probe.reason,
+          fundsError: "",
         });
         return;
       }
@@ -124,6 +128,7 @@ export function useLiveQuote(input: {
           fx: liveFx,
           status: "ready",
           error: "",
+          fundsError: "",
         });
         return;
       }
@@ -159,6 +164,7 @@ export function useLiveQuote(input: {
           fx: liveFx,
           status: "error",
           error: quoted.reason,
+          fundsError: "",
         });
         return;
       }
@@ -172,9 +178,16 @@ export function useLiveQuote(input: {
           fx: liveFx,
           status: "error",
           error: `Amount must be at most ${MAX_USDT.toLocaleString()} USDT.`,
+          fundsError: "",
         });
         return;
       }
+
+      const fundsError =
+        quoted.data.available === false
+          ? (quoted.data.availableReason ??
+            "This amount is currently unavailable.")
+          : "";
 
       setSnapshot({
         key: requestKey,
@@ -189,6 +202,7 @@ export function useLiveQuote(input: {
         },
         status: "ready",
         error: "",
+        fundsError,
       });
     }, delay);
 
@@ -219,5 +233,6 @@ export function useLiveQuote(input: {
     fx,
     status: stale ? "loading" : snapshot.status,
     error: stale ? "" : snapshot.error,
+    fundsError: stale ? "" : snapshot.fundsError,
   };
 }

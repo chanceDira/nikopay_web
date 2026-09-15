@@ -51,6 +51,8 @@ export type Quote = {
   netRwf: number;
   chain: ChainId;
   expiresAt: string;
+  available?: boolean;
+  availableReason?: string;
 } & QuoteFeeBreakdown;
 
 export type IntentPayout = {
