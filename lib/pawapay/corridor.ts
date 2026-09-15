@@ -26,6 +26,7 @@ export type CorridorCountryOption = {
   country: string;
   prefix: string;
   displayName: string;
+  currency?: string;
 };
 
 type CorridorOperation = "PAYOUT" | "DEPOSIT" | "REMITTANCE";
@@ -70,6 +71,7 @@ function listOperationCountries(
       country,
       prefix,
       displayName: countryDisplayName(row?.displayName) ?? country,
+      currency: providers[0]?.currency,
     });
   }
 
