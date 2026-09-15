@@ -319,15 +319,23 @@ export function createQuote(input: CreateQuoteInput): CreateQuoteResult {
     };
   }
 
-  if (stack.usdtAmount < fx.minUsdt) {
+  // Recipient-first path: required USDT can rise after local fee rounding.
+  // USDT-first path: user send amount already passed the min check above.
+  // Do not re-check the recomputed USDT (integer local rounding can dip just under min).
+  if (input.netLocal != null && stack.usdtAmount < fx.minUsdt) {
     return {
       ok: false,
       reason: `usdt amount must be at least ${fx.minUsdt}`,
     };
   }
 
+  const quote = quoteFromStack(input, stack, expiresAt);
+  if (input.usdtAmount != null) {
+    quote.usdtAmount = Number(input.usdtAmount.toFixed(6));
+  }
+
   return {
     ok: true,
-    quote: quoteFromStack(input, stack, expiresAt),
+    quote,
   };
 }

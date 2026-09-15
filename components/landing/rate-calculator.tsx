@@ -9,6 +9,36 @@ import { defaultCountryForCurrency } from "@/lib/settlement/corridor-fee-default
 
 const DEBOUNCE_MS = 400;
 const DEFAULT_AMOUNT = "100";
+const PREVIEW_MAX_DIGITS = 6;
+
+function clampHeroAmount(raw: string, sendingUsdt: boolean): string {
+  const cleaned = sendingUsdt
+    ? raw.replace(/[^\d.]/g, "")
+    : raw.replace(/\D/g, "");
+  if (!cleaned) {
+    return "";
+  }
+
+  if (!sendingUsdt) {
+    return cleaned.slice(0, PREVIEW_MAX_DIGITS);
+  }
+
+  const dot = cleaned.indexOf(".");
+  const whole = dot >= 0 ? cleaned.slice(0, dot) : cleaned;
+  const fraction = dot >= 0 ? cleaned.slice(dot + 1).replace(/\./g, "") : "";
+  const clippedWhole = whole.slice(0, PREVIEW_MAX_DIGITS);
+  const clippedFraction = fraction.slice(0, 6);
+  const next = dot >= 0 ? `${clippedWhole}.${clippedFraction}` : clippedWhole;
+  if (!next || next === ".") {
+    return next === "." ? "0." : "";
+  }
+
+  const value = Number(next);
+  if (Number.isFinite(value) && value > PREVIEW_MAX_USDT) {
+    return String(PREVIEW_MAX_USDT);
+  }
+  return next;
+}
 
 type Direction = "usdt-to-local" | "local-to-usdt";
 
@@ -177,11 +207,11 @@ export function RateCalculator() {
 
   const swapDirection = () => {
     if (payout) {
-      setAmount(
-        sendingUsdt
-          ? String(Math.round(payout.netLocal))
-          : String(payout.usdtAmount),
-      );
+      const nextSendingUsdt = !sendingUsdt;
+      const nextAmount = sendingUsdt
+        ? String(Math.round(payout.netLocal))
+        : String(payout.usdtAmount);
+      setAmount(clampHeroAmount(nextAmount, nextSendingUsdt));
     }
     setDirection((current) =>
       current === "usdt-to-local" ? "local-to-usdt" : "usdt-to-local",
@@ -210,12 +240,12 @@ export function RateCalculator() {
       <div className="niko-field mt-2 flex items-center gap-3 rounded-md px-4 py-3">
         <input
           id="calc-amount"
-          type="number"
-          min={1}
-          max={sendingUsdt ? PREVIEW_MAX_USDT : undefined}
-          step={sendingUsdt ? "0.01" : "1"}
+          type="text"
+          inputMode={sendingUsdt ? "decimal" : "numeric"}
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) =>
+            setAmount(clampHeroAmount(e.target.value, sendingUsdt))
+          }
           className="w-full bg-transparent font-mono text-xl font-semibold text-foreground outline-none"
         />
         {sendingUsdt ? (
