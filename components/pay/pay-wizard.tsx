@@ -174,10 +174,6 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
-    if (step !== 2) {
-      return;
-    }
-
     let cancelled = false;
     const load = async () => {
       setCorridorLoading(true);
@@ -246,8 +242,8 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once when entering step 2
-  }, [step]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load corridors once on mount for amount + details
+  }, []);
 
   const selectedCountry =
     corridorCountries.find((row) => row.country === corridorCountry) ?? null;
@@ -608,6 +604,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
 
   const handleCountryChange = (country: string) => {
     setCorridorError("");
+    setAmountError("");
     setVerifiedMsisdn("");
     setFormattedMsisdn("");
     clearRecipientName();
@@ -634,6 +631,130 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
       await applyPredictedProvider(parsed.msisdn);
     })();
   };
+
+  const countrySelectDisabled =
+    Boolean(checkout?.country) ||
+    corridorLoading ||
+    corridorCountries.length === 0;
+
+  const providerSelectDisabled =
+    Boolean(checkout?.provider) ||
+    corridorLoading ||
+    corridorProviders.length === 0;
+
+  const handleProviderChange = (provider: string) => {
+    const next = corridorProviders.find((row) => row.provider === provider);
+    setCorridorProvider(provider);
+    setAmountError("");
+    setCorridorError("");
+    if (!next) {
+      return;
+    }
+    setCorridorCountry(next.country);
+    setCorridorCurrency(next.currency);
+    if (verifiedMsisdn) {
+      void loadRecipientName({
+        msisdn: verifiedMsisdn,
+        country: next.country,
+        provider: next.provider,
+      });
+    }
+  };
+
+  const countryField = (id: string, hint: string) => (
+    <div>
+      <label htmlFor={id} className="text-sm font-medium text-foreground">
+        Destination country
+      </label>
+      <p className="mt-1 text-xs text-niko-muted">{hint}</p>
+      <select
+        id={id}
+        value={corridorCountry}
+        disabled={countrySelectDisabled}
+        onChange={(e) => handleCountryChange(e.target.value)}
+        className="mt-3 w-full rounded-md border border-niko-border bg-background px-4 py-3.5 text-sm text-foreground outline-none focus:border-niko-teal/50 disabled:opacity-50"
+      >
+        {corridorCountries.length === 0 ? (
+          <option value="">
+            {corridorLoading
+              ? "Loading countries…"
+              : corridorError || "No countries available"}
+          </option>
+        ) : (
+          corridorCountries.map((row) => (
+            <option key={row.country} value={row.country}>
+              {row.displayName}
+              {row.currency ? ` · ${row.currency}` : ""} (+{row.prefix})
+            </option>
+          ))
+        )}
+      </select>
+    </div>
+  );
+
+  const providerField = (id: string) => (
+    <div>
+      <label htmlFor={id} className="text-sm font-medium text-foreground">
+        Mobile money provider
+      </label>
+      <p className="mt-1 text-xs text-niko-muted">{providerHint}</p>
+      <select
+        id={id}
+        value={corridorProvider}
+        disabled={providerSelectDisabled}
+        onChange={(e) => handleProviderChange(e.target.value)}
+        className="mt-3 w-full rounded-md border border-niko-border bg-background px-4 py-3.5 font-mono text-sm text-foreground outline-none focus:border-niko-teal/50 disabled:opacity-50"
+      >
+        {corridorProviders.length === 0 ? (
+          <option value="">
+            {corridorLoading ? "Loading providers…" : "No providers available"}
+          </option>
+        ) : (
+          corridorProviders.map((row) => (
+            <option
+              key={`${row.country}:${row.provider}:${row.currency}`}
+              value={row.provider}
+            >
+              {row.displayName} · {row.currency}
+              {row.payoutStatus && row.payoutStatus !== "OPERATIONAL"
+                ? ` (${row.payoutStatus.toLowerCase()})`
+                : ""}
+            </option>
+          ))
+        )}
+      </select>
+      {selectedCorridor ? (
+        <p className="mt-2 text-[11px] font-mono text-niko-muted">
+          Min {selectedCorridor.minAmount} · max {selectedCorridor.maxAmount}{" "}
+          {selectedCorridor.currency}
+          {selectedCorridor.decimalsInAmount === "NONE"
+            ? " · whole amounts only"
+            : ""}
+        </p>
+      ) : null}
+      {selectedCorridor?.payoutStatus === "DELAYED" ? (
+        <p className="mt-2 text-xs text-[var(--niko-warning-text)]">
+          This provider is delayed. The payout can still go through, but SMS may
+          take longer than usual.
+        </p>
+      ) : null}
+      {selectedCorridor?.payoutStatus === "CLOSED" ? (
+        <p className="mt-2 text-xs text-red-400">
+          This provider is closed right now. Pick another or try later.
+        </p>
+      ) : null}
+      {selectedCorridor?.rateConfigured === false ? (
+        <p className="mt-2 text-xs text-red-400">
+          No live NikoPay rate for {selectedCorridor.currency} yet. You can
+          review the number, but payouts for this corridor are paused until ops
+          sets a rate.
+        </p>
+      ) : null}
+      {corridorError ? (
+        <p className="mt-2 text-xs text-red-400">{corridorError}</p>
+      ) : null}
+    </div>
+  );
 
   const handleMsisdnChange = (value: string) => {
     setVerifiedMsisdn("");
@@ -680,6 +801,12 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
 
   const handleNextStep = () => {
     if (step === 1) {
+      if (!corridorCountry || !corridorProvider || !corridorCurrency) {
+        setCorridorError(
+          "Select a destination country and mobile money provider",
+        );
+        return;
+      }
       if (!validateAmount()) {
         return;
       }
@@ -1051,6 +1178,12 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
             </div>
           </div>
 
+          {countryField(
+            "country-select-amount",
+            "Choose where the recipient gets paid. Currency and fees follow this country.",
+          )}
+          {providerField("provider-select-amount")}
+
           <div className="space-y-4">
             {amountLocked && checkout ? (
               <>
@@ -1233,35 +1366,10 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
 
       {step === 2 && (
         <div className="space-y-6">
-          <div>
-            <label
-              htmlFor="country-select"
-              className="text-sm font-medium text-foreground"
-            >
-              Destination country
-            </label>
-            <p className="text-xs text-niko-muted mt-1">
-              Used for the local dial code. Entering an international number can
-              switch this automatically.
-            </p>
-            <select
-              id="country-select"
-              value={corridorCountry}
-              disabled={corridorLoading || corridorCountries.length === 0}
-              onChange={(e) => handleCountryChange(e.target.value)}
-              className="mt-3 w-full rounded-md border border-niko-border bg-background px-4 py-3.5 text-sm text-foreground outline-none focus:border-niko-teal/50 disabled:opacity-50"
-            >
-              {corridorCountries.length === 0 ? (
-                <option value="">No countries available</option>
-              ) : (
-                corridorCountries.map((row) => (
-                  <option key={row.country} value={row.country}>
-                    {row.displayName} (+{row.prefix})
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
+          {countryField(
+            "country-select",
+            "Used for the local dial code. Entering an international number can switch this automatically.",
+          )}
 
           <div>
             <label
@@ -1325,82 +1433,10 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="provider-select"
-              className="text-sm font-medium text-foreground"
-            >
-              Mobile money provider
-            </label>
-            <p className="text-xs text-niko-muted mt-1">{providerHint}</p>
-            <select
-              id="provider-select"
-              value={corridorProvider}
-              disabled={corridorLoading || corridorProviders.length === 0}
-              onChange={(e) => {
-                const next = corridorProviders.find(
-                  (row) => row.provider === e.target.value,
-                );
-                setCorridorProvider(e.target.value);
-                if (next) {
-                  setCorridorCountry(next.country);
-                  setCorridorCurrency(next.currency);
-                  if (verifiedMsisdn) {
-                    void loadRecipientName({
-                      msisdn: verifiedMsisdn,
-                      country: next.country,
-                      provider: next.provider,
-                    });
-                  }
-                }
-                setCorridorError("");
-              }}
-              className="mt-3 w-full rounded-md border border-niko-border bg-background px-4 py-3.5 font-mono text-sm text-foreground outline-none focus:border-niko-teal/50 disabled:opacity-50"
-            >
-              {corridorProviders.length === 0 ? (
-                <option value="">No providers available</option>
-              ) : (
-                corridorProviders.map((row) => (
-                  <option key={row.provider} value={row.provider}>
-                    {row.displayName} ({row.provider})
-                  </option>
-                ))
-              )}
-            </select>
-            {selectedCorridor ? (
-              <p className="mt-2 text-[11px] font-mono text-niko-muted">
-                Min {selectedCorridor.minAmount} · max{" "}
-                {selectedCorridor.maxAmount} {selectedCorridor.currency}
-                {selectedCorridor.decimalsInAmount === "NONE"
-                  ? " · whole amounts only"
-                  : ""}
-              </p>
-            ) : null}
-            {selectedCorridor?.payoutStatus === "DELAYED" ? (
-              <p className="mt-2 text-xs text-[var(--niko-warning-text)]">
-                This provider is delayed. The payout can still go through, but
-                SMS may take longer than usual.
-              </p>
-            ) : null}
-            {selectedCorridor?.payoutStatus === "CLOSED" ? (
-              <p className="mt-2 text-xs text-red-400">
-                This provider is closed right now. Pick another or try later.
-              </p>
-            ) : null}
-            {selectedCorridor?.rateConfigured === false ? (
-              <p className="mt-2 text-xs text-red-400">
-                No live NikoPay rate for {selectedCorridor.currency} yet. You
-                can review the number, but payouts for this corridor are paused
-                until ops sets a rate.
-              </p>
-            ) : null}
-            {quoteError && selectedCorridor?.rateConfigured !== false ? (
-              <p className="mt-2 text-xs text-red-400">{quoteError}</p>
-            ) : null}
-            {corridorError ? (
-              <p className="mt-2 text-xs text-red-400">{corridorError}</p>
-            ) : null}
-          </div>
+          {providerField("provider-select")}
+          {quoteError && selectedCorridor?.rateConfigured !== false ? (
+            <p className="text-xs text-red-400">{quoteError}</p>
+          ) : null}
 
           <div>
             <label

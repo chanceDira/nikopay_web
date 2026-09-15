@@ -415,6 +415,7 @@ export type CorridorCountryOption = {
   country: string;
   prefix: string;
   displayName: string;
+  currency?: string;
 };
 
 export type CorridorPredictResult = {
@@ -450,7 +451,8 @@ function isCorridorCountryOption(
   return (
     typeof row.country === "string" &&
     typeof row.prefix === "string" &&
-    typeof row.displayName === "string"
+    typeof row.displayName === "string" &&
+    (row.currency === undefined || typeof row.currency === "string")
   );
 }
 
