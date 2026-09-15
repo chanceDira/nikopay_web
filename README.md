@@ -60,7 +60,7 @@ Copy from `.env.example`. Only `NEXT_PUBLIC_*` may reach the browser.
 | `NEXT_PUBLIC_SITE_URL`                                                    | Client + server | Local: `http://localhost:3000`. **Production: `https://nikopay.to`.** Used for OG/canonical; emails/sitemap skip localhost and `*.vercel.app` |
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`                                    | Client          | Reown / WalletConnect Cloud project id                                                                                                        |
 | `SETTLEMENT_INGEST_SECRET`                                                | Server          | Bearer token for deposit ingest and job routes                                                                                                |
-| `ADMIN_SESSION_SECRET`                                                    | Server          | Optional. Falls back to Supabase secret if unset                                                                                              |
+| `ADMIN_SESSION_SECRET`                                                    | Server          | Required for `/admin`. Dedicated HMAC secret. Do not reuse the Supabase service role key                                                      |
 | `CHAIN_RPC_URL_BASE`                                                      | Server          | Prefer Alchemy/QuickNode. Public Sepolia RPC is rate-limited on Vercel                                                                        |
 | `CHAIN_RPC_URL_POLYGON`                                                   | Server          | Optional until Polygon token is ready                                                                                                         |
 

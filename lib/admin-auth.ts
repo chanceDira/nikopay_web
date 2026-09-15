@@ -17,21 +17,8 @@ export function getAdminHmacSecret(): string | null {
 export function resolveAdminHmacSecret(
   env: Record<string, string | undefined>,
 ): string | null {
-  const keys = [
-    "ADMIN_SESSION_SECRET",
-    "SETTLEMENT_INGEST_SECRET",
-    "SUPABASE_SECRET_KEY",
-    "SUPABASE_SERVICE_ROLE_KEY",
-  ] as const;
-
-  for (const key of keys) {
-    const value = env[key]?.trim();
-    if (value) {
-      return value;
-    }
-  }
-
-  return null;
+  const value = env.ADMIN_SESSION_SECRET?.trim();
+  return value || null;
 }
 
 export function buildAdminChallenge(secret: string, now = Date.now()): string {
