@@ -146,7 +146,9 @@ export function usdtForTargetLocal(
   fees: CorridorFees,
   decimals: AmountDecimals = "TWO_PLACES",
 ): number | null {
-  return stackFromNetLocal(localPayout, rate, fees, decimals)?.usdtAmount ?? null;
+  return (
+    stackFromNetLocal(localPayout, rate, fees, decimals)?.usdtAmount ?? null
+  );
 }
 
 /** @deprecated Q-only inverse. Prefer usdtForTargetLocal with CorridorFees. */

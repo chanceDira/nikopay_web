@@ -15,13 +15,8 @@ type Direction = "usdt-to-local" | "local-to-usdt";
 type Payout = {
   usdtAmount: number;
   netLocal: number;
-  feeLocal: number;
   rate: number;
-  feePercent: number;
   currency: string;
-  pawapayFeeLocal: number;
-  mnoFeeLocal: number;
-  nikopayFeeLocal: number;
 };
 
 type State = {
@@ -113,13 +108,8 @@ export function RateCalculator() {
           payout: {
             usdtAmount: result.data.usdtAmount,
             netLocal: result.data.netLocal,
-            feeLocal: result.data.feeLocal,
             rate: result.data.rate,
-            feePercent: result.data.feePercent,
             currency: result.data.currency,
-            pawapayFeeLocal: result.data.pawapayFeeLocal,
-            mnoFeeLocal: result.data.mnoFeeLocal,
-            nikopayFeeLocal: result.data.nikopayFeeLocal,
           },
         });
         return;
@@ -268,44 +258,11 @@ export function RateCalculator() {
         </p>
       ) : null}
 
-      {payout && (
-        <dl className="mt-4 space-y-2 border-t border-niko-border pt-4 text-sm">
-          <div className="flex justify-between">
-            <dt className="text-niko-muted">Exchange rate</dt>
-            <dd className="font-mono text-foreground">
-              1 USDT = {payout.rate.toLocaleString()} {payout.currency}
-            </dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className="text-niko-muted">PawaPay fee</dt>
-            <dd className="font-mono text-foreground">
-              {formatLocalAmount(payout.pawapayFeeLocal, payout.currency)}
-            </dd>
-          </div>
-          {payout.mnoFeeLocal > 0 ? (
-            <div className="flex justify-between">
-              <dt className="text-niko-muted">Mobile money fee</dt>
-              <dd className="font-mono text-foreground">
-                {formatLocalAmount(payout.mnoFeeLocal, payout.currency)}
-              </dd>
-            </div>
-          ) : null}
-          <div className="flex justify-between">
-            <dt className="text-niko-muted">
-              NikoPay fee ({payout.feePercent}%)
-            </dt>
-            <dd className="font-mono text-foreground">
-              {formatLocalAmount(payout.nikopayFeeLocal, payout.currency)}
-            </dd>
-          </div>
-          <div className="flex justify-between font-medium">
-            <dt className="text-foreground">You send</dt>
-            <dd className="font-mono text-foreground">
-              {formatUsdt(payout.usdtAmount)}
-            </dd>
-          </div>
-        </dl>
-      )}
+      {payout ? (
+        <p className="mt-3 font-mono text-sm text-niko-muted">
+          1 USDT = {payout.rate.toLocaleString()} {payout.currency}
+        </p>
+      ) : null}
 
       <p className="mt-4 text-xs leading-relaxed text-niko-muted">
         Preview only. Quotes up to {MAX_USDT.toLocaleString()} USDT. Rate locks
