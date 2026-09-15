@@ -584,13 +584,12 @@ function buildPaths(): Record<string, OpenApiPathItem> {
         security: [],
         responses: {
           "200": {
-            description: "Challenge message and admin wallets",
+            description: "Challenge message",
             ...jsonContent(
               dataEnvelope({
                 type: "object",
                 properties: {
                   message: { type: "string" },
-                  admins: { type: "array", items: { type: "string" } },
                 },
               }),
             ),

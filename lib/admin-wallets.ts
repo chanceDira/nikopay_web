@@ -39,9 +39,9 @@ function includeTreasuryFromEnv(
   env: Record<string, string | undefined>,
 ): boolean {
   const raw = env[ADMIN_INCLUDE_TREASURY_ENV]?.trim().toLowerCase();
-  if (!raw) return true;
-  if (raw === "false" || raw === "0" || raw === "no") return false;
-  return true;
+  if (!raw) return false;
+  if (raw === "true" || raw === "1" || raw === "yes") return true;
+  return false;
 }
 
 export async function loadAdminWalletAddresses(

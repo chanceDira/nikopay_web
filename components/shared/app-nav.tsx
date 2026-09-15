@@ -12,7 +12,6 @@ const links = [
   { href: "/app/pay", label: "New payment" },
   { href: "/app/links", label: "Links" },
   { href: "/app/payments", label: "History" },
-  { href: "/app/profile", label: "Profile" },
 ] as const;
 
 const SwitchWalletIcon = () => (

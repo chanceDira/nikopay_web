@@ -7,7 +7,6 @@ const items = [
   { name: "WalletConnect", src: "/logos/walletconnect-logo.png" },
   { name: "Mobile money", src: "/logos/mtn-logo.jpg", rounded: true },
   { name: "USDT", src: "/logos/usdt-logo.png" },
-  { name: "USDC", src: "/logos/usdc-logo.webp" },
 ] as const;
 
 type TrustItem = {

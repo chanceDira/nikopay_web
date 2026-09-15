@@ -13,20 +13,24 @@ export function getMomoLookupConfig():
   const apiUser = process.env.MOMO_API_USER?.trim();
   const apiKey = process.env.MOMO_API_KEY?.trim();
 
-  if (!subscriptionKey || !apiUser || !apiKey) {
+  const baseUrl = process.env.MOMO_BASE_URL?.trim();
+  const targetEnvironment = process.env.MOMO_TARGET_ENVIRONMENT?.trim();
+
+  if (
+    !subscriptionKey ||
+    !apiUser ||
+    !apiKey ||
+    !baseUrl ||
+    !targetEnvironment
+  ) {
     return { ok: false, reason: "momo name lookup is not configured" };
   }
-
-  const baseUrl = (
-    process.env.MOMO_BASE_URL?.trim() || "https://sandbox.momodeveloper.mtn.com"
-  ).replace(/\/$/, "");
 
   return {
     ok: true,
     config: {
-      baseUrl,
-      targetEnvironment:
-        process.env.MOMO_TARGET_ENVIRONMENT?.trim() || "sandbox",
+      baseUrl: baseUrl.replace(/\/$/, ""),
+      targetEnvironment,
       subscriptionKey,
       apiUser,
       apiKey,

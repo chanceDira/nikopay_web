@@ -13,7 +13,7 @@ const siteUrl = resolvePublicSiteUrl();
 
 const title = "NikoPay | Making stablecoins spendable";
 const description =
-  "Send stablecoins from your wallet. Recipients get local currency on mobile money across Africa. Transparent rates and fees before you confirm. USDT is live.";
+  "Send stablecoins from your wallet. Recipients get local currency on mobile money across Africa. Transparent rates and fees before you confirm.";
 
 const brandImage = {
   url: "/og-image.png",

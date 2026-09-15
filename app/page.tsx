@@ -31,8 +31,9 @@ export default function Home() {
               Get notes by email
             </h2>
             <p className="mt-4 text-niko-muted leading-relaxed">
-              Payments are live on the web. The mobile app is rolling out. Leave
-              an email for corridor notes and when store listings open.
+              Payments are available on the web (testnet). The mobile app is
+              rolling out. Leave an email for corridor notes and when store
+              listings open.
             </p>
             <div className="mt-8">
               <WaitlistForm />

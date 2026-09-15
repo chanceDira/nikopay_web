@@ -11,6 +11,10 @@ const SESSION_TTL_SEC = 12 * 60 * 60;
 const MESSAGE_HEAD = "NikoPay wallet\nSign this to manage your payout links.\n";
 
 export function getWalletHmacSecret(): string | null {
+  const dedicated = process.env.WALLET_SESSION_SECRET?.trim();
+  if (dedicated) {
+    return dedicated;
+  }
   return getAdminHmacSecret();
 }
 

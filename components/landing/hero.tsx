@@ -24,7 +24,7 @@ export function Hero() {
             currency on mobile money. Rate and fee are shown before you confirm.
           </p>
           <p className="mt-3 text-sm text-niko-muted">
-            USDT is live. USDC is next.
+            USDT on Base Sepolia (testnet). Mainnet and USDC are next.
           </p>
 
           <div className="mt-8 flex flex-col gap-6 sm:items-start">
