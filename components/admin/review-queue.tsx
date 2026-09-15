@@ -75,44 +75,54 @@ export function AdminReviewQueue() {
         </div>
       ) : null}
 
-      <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
-        <h4 className="text-sm font-semibold text-niko-teal mb-4">
-          Review queue ({loading ? "..." : queue.length})
-        </h4>
-
-        {loading && queue.length === 0 ? (
-          <div className="flex justify-center py-10">
-            <span className="h-5 w-5 animate-spin rounded-full border-2 border-niko-teal border-t-transparent" />
-          </div>
-        ) : queue.length === 0 ? (
-          <p className="text-sm text-niko-muted py-8 text-center font-sans">
-            Nothing to review.
+      <div className="niko-panel overflow-hidden">
+        <div className="border-b border-niko-border/40 bg-niko-well/40 px-5 py-4 sm:px-6">
+          <h2 className="text-sm font-semibold text-foreground">
+            Review queue
+            <span className="ml-2 font-mono text-niko-teal">
+              ({loading ? "…" : queue.length})
+            </span>
+          </h2>
+          <p className="mt-1 text-xs text-niko-muted">
+            Intents waiting on deposit or payout action
           </p>
-        ) : (
-          <div className="space-y-4">
-            {paged.items.map((item) => (
-              <ReviewCard
-                key={item.id}
-                item={item}
-                confirmTarget={reviewConfirmTarget(item.status)}
-                failTarget={
-                  canTransition(item.status, "failed", "admin")
-                    ? "failed"
-                    : null
-                }
-                onConfirm={(status) => void patchStatus(item, status)}
-                onFail={() => void patchStatus(item, "failed")}
+        </div>
+
+        <div className="p-4 sm:p-5">
+          {loading && queue.length === 0 ? (
+            <div className="flex justify-center py-10">
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-niko-teal border-t-transparent" />
+            </div>
+          ) : queue.length === 0 ? (
+            <p className="py-8 text-center text-sm text-niko-muted">
+              Nothing to review.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {paged.items.map((item) => (
+                <ReviewCard
+                  key={item.id}
+                  item={item}
+                  confirmTarget={reviewConfirmTarget(item.status)}
+                  failTarget={
+                    canTransition(item.status, "failed", "admin")
+                      ? "failed"
+                      : null
+                  }
+                  onConfirm={(status) => void patchStatus(item, status)}
+                  onFail={() => void patchStatus(item, "failed")}
+                />
+              ))}
+              <PaginationBar
+                page={paged.page}
+                totalPages={paged.totalPages}
+                total={paged.total}
+                onPrev={() => setPage(paged.page - 1)}
+                onNext={() => setPage(paged.page + 1)}
               />
-            ))}
-            <PaginationBar
-              page={paged.page}
-              totalPages={paged.totalPages}
-              total={paged.total}
-              onPrev={() => setPage(paged.page - 1)}
-              onNext={() => setPage(paged.page + 1)}
-            />
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -140,37 +150,37 @@ function ReviewCard(props: {
     confirmTarget === "credited" ? "Retry payout" : "Mark paid";
 
   return (
-    <div className="p-5 rounded-md border border-niko-border/20 bg-background/50 flex flex-col gap-4 hover:border-niko-border/40 transition-all">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="font-mono font-bold text-sm text-niko-teal">
+    <div className="flex flex-col gap-4 rounded-md border border-niko-border/40 bg-niko-well/30 p-4 transition-colors hover:border-niko-border/70 sm:p-5">
+      <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="font-mono text-sm font-semibold text-niko-teal">
             <Link
               href={`/admin/transactions/${item.id}`}
               className="hover:underline"
             >
-              {item.id}
+              {item.id.slice(0, 8)}…
             </Link>
           </span>
           <span
-            className={`px-2 py-0.5 rounded text-[10px] font-mono capitalize border ${
+            className={`rounded-md border px-2 py-0.5 font-mono text-[10px] capitalize ${
               item.status === "manual_review"
-                ? "bg-[var(--niko-warning-bg)] text-[var(--niko-warning-text)] border-[var(--niko-warning-border)]"
-                : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                ? "border-[var(--niko-warning-border)] bg-[var(--niko-warning-bg)] text-[var(--niko-warning-text)]"
+                : "border-amber-500/25 bg-amber-500/10 text-amber-700"
             }`}
           >
             {item.status.replace(/_/g, " ")}
           </span>
-          <span className="text-xs text-niko-muted font-mono capitalize">
+          <span className="font-mono text-xs capitalize text-niko-muted">
             {item.chain}
           </span>
         </div>
 
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex w-full gap-2 md:w-auto">
           {confirmTarget ? (
             <button
               type="button"
               onClick={() => props.onConfirm(confirmTarget)}
-              className="flex-1 md:flex-none px-4 py-2 bg-niko-teal hover:bg-niko-teal-bright text-niko-on-accent text-xs font-bold rounded-md transition-all cursor-pointer"
+              className="flex-1 cursor-pointer rounded-md bg-niko-teal px-4 py-2 text-xs font-semibold text-niko-on-accent transition-colors hover:bg-niko-teal-bright md:flex-none"
             >
               {confirmLabel}
             </button>

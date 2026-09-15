@@ -1,13 +1,13 @@
 import { AdminCheckoutLinks } from "@/components/admin/checkout-links";
-import { PageHeader } from "@/components/shared/page-header";
+import { AdminPage } from "@/components/admin/admin-page";
 
 export default function AdminCheckoutsPage() {
   return (
-    <PageHeader
+    <AdminPage
       title="Pay links"
       description="Single-use checkout links. Payer still sends USDT."
     >
       <AdminCheckoutLinks />
-    </PageHeader>
+    </AdminPage>
   );
 }

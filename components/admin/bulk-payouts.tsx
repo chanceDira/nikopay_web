@@ -35,7 +35,7 @@ const HEADERS = { "Content-Type": "application/json" };
 const FALLBACK_COUNTRY = "RWA";
 const MAX_ITEMS = 20;
 const FIELD_CLASS =
-  "mt-1 w-full rounded-md border border-niko-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-niko-teal/50";
+  "niko-field mt-1 w-full rounded-md px-3 py-2 font-mono text-sm outline-none";
 
 function emptyRow(): DraftRow {
   return { msisdn: "", amount: "" };
@@ -201,8 +201,11 @@ export function AdminBulkPayouts() {
   const busy = saving || corridorLoading;
 
   return (
-    <div className="space-y-8">
-      <form onSubmit={handleCreate} className="grid gap-4 sm:grid-cols-2">
+    <div className="space-y-6">
+      <form
+        onSubmit={handleCreate}
+        className="niko-panel grid gap-4 p-5 sm:grid-cols-2 sm:p-6"
+      >
         <label className="text-sm">
           Label (optional)
           <input
@@ -298,7 +301,7 @@ export function AdminBulkPayouts() {
           <button
             type="submit"
             disabled={busy || !country || !provider}
-            className="rounded-md border border-niko-teal/40 bg-niko-teal/10 px-4 py-2 text-sm text-niko-teal hover:border-niko-teal disabled:opacity-50"
+            className="w-full rounded-md bg-niko-teal px-4 py-2.5 text-sm font-semibold text-niko-on-accent transition-colors hover:bg-niko-teal-bright disabled:opacity-50 sm:w-auto"
           >
             {saving ? "Submitting..." : "Submit bulk"}
           </button>
@@ -307,23 +310,22 @@ export function AdminBulkPayouts() {
 
       {errorMsg ? <p className="text-sm text-red-400">{errorMsg}</p> : null}
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {batches.length === 0 ? (
-          <p className="text-sm text-niko-muted">No bulk payouts yet</p>
+          <div className="niko-panel px-5 py-10 text-center text-sm text-niko-muted">
+            No bulk payouts yet
+          </div>
         ) : (
           batches.map((batch) => {
             const pending = batch.items.some((row) => row.status === "pending");
             return (
-              <div
-                key={batch.id}
-                className="rounded-md border border-niko-border/40 p-4 space-y-3"
-              >
+              <div key={batch.id} className="niko-panel space-y-3 p-4 sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-mono text-xs text-niko-muted">
                       {batch.country} · {batch.currency} · {batch.provider}
                     </p>
-                    <p className="text-sm mt-1">
+                    <p className="mt-1 text-sm">
                       {batch.label ?? "Untitled batch"} · {batch.itemCount}{" "}
                       items ·{" "}
                       {formatLocalAmount(batch.totalAmount, batch.currency)}

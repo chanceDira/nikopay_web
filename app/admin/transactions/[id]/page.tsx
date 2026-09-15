@@ -6,7 +6,7 @@ import { displayPayoutRef } from "@/lib/payout-ref";
 import type { PaymentIntent, PaymentStatus } from "@/lib/settlement/types";
 import { canTransition } from "@/lib/settlement/transitions";
 import { formatExactUsdt, formatLocalAmount } from "@/lib/rates";
-import { PageHeader } from "@/components/shared/page-header";
+import { AdminPage } from "@/components/admin/admin-page";
 import { SettlementTimingFields } from "@/components/shared/settlement-timing";
 import type { PayoutLookupData } from "@/lib/pawapay/types";
 import type { AdminAuditEntry } from "@/lib/admin-audit";
@@ -185,26 +185,26 @@ export default function AdminTransactionDetailPage({ params }: Props) {
 
   if (pageState === "loading") {
     return (
-      <PageHeader title="Transaction inspector" description={id}>
+      <AdminPage title="Transaction inspector" description={id}>
         <div className="flex justify-center py-20">
           <span className="h-6 w-6 animate-spin rounded-full border-2 border-niko-teal border-t-transparent" />
         </div>
-      </PageHeader>
+      </AdminPage>
     );
   }
 
   if (pageState === "not_found" || !intent) {
     return (
-      <PageHeader title="Transaction inspector" description={id}>
+      <AdminPage title="Transaction inspector" description={id}>
         <div className="text-center py-12 text-sm text-niko-muted font-sans bg-[var(--niko-card-bg)] border border-niko-border/40 rounded-md">
           Transaction not found.
         </div>
-      </PageHeader>
+      </AdminPage>
     );
   }
 
   return (
-    <PageHeader title="Transaction inspector" description={`Details for ${id}`}>
+    <AdminPage title="Transaction inspector" description={`Details for ${id}`}>
       <div className="space-y-6">
         <Link
           href="/admin/transactions"
@@ -548,6 +548,6 @@ export default function AdminTransactionDetailPage({ params }: Props) {
           </div>
         </div>
       </div>
-    </PageHeader>
+    </AdminPage>
   );
 }

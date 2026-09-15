@@ -62,7 +62,7 @@ export function AdminPawapayDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
+      <div className="niko-panel p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-mono uppercase tracking-widest text-niko-muted">
@@ -107,7 +107,7 @@ export function AdminPawapayDashboard() {
             {snapshot.balances.map((row) => (
               <div
                 key={`${row.country}-${row.currency}-${row.provider}`}
-                className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] p-5"
+                className="niko-panel p-5"
               >
                 <p className="text-xs font-mono uppercase tracking-widest text-niko-muted">
                   {row.country} · {row.currency}

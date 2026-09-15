@@ -122,7 +122,7 @@ function PawapayPoolCard(props: {
         </div>
       ) : null}
 
-      <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
+      <div className="niko-panel p-5 sm:p-6">
         <p className="text-xs text-niko-muted">PawaPay disbursement balance</p>
         <h3 className="text-2xl font-bold font-mono text-foreground mt-3">
           {props.pawapay.ok
@@ -163,7 +163,7 @@ function VaultCard(props: {
   const { wallet, receivedUsdt } = props;
 
   return (
-    <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
+    <div className="niko-panel p-5 sm:p-6">
       <p className="text-xs text-niko-muted">{CHAIN_LABEL[wallet.chain]}</p>
       <h3 className="text-2xl font-bold font-mono text-foreground mt-3">
         {wallet.usdtBalance === null

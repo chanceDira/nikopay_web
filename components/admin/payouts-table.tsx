@@ -86,11 +86,11 @@ export function AdminPayoutsTable() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {actionError ? (
         <p className="text-xs text-red-400">{actionError}</p>
       ) : null}
-      <div className="flex flex-wrap gap-2">
+      <div className="niko-panel flex flex-wrap gap-2 p-3">
         {FILTERS.map((filter) => {
           const href =
             filter.value === "all"
@@ -102,10 +102,10 @@ export function AdminPayoutsTable() {
               key={filter.value}
               href={href}
               onClick={() => setPage(1)}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+              className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors ${
                 active
-                  ? "bg-niko-teal/15 text-niko-teal border-niko-teal/30"
-                  : "border-niko-border text-niko-muted hover:border-niko-teal/40"
+                  ? "border-niko-teal/35 bg-niko-teal/15 text-niko-teal"
+                  : "border-transparent text-niko-muted hover:border-niko-border hover:bg-niko-well/60 hover:text-foreground"
               }`}
             >
               {filter.label}
@@ -114,22 +114,28 @@ export function AdminPayoutsTable() {
         })}
       </div>
 
-      <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] overflow-hidden">
+      <div className="niko-panel overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs text-niko-muted">
-                <th className="px-6 py-4 font-medium">Sent</th>
-                <th className="px-6 py-4 font-medium">Corridor</th>
-                <th className="px-6 py-4 font-medium">Recipient</th>
-                <th className="px-6 py-4 font-medium text-right">Amount</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium">Provider ref</th>
-                <th className="px-6 py-4 font-medium">Reason</th>
-                <th className="px-6 py-4 font-medium text-right">Intent</th>
+              <tr className="border-b border-niko-border/40 bg-niko-well/50 text-xs text-niko-muted">
+                <th className="px-5 py-3.5 font-medium sm:px-6">Sent</th>
+                <th className="px-5 py-3.5 font-medium sm:px-6">Corridor</th>
+                <th className="px-5 py-3.5 font-medium sm:px-6">Recipient</th>
+                <th className="px-5 py-3.5 text-right font-medium sm:px-6">
+                  Amount
+                </th>
+                <th className="px-5 py-3.5 font-medium sm:px-6">Status</th>
+                <th className="px-5 py-3.5 font-medium sm:px-6">
+                  Provider ref
+                </th>
+                <th className="px-5 py-3.5 font-medium sm:px-6">Reason</th>
+                <th className="px-5 py-3.5 text-right font-medium sm:px-6">
+                  Intent
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-niko-border/10 text-sm">
+            <tbody className="divide-y divide-niko-border/20 text-sm">
               {loading && filtered.length === 0 ? (
                 <tr>
                   <td
@@ -150,33 +156,38 @@ export function AdminPayoutsTable() {
                 </tr>
               ) : (
                 paged.items.map((row) => (
-                  <tr key={row.id} className="hover:bg-niko-surface/10">
-                    <td className="px-6 py-4 text-foreground/80 font-sans text-xs">
+                  <tr
+                    key={row.id}
+                    className="transition-colors hover:bg-niko-well/40"
+                  >
+                    <td className="px-5 py-4 text-xs text-foreground/80 sm:px-6">
                       {formatDate(row.createdAt)}
                     </td>
-                    <td className="px-6 py-4 font-mono text-xs text-foreground">
+                    <td className="px-5 py-4 font-mono text-xs text-foreground sm:px-6">
                       {row.country}
                       {row.provider ? ` · ${row.provider}` : ""}
                     </td>
-                    <td className="px-6 py-4 font-mono text-foreground">
+                    <td className="px-5 py-4 font-mono text-foreground sm:px-6">
                       {row.msisdn}
                     </td>
-                    <td className="px-6 py-4 font-mono font-semibold text-niko-teal-bright text-right tabular-nums">
+                    <td className="px-5 py-4 text-right font-mono font-semibold tabular-nums text-niko-teal-bright sm:px-6">
                       {row.currency === "RWF"
                         ? formatRwf(row.amountRwf)
                         : `${row.amountRwf} ${row.currency}`}
                     </td>
-                    <td className="px-6 py-4">{statusBadge(row.status)}</td>
-                    <td className="px-6 py-4 font-mono text-xs text-foreground">
+                    <td className="px-5 py-4 sm:px-6">
+                      {statusBadge(row.status)}
+                    </td>
+                    <td className="px-5 py-4 font-mono text-xs text-foreground sm:px-6">
                       {row.providerRef ?? "—"}
                     </td>
                     <td
-                      className="px-6 py-4 font-mono text-xs text-niko-muted max-w-[14rem] truncate"
+                      className="max-w-[14rem] truncate px-5 py-4 font-mono text-xs text-niko-muted sm:px-6"
                       title={row.providerReason ?? undefined}
                     >
                       {row.providerReason ?? "—"}
                     </td>
-                    <td className="px-6 py-4 text-right space-y-1">
+                    <td className="space-y-1 px-5 py-4 text-right sm:px-6">
                       {row.intentId ? (
                         <Link
                           href={`/admin/transactions/${row.intentId}`}

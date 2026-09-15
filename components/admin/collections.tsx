@@ -26,7 +26,7 @@ type CollectionView = {
 const HEADERS = { "Content-Type": "application/json" };
 const FALLBACK_COUNTRY = "RWA";
 const FIELD_CLASS =
-  "mt-1 w-full rounded-md border border-niko-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-niko-teal/50";
+  "niko-field mt-1 w-full rounded-md px-3 py-2 font-mono text-sm outline-none";
 
 export function AdminCollections() {
   const [rows, setRows] = useState<CollectionView[]>([]);
@@ -170,8 +170,11 @@ export function AdminCollections() {
   const busy = saving || corridorLoading;
 
   return (
-    <div className="space-y-8">
-      <form onSubmit={handleCreate} className="grid gap-4 sm:grid-cols-2">
+    <div className="space-y-6">
+      <form
+        onSubmit={handleCreate}
+        className="niko-panel grid gap-4 p-5 sm:grid-cols-2 sm:p-6"
+      >
         <label className="text-sm">
           Label (optional)
           <input

@@ -1,10 +1,10 @@
 import { AdminReviewQueue as ReviewQueue } from "@/components/admin/review-queue";
-import { PageHeader } from "@/components/shared/page-header";
+import { AdminPage } from "@/components/admin/admin-page";
 
 export default function AdminReviewPage() {
   return (
-    <PageHeader title="Review" description="Open intents">
+    <AdminPage title="Review" description="Open intents">
       <ReviewQueue />
-    </PageHeader>
+    </AdminPage>
   );
 }

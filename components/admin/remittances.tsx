@@ -26,7 +26,7 @@ type RemittanceView = {
 const HEADERS = { "Content-Type": "application/json" };
 const FALLBACK_COUNTRY = "RWA";
 const FIELD_CLASS =
-  "mt-1 w-full rounded-md border border-niko-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-niko-teal/50";
+  "niko-field mt-1 w-full rounded-md px-3 py-2 font-mono text-sm outline-none";
 
 const PURPOSE_OPTIONS = [
   "PERSONAL_TRANSFER",
@@ -256,10 +256,10 @@ export function AdminRemittances() {
   const busy = saving || corridorLoading;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <form
         onSubmit={handleCreate}
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        className="niko-panel grid gap-4 p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-3"
       >
         <label className="text-sm">
           Label (optional)

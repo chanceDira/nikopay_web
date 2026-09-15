@@ -1,13 +1,13 @@
 import { AdminCollections } from "@/components/admin/collections";
-import { PageHeader } from "@/components/shared/page-header";
+import { AdminPage } from "@/components/admin/admin-page";
 
 export default function AdminCollectionsPage() {
   return (
-    <PageHeader
+    <AdminPage
       title="Collections"
       description="Request mobile-money deposits into the PawaPay float. Not a USDT offramp."
     >
       <AdminCollections />
-    </PageHeader>
+    </AdminPage>
   );
 }

@@ -124,7 +124,7 @@ export function AdminFxForm() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-1 rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md h-fit">
+      <div className="lg:col-span-1 niko-panel p-5 sm:p-6 h-fit">
         <h4 className="text-sm font-semibold text-niko-teal mb-4">Set rate</h4>
 
         <form onSubmit={handleSave} className="space-y-4">
@@ -139,7 +139,7 @@ export function AdminFxForm() {
               id="fx-currency"
               value={currency}
               onChange={(e) => handleCurrencyChange(e.target.value)}
-              className="w-full bg-background border border-niko-border text-foreground px-3 py-2 text-sm font-mono rounded-md outline-none focus:border-niko-teal/50 cursor-pointer"
+              className="niko-field w-full cursor-pointer rounded-md px-3 py-2 font-mono text-sm text-foreground outline-none"
             >
               {currencies.map((code) => (
                 <option key={code} value={code}>
@@ -262,7 +262,7 @@ export function AdminFxForm() {
           onSelect={handleCurrencyChange}
         />
 
-        <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
+        <div className="niko-panel p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h4 className="text-sm font-semibold text-niko-teal">History</h4>
             <select
@@ -300,7 +300,7 @@ function RateTable(props: {
   onSelect: (currency: string) => void;
 }) {
   return (
-    <div className="rounded-md border border-niko-border/40 bg-[var(--niko-card-bg)] backdrop-blur-md p-6 shadow-md">
+    <div className="niko-panel p-5 sm:p-6">
       <h4 className="text-sm font-semibold text-niko-teal mb-4">
         {props.title}
       </h4>
