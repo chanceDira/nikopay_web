@@ -15,8 +15,10 @@ export default function Home() {
     <>
       <Navbar />
       <main>
-        <Hero />
-        <TrustBar />
+        <div className="flex flex-col lg:min-h-svh">
+          <Hero />
+          <TrustBar />
+        </div>
         <HowItWorks />
         <Features />
         <Personas />

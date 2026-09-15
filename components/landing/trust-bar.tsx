@@ -38,7 +38,7 @@ export function TrustBar() {
 
   return (
     <section
-      className="border-y border-niko-border/40 py-4 sm:py-5"
+      className="shrink-0 border-y border-niko-border/40 py-3 sm:py-4"
       aria-label="Supported wallets and rails"
     >
       <div className="relative overflow-hidden">

@@ -13,8 +13,7 @@ export function isPawapayConfigured(): boolean {
 }
 
 export function getPawapayConfig():
-  | { ok: true; config: PawapayConfig }
-  | { ok: false; reason: string } {
+  { ok: true; config: PawapayConfig } | { ok: false; reason: string } {
   const apiToken = process.env.PAWAPAY_API_TOKEN?.trim();
   if (!apiToken) {
     return { ok: false, reason: "pawapay is not configured" };
