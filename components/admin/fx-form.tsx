@@ -6,6 +6,11 @@ import {
   DEFAULT_FX_CURRENCY,
   latestRateForCurrency,
 } from "@/lib/fx-currencies";
+import { paginate } from "@/lib/paginate";
+import {
+  PaginationControls,
+  TABLE_PAGE_SIZE,
+} from "@/components/shared/pagination-controls";
 
 type RateRow = {
   currency: string;
@@ -322,69 +327,84 @@ function RateTableBody(props: {
   onSelect: (currency: string) => void;
   showWhen?: boolean;
 }) {
+  const [page, setPage] = useState(1);
+  const paged = paginate(props.rows, page, TABLE_PAGE_SIZE);
+
   return (
-    <div className="overflow-x-auto rounded border border-niko-border/20 bg-background/50">
-      <table className="w-full text-left border-collapse text-xs">
-        <thead>
-          <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-niko-muted">
-            {props.showWhen ? (
-              <th className="px-4 py-3 font-medium">When</th>
-            ) : null}
-            <th className="px-4 py-3 font-medium">Currency</th>
-            <th className="px-4 py-3 font-medium text-right">Rate</th>
-            <th className="px-4 py-3 font-medium text-right">Fee</th>
-            <th className="px-4 py-3 font-medium text-right">Min</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-niko-border/10 font-mono text-foreground">
-          {props.rows.length === 0 ? (
-            <tr>
-              <td
-                colSpan={props.showWhen ? 5 : 4}
-                className="px-4 py-6 text-center text-niko-muted font-sans text-xs"
-              >
-                {props.empty}
-              </td>
+    <div className="overflow-hidden rounded border border-niko-border/20 bg-background/50">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[28rem] border-collapse text-left text-xs">
+          <thead>
+            <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-niko-muted">
+              {props.showWhen ? (
+                <th className="px-4 py-3 font-medium">When</th>
+              ) : null}
+              <th className="px-4 py-3 font-medium">Currency</th>
+              <th className="px-4 py-3 text-right font-medium">Rate</th>
+              <th className="px-4 py-3 text-right font-medium">Fee</th>
+              <th className="px-4 py-3 text-right font-medium">Min</th>
             </tr>
-          ) : (
-            props.rows.map((row) => {
-              const active = row.currency === props.selected;
-              return (
-                <tr
-                  key={`${row.currency}-${row.effectiveFrom}`}
-                  className={`transition-colors ${
-                    active ? "bg-niko-teal/10" : "hover:bg-niko-surface/10"
-                  }`}
+          </thead>
+          <tbody className="divide-y divide-niko-border/10 font-mono text-foreground">
+            {props.rows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={props.showWhen ? 5 : 4}
+                  className="px-4 py-6 text-center font-sans text-xs text-niko-muted"
                 >
-                  {props.showWhen ? (
-                    <td className="px-4 py-3 text-foreground/80 font-sans whitespace-nowrap">
-                      {formatDate(row.effectiveFrom)}
+                  {props.empty}
+                </td>
+              </tr>
+            ) : (
+              paged.items.map((row) => {
+                const active = row.currency === props.selected;
+                return (
+                  <tr
+                    key={`${row.currency}-${row.effectiveFrom}`}
+                    className={`transition-colors ${
+                      active ? "bg-niko-teal/10" : "hover:bg-niko-surface/10"
+                    }`}
+                  >
+                    {props.showWhen ? (
+                      <td className="whitespace-nowrap px-4 py-3 font-sans text-foreground/80">
+                        {formatDate(row.effectiveFrom)}
+                      </td>
+                    ) : null}
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => props.onSelect(row.currency)}
+                        className="cursor-pointer font-semibold text-foreground hover:text-niko-teal"
+                      >
+                        {row.currency}
+                      </button>
                     </td>
-                  ) : null}
-                  <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => props.onSelect(row.currency)}
-                      className="font-semibold text-foreground hover:text-niko-teal cursor-pointer"
-                    >
-                      {row.currency}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    {row.rate}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-niko-teal-bright">
-                    {row.feePercent}%
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums whitespace-nowrap">
-                    {row.minUsdt} USDT
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {row.rate}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-niko-teal-bright">
+                      {row.feePercent}%
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
+                      {row.minUsdt} USDT
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+      <div className="border-t border-niko-border/30 px-4 py-3">
+        <PaginationControls
+          page={paged.page}
+          totalPages={paged.totalPages}
+          total={paged.total}
+          label="rates"
+          onPrev={() => setPage((current) => Math.max(1, current - 1))}
+          onNext={() => setPage((current) => current + 1)}
+        />
+      </div>
     </div>
   );
 }

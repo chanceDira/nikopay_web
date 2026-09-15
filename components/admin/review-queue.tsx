@@ -3,6 +3,10 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useAdminIntents } from "@/components/admin/use-admin-intents";
+import {
+  PaginationControls,
+  REVIEW_PAGE_SIZE,
+} from "@/components/shared/pagination-controls";
 import { getPublicChain } from "@/lib/chain-config";
 import { paginate } from "@/lib/paginate";
 import { formatLocalAmount, formatExactUsdt } from "@/lib/rates";
@@ -14,7 +18,9 @@ import type {
   PaymentStatus,
 } from "@/lib/settlement/types";
 
-const PAGE_SIZE = 5;
+const PATCH_HEADERS = {
+  "Content-Type": "application/json",
+};
 
 const REVIEW_STATUSES: PaymentStatus[] = [
   "awaiting_payment",
@@ -23,10 +29,6 @@ const REVIEW_STATUSES: PaymentStatus[] = [
   "credited",
   "payout_pending",
 ];
-
-const PATCH_HEADERS = {
-  "Content-Type": "application/json",
-};
 
 export function AdminReviewQueue() {
   const { intents, loading, reload } = useAdminIntents();
@@ -37,7 +39,7 @@ export function AdminReviewQueue() {
   const queue = intents.filter((intent) =>
     REVIEW_STATUSES.includes(intent.status),
   );
-  const paged = paginate(queue, page, PAGE_SIZE);
+  const paged = paginate(queue, page, REVIEW_PAGE_SIZE);
 
   const patchStatus = async (intent: PaymentIntent, status: PaymentStatus) => {
     setSuccessMsg("");
@@ -113,10 +115,12 @@ export function AdminReviewQueue() {
                   onFail={() => void patchStatus(item, "failed")}
                 />
               ))}
-              <PaginationBar
+              <PaginationControls
                 page={paged.page}
                 totalPages={paged.totalPages}
                 total={paged.total}
+                label="open"
+                className="border-t border-niko-border/20 pt-3"
                 onPrev={() => setPage(paged.page - 1)}
                 onNext={() => setPage(paged.page + 1)}
               />
@@ -157,8 +161,9 @@ function ReviewCard(props: {
             <Link
               href={`/admin/transactions/${item.id}`}
               className="hover:underline"
+              title={item.id}
             >
-              {item.id.slice(0, 8)}…
+              {item.id}
             </Link>
           </span>
           <span
@@ -263,40 +268,6 @@ function ExplorerLink(props: { chain: ChainId; txHash: string }) {
     >
       {shortHex(props.txHash)}
     </a>
-  );
-}
-
-function PaginationBar(props: {
-  page: number;
-  totalPages: number;
-  total: number;
-  onPrev: () => void;
-  onNext: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between pt-2 border-t border-niko-border/20">
-      <p className="text-[11px] font-mono text-niko-muted">
-        Page {props.page} of {props.totalPages} ({props.total} open)
-      </p>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={props.page <= 1}
-          onClick={props.onPrev}
-          className="px-3 py-1.5 border border-niko-border text-xs font-semibold rounded-md text-foreground disabled:opacity-40 disabled:cursor-not-allowed hover:bg-niko-surface/50 transition-all cursor-pointer"
-        >
-          Previous
-        </button>
-        <button
-          type="button"
-          disabled={props.page >= props.totalPages}
-          onClick={props.onNext}
-          className="px-3 py-1.5 border border-niko-border text-xs font-semibold rounded-md text-foreground disabled:opacity-40 disabled:cursor-not-allowed hover:bg-niko-surface/50 transition-all cursor-pointer"
-        >
-          Next
-        </button>
-      </div>
-    </div>
   );
 }
 

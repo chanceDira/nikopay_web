@@ -35,7 +35,7 @@ export function AdminShell({
         <div className="absolute right-0 top-32 h-64 w-64 rounded-full bg-niko-blue/15 blur-3xl" />
       </div>
       <AdminNav />
-      <main className="relative px-4 pb-16 pt-8 sm:px-6 lg:pl-60 lg:pr-8">
+      <main className="relative w-full px-4 pb-16 pt-8 sm:px-6 lg:pl-64 lg:pr-6 xl:pr-8">
         {children}
       </main>
     </div>

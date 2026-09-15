@@ -9,6 +9,7 @@ import { disconnectWalletConnect } from "@/lib/wallet/walletconnect";
 
 const links = [
   { href: "/app/pay", label: "New payment" },
+  { href: "/app/links", label: "Links" },
   { href: "/app/payments", label: "History" },
   { href: "/app/profile", label: "Profile" },
 ] as const;
@@ -54,12 +55,12 @@ export function AppNav() {
           <Link href="/" className="flex items-center gap-2">
             <BrandLogo className="h-8 sm:h-8.5" priority />
           </Link>
-          <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-3 text-xs sm:gap-5 sm:text-sm">
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-niko-muted transition-colors hover:text-niko-teal"
+                className="whitespace-nowrap text-niko-muted transition-colors hover:text-niko-teal"
               >
                 {link.label}
               </Link>

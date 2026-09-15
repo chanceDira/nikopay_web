@@ -8,6 +8,11 @@ import {
   type CorridorProviderOption,
 } from "@/lib/pay-api";
 import { formatLocalAmount } from "@/lib/rates";
+import { paginate } from "@/lib/paginate";
+import {
+  PaginationControls,
+  TABLE_PAGE_SIZE,
+} from "@/components/shared/pagination-controls";
 
 type RemittanceView = {
   id: string;
@@ -96,6 +101,7 @@ export function AdminRemittances() {
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [corridorLoading, setCorridorLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   const selectedCountry =
     countries.find((row) => row.country === country) ?? null;
@@ -254,6 +260,7 @@ export function AdminRemittances() {
   };
 
   const busy = saving || corridorLoading;
+  const paged = paginate(rows, page, TABLE_PAGE_SIZE);
 
   return (
     <div className="space-y-6">
@@ -564,59 +571,73 @@ export function AdminRemittances() {
 
       {errorMsg ? <p className="text-sm text-red-400">{errorMsg}</p> : null}
 
-      <div className="rounded-md border border-niko-border/40 overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs font-mono uppercase tracking-wider text-niko-muted">
-              <th className="px-4 py-3">Created</th>
-              <th className="px-4 py-3">Corridor</th>
-              <th className="px-4 py-3">Recipient</th>
-              <th className="px-4 py-3 text-right">Amount</th>
-              <th className="px-4 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-niko-border/10">
-            {rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-8 text-center text-niko-muted"
-                >
-                  No remittances yet
-                </td>
+      <div className="niko-panel overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[48rem] text-left text-sm">
+            <thead>
+              <tr className="border-b border-niko-border/30 bg-niko-surface/20 text-xs font-mono uppercase tracking-wider text-niko-muted">
+                <th className="px-4 py-3">Created</th>
+                <th className="px-4 py-3">Corridor</th>
+                <th className="px-4 py-3">Recipient</th>
+                <th className="px-4 py-3 text-right">Amount</th>
+                <th className="px-4 py-3">Status</th>
               </tr>
-            ) : (
-              rows.map((row) => (
-                <tr key={row.id}>
-                  <td className="px-4 py-3 text-xs">
-                    {new Date(row.createdAt).toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs">
-                    {row.recipientCountry} · {row.recipientProvider}
-                    {row.label ? (
-                      <span className="block text-niko-muted">{row.label}</span>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs">
-                    {row.recipientMsisdn}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-right">
-                    {formatLocalAmount(row.amount, row.currency)}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-niko-muted">
-                    {row.status}
-                    {row.providerReason ? ` · ${row.providerReason}` : ""}
+            </thead>
+            <tbody className="divide-y divide-niko-border/10">
+              {rows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-4 py-8 text-center text-niko-muted"
+                  >
+                    No remittances yet
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                paged.items.map((row) => (
+                  <tr key={row.id}>
+                    <td className="px-4 py-3 text-xs">
+                      {new Date(row.createdAt).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs">
+                      {row.recipientCountry} · {row.recipientProvider}
+                      {row.label ? (
+                        <span className="block text-niko-muted">
+                          {row.label}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs">
+                      {row.recipientMsisdn}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-right">
+                      {formatLocalAmount(row.amount, row.currency)}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-niko-muted">
+                      {row.status}
+                      {row.providerReason ? ` · ${row.providerReason}` : ""}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="border-t border-niko-border/40 px-4 py-3">
+          <PaginationControls
+            page={paged.page}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            label="remittances"
+            onPrev={() => setPage((current) => Math.max(1, current - 1))}
+            onNext={() => setPage((current) => current + 1)}
+          />
+        </div>
       </div>
     </div>
   );

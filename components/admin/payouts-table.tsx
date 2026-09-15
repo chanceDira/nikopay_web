@@ -10,8 +10,11 @@ import {
 } from "@/lib/admin-payouts";
 import { paginate } from "@/lib/paginate";
 import { formatRwf } from "@/lib/rates";
+import {
+  PaginationControls,
+  TABLE_PAGE_SIZE,
+} from "@/components/shared/pagination-controls";
 
-const PAGE_SIZE = 10;
 const POLL_MS = 8000;
 
 const FILTERS: { value: "all" | AdminPayoutStatus; label: string }[] = [
@@ -68,7 +71,7 @@ export function AdminPayoutsTable() {
     statusFilter === "all"
       ? payouts
       : payouts.filter((row) => row.status === statusFilter);
-  const paged = paginate(filtered, page, PAGE_SIZE);
+  const paged = paginate(filtered, page, TABLE_PAGE_SIZE);
 
   const cancelEnqueued = async (payoutId: string) => {
     setActionError("");
@@ -116,7 +119,7 @@ export function AdminPayoutsTable() {
 
       <div className="niko-panel overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
+          <table className="w-full min-w-[64rem] border-collapse text-left">
             <thead>
               <tr className="border-b border-niko-border/40 bg-niko-well/50 text-xs text-niko-muted">
                 <th className="px-5 py-3.5 font-medium sm:px-6">Sent</th>
@@ -224,29 +227,14 @@ export function AdminPayoutsTable() {
       </div>
 
       {filtered.length > 0 ? (
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] font-mono text-niko-muted">
-            Page {paged.page} of {paged.totalPages} ({paged.total} transfers)
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={paged.page <= 1}
-              onClick={() => setPage(paged.page - 1)}
-              className="px-3 py-1.5 border border-niko-border text-xs font-semibold rounded-md text-foreground disabled:opacity-40 disabled:cursor-not-allowed hover:bg-niko-surface/50 cursor-pointer"
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              disabled={paged.page >= paged.totalPages}
-              onClick={() => setPage(paged.page + 1)}
-              className="px-3 py-1.5 border border-niko-border text-xs font-semibold rounded-md text-foreground disabled:opacity-40 disabled:cursor-not-allowed hover:bg-niko-surface/50 cursor-pointer"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        <PaginationControls
+          page={paged.page}
+          totalPages={paged.totalPages}
+          total={paged.total}
+          label="transfers"
+          onPrev={() => setPage(paged.page - 1)}
+          onNext={() => setPage(paged.page + 1)}
+        />
       ) : null}
     </div>
   );

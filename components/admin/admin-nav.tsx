@@ -264,7 +264,7 @@ export function AdminNav() {
       </header>
 
       <aside
-        className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-niko-border/50 bg-niko-band/40 pt-14 lg:block"
+        className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-niko-border/50 bg-niko-band/40 pt-14 lg:block"
         aria-label="Admin sections"
       >
         <div className="flex h-full flex-col overflow-y-auto px-3 py-5">

@@ -3,7 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAdminIntents } from "@/components/admin/use-admin-intents";
+import {
+  PaginationControls,
+  TABLE_PAGE_SIZE,
+} from "@/components/shared/pagination-controls";
 import { formatLocalAmount } from "@/lib/rates";
+import { paginate } from "@/lib/paginate";
 import {
   formatDurationMicros,
   settlementDurations,
@@ -14,6 +19,7 @@ export function AdminTransactionsTable() {
   const { intents, loading } = useAdminIntents();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
 
   const filtered = intents.filter((intent) => {
     const matchesSearch =
@@ -26,6 +32,7 @@ export function AdminTransactionsTable() {
     return matchesSearch && matchesStatus;
   });
 
+  const paged = paginate(filtered, page, TABLE_PAGE_SIZE);
   const getStatusBadge = (status: PaymentStatus) => {
     switch (status) {
       case "paid":
@@ -102,7 +109,10 @@ export function AdminTransactionsTable() {
             type="text"
             placeholder="ID or phone"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="niko-field w-full rounded-md px-4 py-2.5 text-sm text-foreground outline-none"
           />
         </div>
@@ -110,7 +120,10 @@ export function AdminTransactionsTable() {
         <div className="flex w-full items-center justify-end gap-3 sm:w-auto">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
             className="niko-field cursor-pointer rounded-md px-3 py-2.5 text-sm text-foreground outline-none"
           >
             <option value="all">All</option>
@@ -128,7 +141,7 @@ export function AdminTransactionsTable() {
 
       <div className="niko-panel overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
+          <table className="w-full min-w-[64rem] border-collapse text-left">
             <thead>
               <tr className="border-b border-niko-border/40 bg-niko-well/50 text-xs text-niko-muted">
                 <th className="px-5 py-3.5 font-medium sm:px-6">ID</th>
@@ -167,7 +180,7 @@ export function AdminTransactionsTable() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((intent) => (
+                paged.items.map((intent) => (
                   <tr
                     key={intent.id}
                     className="transition-colors hover:bg-niko-well/40"
@@ -176,8 +189,9 @@ export function AdminTransactionsTable() {
                       <Link
                         href={`/admin/transactions/${intent.id}`}
                         className="hover:underline"
+                        title={intent.id}
                       >
-                        {intent.id.slice(0, 8)}…
+                        {intent.id}
                       </Link>
                     </td>
                     <td className="px-5 py-4 text-foreground/80 sm:px-6">
@@ -211,6 +225,16 @@ export function AdminTransactionsTable() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="border-t border-niko-border/40 px-5 py-4 sm:px-6">
+          <PaginationControls
+            page={paged.page}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            label="transactions"
+            onPrev={() => setPage((current) => Math.max(1, current - 1))}
+            onNext={() => setPage((current) => current + 1)}
+          />
         </div>
       </div>
     </div>

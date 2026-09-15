@@ -5,7 +5,7 @@ export default function AdminCheckoutsPage() {
   return (
     <AdminPage
       title="Pay links"
-      description="Single-use checkout links. Payer still sends USDT."
+      description="Single-use payout links. Share the URL so someone else can pay USDT to your recipient."
     >
       <AdminCheckoutLinks />
     </AdminPage>

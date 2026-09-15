@@ -257,16 +257,30 @@ export async function createCheckoutLink(input: {
   return { ok: true, checkout: toAdmin(data, null) };
 }
 
-export async function listCheckoutLinks(): Promise<
+export async function listCheckoutLinks(options?: {
+  createdBy?: string;
+  limit?: number;
+}): Promise<
   | { ok: true; checkouts: CheckoutAdmin[] }
   | { ok: false; reason: string; status: number }
 > {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  const limit =
+    options?.limit && options.limit > 0 && options.limit <= 200
+      ? options.limit
+      : 80;
+
+  let query = supabase
     .from("checkout_links")
     .select()
     .order("created_at", { ascending: false })
-    .limit(80);
+    .limit(limit);
+
+  if (options?.createdBy) {
+    query = query.eq("created_by", options.createdBy);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     return { ok: false, reason: "unable to load checkouts", status: 503 };
@@ -300,6 +314,7 @@ export async function listCheckoutLinks(): Promise<
 
 export async function revokeCheckoutLink(
   id: string,
+  options?: { createdBy?: string },
 ): Promise<
   | { ok: true; checkout: CheckoutAdmin }
   | { ok: false; reason: string; status: number }
@@ -315,6 +330,13 @@ export async function revokeCheckoutLink(
     return { ok: false, reason: "unable to revoke checkout", status: 503 };
   }
   if (!existing) {
+    return { ok: false, reason: "checkout not found", status: 404 };
+  }
+
+  if (
+    options?.createdBy &&
+    existing.created_by.toLowerCase() !== options.createdBy.toLowerCase()
+  ) {
     return { ok: false, reason: "checkout not found", status: 404 };
   }
 
