@@ -5,8 +5,7 @@ import Link from "next/link";
 import { useIntentView } from "@/components/pay/use-intent-view";
 import { CONTACT } from "@/lib/contact";
 import { displayPayoutRef } from "@/lib/payout-ref";
-import { formatLocalAmount, formatExactUsdt, formatUsdt } from "@/lib/rates";
-import { feeUsdtForAmount } from "@/lib/settlement/quote";
+import { formatLocalAmount, formatExactUsdt } from "@/lib/rates";
 import { SettlementTimingFields } from "@/components/shared/settlement-timing";
 
 type PaymentReceiptProps = {
@@ -191,14 +190,31 @@ export function PaymentReceipt({ id }: PaymentReceiptProps) {
           </div>
           <div className="flex justify-between text-xs">
             <span className="text-niko-muted print:text-neutral-500">
-              NikoPay fee ({intent.feePercent}% of USDT)
+              PawaPay fee
+            </span>
+            <span className="font-mono text-foreground print:text-black">
+              {formatLocalAmount(intent.pawapayFeeLocal ?? 0, intent.currency)}
+            </span>
+          </div>
+          {(intent.mnoFeeLocal ?? 0) > 0 ? (
+            <div className="flex justify-between text-xs">
+              <span className="text-niko-muted print:text-neutral-500">
+                Mobile money fee
+              </span>
+              <span className="font-mono text-foreground print:text-black">
+                {formatLocalAmount(intent.mnoFeeLocal ?? 0, intent.currency)}
+              </span>
+            </div>
+          ) : null}
+          <div className="flex justify-between text-xs">
+            <span className="text-niko-muted print:text-neutral-500">
+              NikoPay fee ({intent.feePercent}%)
             </span>
             <span className="font-mono text-red-400 print:text-neutral-700">
-              -
-              {formatUsdt(
-                feeUsdtForAmount(intent.usdtAmount, intent.feePercent) ?? 0,
-              )}{" "}
-              ({formatLocalAmount(intent.feeRwf, intent.currency)})
+              {formatLocalAmount(
+                intent.nikopayFeeLocal ?? intent.feeRwf,
+                intent.currency,
+              )}
             </span>
           </div>
           <div className="h-px bg-niko-border/60 print:bg-neutral-200 my-1" />

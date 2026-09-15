@@ -121,6 +121,12 @@ const paymentIntentSchema: JsonSchema = {
       type: "number",
       description: "Local net amount recipient receives (legacy column name)",
     },
+    pawapayPercent: { type: "number" },
+    mnoFixed: { type: "number" },
+    pawapayFeeLocal: { type: "number" },
+    mnoFeeLocal: { type: "number" },
+    nikopayFeeLocal: { type: "number" },
+    grossLocal: { type: "number" },
     treasuryAddress: { type: "string" },
     expiresAt: { type: "string", format: "date-time" },
     createdAt: { type: "string", format: "date-time" },
@@ -163,6 +169,12 @@ const quoteSchema: JsonSchema = {
     netLocal: { type: "number" },
     feeRwf: { type: "number" },
     netRwf: { type: "number" },
+    pawapayPercent: { type: "number" },
+    mnoFixed: { type: "number" },
+    pawapayFeeLocal: { type: "number" },
+    mnoFeeLocal: { type: "number" },
+    nikopayFeeLocal: { type: "number" },
+    grossLocal: { type: "number" },
     chain: chainSchema,
     expiresAt: { type: "string", format: "date-time" },
   },
@@ -241,12 +253,17 @@ function buildPaths(): Record<string, OpenApiPathItem> {
           required: true,
           ...jsonContent({
             type: "object",
-            required: ["usdtAmount", "chain"],
+            required: ["chain"],
             properties: {
               usdtAmount: {
                 type: "number",
                 exclusiveMinimum: 0,
                 maximum: 10000,
+              },
+              netLocal: {
+                type: "number",
+                exclusiveMinimum: 0,
+                description: "Amount that must reach the recipient (X).",
               },
               chain: chainSchema,
               currency: {
@@ -260,7 +277,12 @@ function buildPaths(): Record<string, OpenApiPathItem> {
                 minLength: 3,
                 maxLength: 3,
                 description:
-                  "ISO-3 corridor country. When set, the quote is refused if the PawaPay wallet cannot cover the payout.",
+                  "ISO-3 corridor country. Rwanda (RWA) is the first live corridor. When set, the quote is refused if the PawaPay wallet cannot cover the payout.",
+              },
+              provider: {
+                type: "string",
+                description:
+                  "PawaPay provider code. Rwanda MTN uses a 60 RWF mobile money fee.",
               },
             },
           }),

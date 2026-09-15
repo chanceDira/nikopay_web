@@ -36,6 +36,16 @@ export function parseUsdtAmount(
   return { ok: true, amount: value };
 }
 
+export function parsePositiveAmount(
+  value: unknown,
+  field: string,
+): { ok: true; amount: number } | { ok: false; reason: string } {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return { ok: false, reason: `${field} must be a positive number` };
+  }
+  return { ok: true, amount: value };
+}
+
 export function parseNonNegativeInt(
   value: unknown,
   field: string,

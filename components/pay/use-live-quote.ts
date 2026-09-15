@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { isAborted, requestQuote } from "@/lib/pay-api";
 import { MAX_USDT } from "@/lib/quote-limits";
-import { usdtForTargetLocal } from "@/lib/settlement/quote";
+import { type CorridorFees } from "@/lib/settlement/quote";
 import type { ChainId, Quote } from "@/lib/settlement/types";
 
 const QUOTE_PROBE_USDT = 10;
@@ -20,6 +20,7 @@ type LiveFx = {
   rate: number;
   feePercent: number;
   currency: string;
+  fees: CorridorFees;
 };
 
 type Snapshot = {
@@ -32,10 +33,19 @@ type Snapshot = {
   error: string;
 };
 
+function feesFromQuote(quote: Quote): CorridorFees {
+  return {
+    pawapayPercent: quote.pawapayPercent,
+    mnoFixed: quote.mnoFixed,
+    nikopayPercent: quote.feePercent,
+  };
+}
+
 export function useLiveQuote(input: {
   chain: ChainId;
   currency: string;
   country?: string;
+  provider?: string;
   entry: AmountEntry | LegacyAmountEntry;
   localPayout: number;
   usdtSell: number;
@@ -44,6 +54,7 @@ export function useLiveQuote(input: {
 }) {
   const currency = input.currency.trim().toUpperCase() || "RWF";
   const country = input.country?.trim().toUpperCase() || "";
+  const provider = input.provider?.trim().toUpperCase() || "";
   const entry: AmountEntry =
     input.entry === "rwf" ? "local" : (input.entry as AmountEntry);
   const localPayout =
@@ -57,7 +68,7 @@ export function useLiveQuote(input: {
       : usdtSell > 0
         ? usdtSell
         : 0;
-  const requestKey = `${chain}:${country}:${currency}:${entry}:${activeAmount}`;
+  const requestKey = `${chain}:${country}:${provider}:${currency}:${entry}:${activeAmount}`;
   const [snapshot, setSnapshot] = useState<Snapshot>({
     key: "",
     chain,
@@ -73,12 +84,14 @@ export function useLiveQuote(input: {
     const delay = activeAmount > 0 ? QUOTE_DEBOUNCE_MS : 0;
 
     const timer = window.setTimeout(async () => {
-      const probe = await requestQuote(
-        QUOTE_PROBE_USDT,
+      const probe = await requestQuote({
+        usdtAmount: QUOTE_PROBE_USDT,
         chain,
-        controller.signal,
         currency,
-      );
+        country: country || undefined,
+        provider: provider || undefined,
+        signal: controller.signal,
+      });
       if (controller.signal.aborted || isAborted(probe)) {
         return;
       }
@@ -95,10 +108,11 @@ export function useLiveQuote(input: {
         return;
       }
 
-      const liveFx = {
+      const liveFx: LiveFx = {
         rate: probe.data.rate,
         feePercent: probe.data.feePercent,
         currency: probe.data.currency,
+        fees: feesFromQuote(probe.data),
       };
 
       if (activeAmount <= 0) {
@@ -114,39 +128,25 @@ export function useLiveQuote(input: {
         return;
       }
 
-      let usdt = usdtSell;
-      if (entry === "local") {
-        const derived = usdtForTargetLocal(
-          localPayout,
-          liveFx.rate,
-          liveFx.feePercent,
-        );
-        if (derived == null) {
-          return;
-        }
-        usdt = derived;
-      }
+      const quoted =
+        entry === "local"
+          ? await requestQuote({
+              netLocal: localPayout,
+              chain,
+              currency,
+              country: country || undefined,
+              provider: provider || undefined,
+              signal: controller.signal,
+            })
+          : await requestQuote({
+              usdtAmount: usdtSell,
+              chain,
+              currency,
+              country: country || undefined,
+              provider: provider || undefined,
+              signal: controller.signal,
+            });
 
-      if (usdt > MAX_USDT) {
-        setSnapshot({
-          key: requestKey,
-          chain,
-          currency,
-          quote: null,
-          fx: liveFx,
-          status: "error",
-          error: `Amount must be at most ${MAX_USDT.toLocaleString()} USDT.`,
-        });
-        return;
-      }
-
-      const quoted = await requestQuote(
-        usdt,
-        chain,
-        controller.signal,
-        currency,
-        country || undefined,
-      );
       if (controller.signal.aborted || isAborted(quoted)) {
         return;
       }
@@ -163,6 +163,19 @@ export function useLiveQuote(input: {
         return;
       }
 
+      if (quoted.data.usdtAmount > MAX_USDT) {
+        setSnapshot({
+          key: requestKey,
+          chain,
+          currency,
+          quote: null,
+          fx: liveFx,
+          status: "error",
+          error: `Amount must be at most ${MAX_USDT.toLocaleString()} USDT.`,
+        });
+        return;
+      }
+
       setSnapshot({
         key: requestKey,
         chain,
@@ -172,6 +185,7 @@ export function useLiveQuote(input: {
           rate: quoted.data.rate,
           feePercent: quoted.data.feePercent,
           currency: quoted.data.currency,
+          fees: feesFromQuote(quoted.data),
         },
         status: "ready",
         error: "",
@@ -186,6 +200,7 @@ export function useLiveQuote(input: {
     requestKey,
     chain,
     country,
+    provider,
     currency,
     entry,
     localPayout,

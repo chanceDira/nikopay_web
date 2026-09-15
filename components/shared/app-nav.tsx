@@ -6,6 +6,7 @@ import { BrandLogo } from "@/components/shared/brand-logo";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { clearConnectedWallet } from "@/lib/wallet-session";
 import { disconnectWalletConnect } from "@/lib/wallet/walletconnect";
+import { clearWalletSession } from "@/lib/wallet/user";
 
 const links = [
   { href: "/app/pay", label: "New payment" },
@@ -40,6 +41,7 @@ export function AppNav() {
     }
     setSwitching(true);
     clearConnectedWallet();
+    void clearWalletSession();
     void disconnectWalletConnect().finally(() => {
       window.location.href = "/auth/sign-in?switched=1";
     });

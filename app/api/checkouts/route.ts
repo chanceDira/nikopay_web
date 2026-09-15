@@ -4,8 +4,8 @@ import {
   clientIp,
   createIpRateLimiter,
 } from "@/lib/ip-rate-limit";
-import { normalizeWalletAddress } from "@/lib/identity";
 import { createCheckoutLink, listCheckoutLinks } from "@/lib/checkouts";
+import { authorizeWallet } from "@/lib/wallet-auth";
 
 const listLimit = createIpRateLimiter({
   windowMs: 10 * 60 * 1000,
@@ -22,14 +22,12 @@ export async function GET(request: Request) {
     return jsonError("too many requests", 429);
   }
 
-  const wallet = normalizeWalletAddress(
-    new URL(request.url).searchParams.get("wallet"),
-  );
-  if (!wallet.ok) {
-    return jsonError(wallet.reason, 400);
+  const session = authorizeWallet(request);
+  if (!session.ok) {
+    return jsonError(session.reason, session.status);
   }
 
-  const result = await listCheckoutLinks({ createdBy: wallet.address });
+  const result = await listCheckoutLinks({ createdBy: session.address });
   if (!result.ok) {
     return jsonError(result.reason, result.status);
   }
@@ -42,6 +40,11 @@ export async function POST(request: Request) {
     return jsonError("too many requests", 429);
   }
 
+  const session = authorizeWallet(request);
+  if (!session.ok) {
+    return jsonError(session.reason, session.status);
+  }
+
   const parsed = await readJsonBody(request);
   if (!parsed.ok) {
     return jsonError("invalid request body", 400);
@@ -52,11 +55,6 @@ export async function POST(request: Request) {
     return jsonError("invalid request body", 400);
   }
 
-  const wallet = normalizeWalletAddress(body.walletAddress);
-  if (!wallet.ok) {
-    return jsonError(wallet.reason, 400);
-  }
-
   const result = await createCheckoutLink({
     label: body.label,
     usdtAmount: body.usdtAmount,
@@ -65,7 +63,7 @@ export async function POST(request: Request) {
     provider: body.provider,
     msisdn: body.msisdn,
     expiresHours: body.expiresHours,
-    createdBy: wallet.address,
+    createdBy: session.address,
   });
 
   if (!result.ok) {

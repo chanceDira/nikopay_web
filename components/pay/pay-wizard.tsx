@@ -21,6 +21,7 @@ import {
 } from "@/lib/identity";
 import {
   createLiveIntent,
+  createUserCheckout,
   fetchCorridorCountries,
   fetchCorridorProviders,
   fetchRecipientNamePreview,
@@ -28,13 +29,11 @@ import {
   reportIntentDepositWhenReady,
   type CorridorCountryOption,
   type CorridorProviderOption,
+  type UserCheckoutLink,
 } from "@/lib/pay-api";
 import type { ChainId, PaymentIntent } from "@/lib/settlement/types";
-import {
-  netLocalForUsdt,
-  usdtForTargetLocal,
-  feeUsdtForAmount,
-} from "@/lib/settlement/quote";
+import { netLocalForUsdt, usdtForTargetLocal } from "@/lib/settlement/quote";
+import { fallbackCorridorFees } from "@/lib/settlement/corridor-fee-defaults";
 import { formatLocalAmount, formatExactUsdt, formatUsdt } from "@/lib/rates";
 import { asWalletKind, type WalletKind } from "@/lib/wallet/browser";
 import {
@@ -42,6 +41,8 @@ import {
   consentAndTransferUsdt,
 } from "@/lib/wallet/offramp";
 import { sameWalletAddress, shortAddress } from "@/lib/wallet-session";
+import { ensureWalletSession } from "@/lib/wallet/user";
+import { FeeLines } from "@/components/pay/fee-lines";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -136,6 +137,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     chain,
     currency: corridorCurrency,
     country: corridorCountry,
+    provider: corridorProvider,
     entry: amountEntry,
     localPayout: rwfPayout,
     usdtSell,
@@ -159,6 +161,12 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     useState<WalletKind | null>(null);
   const [gateError, setGateError] = useState("");
   const [payError, setPayError] = useState("");
+  const [fulfillment, setFulfillment] = useState<"choose" | "pay" | "link">(
+    checkout ? "pay" : "choose",
+  );
+  const [createdLink, setCreatedLink] = useState<UserCheckoutLink | null>(null);
+  const [creatingLink, setCreatingLink] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
     if (step !== 2) {
@@ -305,17 +313,33 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     Number.isFinite(displayRate) &&
     displayFeePercent != null &&
     Number.isFinite(displayFeePercent);
+  const liveFees =
+    quote != null
+      ? {
+          pawapayPercent: quote.pawapayPercent,
+          mnoFixed: quote.mnoFixed,
+          nikopayPercent: quote.feePercent,
+        }
+      : (fx?.fees ??
+        (displayFeePercent != null
+          ? fallbackCorridorFees({
+              currency: corridorCurrency,
+              nikopayPercent: displayFeePercent,
+              country: corridorCountry,
+              provider: corridorProvider,
+            })
+          : null));
   const estimatedUsdt =
     amountEntry === "usdt"
       ? usdtSell
-      : hasLiveRate
-        ? rwfPayout / (displayRate * (1 - displayFeePercent / 100))
+      : hasLiveRate && liveFees
+        ? (usdtForTargetLocal(rwfPayout, displayRate, liveFees) ?? 0)
         : 0;
   const estimatedNetRwf =
     amountEntry === "local"
       ? rwfPayout
-      : hasLiveRate
-        ? usdtSell * displayRate * (1 - displayFeePercent / 100)
+      : hasLiveRate && liveFees
+        ? (netLocalForUsdt(usdtSell, displayRate, liveFees) ?? 0)
         : 0;
   const amountQuoteReady =
     hasAmount && quoteStatus === "ready" && quote != null;
@@ -335,7 +359,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   const treasuryAddress = liveIntent?.treasuryAddress ?? "";
 
   const previewRate = fx?.rate ?? displayRate;
-  const previewFee = fx?.feePercent ?? displayFeePercent;
+  const previewFees = liveFees;
 
   const handleRwfChange = (value: string) => {
     if (!/^\d*$/.test(value)) {
@@ -350,11 +374,11 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
       setAmountUsdt("");
       return;
     }
-    if (previewRate == null || previewFee == null) {
+    if (previewRate == null || previewFees == null) {
       setAmountUsdt("");
       return;
     }
-    const usdt = usdtForTargetLocal(parsed, previewRate, previewFee);
+    const usdt = usdtForTargetLocal(parsed, previewRate, previewFees);
     setAmountUsdt(usdt != null ? formatUsdtInput(usdt) : "");
   };
 
@@ -371,11 +395,11 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
       setAmountRwf("");
       return;
     }
-    if (previewRate == null || previewFee == null) {
+    if (previewRate == null || previewFees == null) {
       setAmountRwf("");
       return;
     }
-    const local = netLocalForUsdt(parsed, previewRate, previewFee);
+    const local = netLocalForUsdt(parsed, previewRate, previewFees);
     setAmountRwf(local != null ? String(Math.round(local)) : "");
   };
 
@@ -681,6 +705,8 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           setMsisdnError("");
           setLiveIntent(null);
           setIntentError("");
+          setCreatedLink(null);
+          setFulfillment(checkout ? "pay" : "choose");
           setStep(3);
         }
       })();
@@ -688,9 +714,17 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
   };
 
   const handlePrevStep = () => {
+    if (step === 3 && fulfillment !== "choose" && !checkout) {
+      setLiveIntent(null);
+      setIntentError("");
+      setCreatedLink(null);
+      setFulfillment("choose");
+      return;
+    }
     if (step > 1) {
       setLiveIntent(null);
       setIntentError("");
+      setCreatedLink(null);
       setStep((prev) => (prev - 1) as Step);
     }
   };
@@ -777,6 +811,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     setCreatingIntent(true);
     const result = await createLiveIntent({
       usdtAmount: quote.usdtAmount,
+      netLocal: amountEntry === "local" ? rwfPayout : undefined,
       chain,
       msisdn: resolved.msisdn,
       walletAddress: activeAddress,
@@ -796,6 +831,44 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
     setLiveIntent(result.data);
     setShowWalletModal(true);
     setModalState("confirm");
+  };
+
+  const handleCreatePayoutLink = async () => {
+    if (creatingLink || !quote || !amountQuoteReady) {
+      setIntentError(quoteError || "Waiting for a live quote");
+      return;
+    }
+
+    const resolved = resolveMsisdn();
+    if (!resolved.ok) {
+      setIntentError(resolved.reason);
+      return;
+    }
+
+    const session = await ensureWalletSession(asWalletKind(walletName));
+    if (!session.ok) {
+      setIntentError(session.reason);
+      return;
+    }
+
+    setCreatingLink(true);
+    setIntentError("");
+    const result = await createUserCheckout({
+      usdtAmount: quote.usdtAmount,
+      country: corridorCountry,
+      currency: corridorCurrency,
+      provider: corridorProvider,
+      msisdn: resolved.msisdn,
+    });
+    setCreatingLink(false);
+
+    if (!result.ok) {
+      setIntentError(result.reason);
+      return;
+    }
+
+    setCreatedLink(result.data.checkout);
+    setFulfillment("link");
   };
 
   const handleModalConfirm = async () => {
@@ -898,7 +971,7 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
           <span
             className={`text-xs font-medium ${step === 3 ? "text-foreground" : "text-niko-muted"}`}
           >
-            Confirm & Pay
+            Confirm
           </span>
         </div>
       </div>
@@ -1068,26 +1141,43 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
 
           <div className="rounded-md border border-niko-teal/10 bg-niko-teal/5 p-4 space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-niko-muted">Recipient Receives</span>
+              <span className="text-niko-muted">Recipient receives</span>
               <span className="font-mono text-foreground font-semibold">
                 {hasAmount ? formatPayout(netRwf) : "-"}
               </span>
             </div>
+            {quote && quote.pawapayFeeLocal > 0 ? (
+              <div className="flex justify-between text-sm">
+                <span className="text-niko-muted">PawaPay fee</span>
+                <span className="font-mono text-niko-muted">
+                  {formatPayout(quote.pawapayFeeLocal)}
+                </span>
+              </div>
+            ) : null}
+            {quote && quote.mnoFeeLocal > 0 ? (
+              <div className="flex justify-between text-sm">
+                <span className="text-niko-muted">Mobile money fee</span>
+                <span className="font-mono text-niko-muted">
+                  {formatPayout(quote.mnoFeeLocal)}
+                </span>
+              </div>
+            ) : null}
             <div className="flex justify-between text-sm">
               <span className="text-niko-muted">
-                NikoPay fee ({hasLiveRate ? `${displayFeePercent}%` : "—"} of
-                USDT)
+                NikoPay fee ({hasLiveRate ? `${displayFeePercent}%` : "—"})
               </span>
               <span className="font-mono text-niko-muted">
-                {hasAmount && hasLiveRate
-                  ? `${formatUsdt(feeUsdtForAmount(usdtAmount, displayFeePercent) ?? 0)} (${formatPayout(feeRwf)})`
-                  : "-"}
+                {quote
+                  ? formatPayout(quote.nikopayFeeLocal)
+                  : hasAmount && hasLiveRate
+                    ? formatPayout(feeRwf)
+                    : "-"}
               </span>
             </div>
             <div className="h-px bg-niko-border/40 my-1" />
             <div className="flex justify-between items-baseline">
               <span className="text-sm font-medium text-foreground">
-                Total USDT You Send (from wallet)
+                Total USDT you send
               </span>
               <span className="text-lg font-bold text-niko-teal-bright font-mono">
                 {hasAmount ? formatUsdt(usdtAmount) : "-"}
@@ -1383,12 +1473,110 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
         </div>
       )}
 
-      {step === 3 && (
+      {step === 3 && fulfillment === "choose" && !checkout && (
         <div className="space-y-6">
-          <div className="rounded-md border border-niko-border bg-background p-6 space-y-5">
+          <div>
+            <h3 className="text-base font-semibold text-foreground">
+              How do you want to continue?
+            </h3>
+            <p className="mt-1 text-sm text-niko-muted">
+              Pay now from this wallet, or create a payout link someone else can
+              open.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setFulfillment("pay")}
+              className="niko-panel p-5 text-left transition-colors hover:border-niko-teal/40"
+            >
+              <p className="text-sm font-semibold text-foreground">Pay now</p>
+              <p className="mt-2 text-xs leading-relaxed text-niko-muted">
+                Send USDT from the connected wallet. Recipient gets{" "}
+                {amountQuoteReady ? formatPayout(netRwf) : "mobile money"} now.
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleCreatePayoutLink()}
+              disabled={creatingLink || !amountQuoteReady}
+              className="niko-panel p-5 text-left transition-colors hover:border-niko-teal/40 disabled:opacity-50"
+            >
+              <p className="text-sm font-semibold text-foreground">
+                Create a payout link
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-niko-muted">
+                Share a one-time link. The payer sends USDT; your recipient
+                still gets this amount.
+              </p>
+              {creatingLink ? (
+                <p className="mt-3 text-xs text-niko-teal">Creating link...</p>
+              ) : null}
+            </button>
+          </div>
+          {intentError ? (
+            <p className="text-xs text-red-400">{intentError}</p>
+          ) : null}
+          <button
+            type="button"
+            onClick={handlePrevStep}
+            className="w-full rounded-md border border-niko-border py-3 text-sm font-semibold text-foreground hover:bg-niko-surface/40 sm:w-1/3"
+          >
+            Back
+          </button>
+        </div>
+      )}
+
+      {step === 3 && fulfillment === "link" && createdLink && (
+        <div className="space-y-6">
+          <div className="niko-panel space-y-4 p-6">
+            <h3 className="text-sm font-semibold text-foreground">
+              Payout link ready
+            </h3>
+            <p className="text-sm text-niko-muted">
+              Share this URL. It is tied to your wallet, so only you will see it
+              under Links.
+            </p>
+            <div className="niko-field break-all p-3 font-mono text-xs text-niko-teal">
+              {createdLink.url}
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard.writeText(createdLink.url);
+                  setCopiedLink(true);
+                  window.setTimeout(() => setCopiedLink(false), 2000);
+                }}
+                className="rounded-md bg-niko-teal px-4 py-2 text-xs font-semibold text-niko-on-accent hover:bg-niko-teal-bright"
+              >
+                {copiedLink ? "Copied" : "Copy link"}
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/app/links")}
+                className="rounded-md border border-niko-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-niko-surface/40"
+              >
+                View my links
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handlePrevStep}
+            className="w-full rounded-md border border-niko-border py-3 text-sm font-semibold text-foreground hover:bg-niko-surface/40 sm:w-1/3"
+          >
+            Back
+          </button>
+        </div>
+      )}
+
+      {step === 3 && fulfillment === "pay" && (
+        <div className="space-y-6">
+          <div className="niko-panel space-y-5 p-6">
             <div className="flex justify-between items-center border-b border-niko-border/60 pb-3">
               <h3 className="text-sm font-semibold text-niko-teal uppercase tracking-wider">
-                Transaction Details
+                Transaction details
               </h3>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5">
@@ -1426,29 +1614,32 @@ export function PayWizard({ checkout }: { checkout?: CheckoutPrefill }) {
                 </>
               )}
 
-              <div className="text-niko-muted">Recipient Receives</div>
-              <div className="font-semibold text-right text-foreground font-mono">
-                {amountQuoteReady ? formatPayout(netRwf) : "—"}
-              </div>
-
-              <div className="text-niko-muted">Exchange Rate</div>
+              <div className="text-niko-muted">Exchange rate</div>
               <div className="text-right font-mono text-foreground">
                 {hasLiveRate
                   ? `1 USDT = ${displayRate.toLocaleString()} ${displayCurrency}`
                   : quoteError || "No live rate"}
               </div>
 
-              <div className="text-niko-muted">
-                NikoPay fee ({hasLiveRate ? `${displayFeePercent}%` : "—"} of
-                USDT)
-              </div>
-              <div className="text-right font-mono text-niko-muted">
-                {amountQuoteReady
-                  ? `${formatUsdt(
-                      feeUsdtForAmount(usdtAmount, displayFeePercent ?? 0) ?? 0,
-                    )} (${formatPayout(feeRwf)})`
-                  : "—"}
-              </div>
+              {quote ? (
+                <FeeLines
+                  currency={displayCurrency}
+                  feePercent={displayFeePercent ?? quote.feePercent}
+                  feeLocal={quote.feeLocal}
+                  netLocal={quote.netLocal}
+                  pawapayPercent={quote.pawapayPercent}
+                  pawapayFeeLocal={quote.pawapayFeeLocal}
+                  mnoFeeLocal={quote.mnoFeeLocal}
+                  nikopayFeeLocal={quote.nikopayFeeLocal}
+                />
+              ) : (
+                <>
+                  <div className="text-niko-muted">Recipient receives</div>
+                  <div className="font-semibold text-right text-foreground font-mono">
+                    {amountQuoteReady ? formatPayout(netRwf) : "—"}
+                  </div>
+                </>
+              )}
 
               <div className="col-span-2 h-px bg-niko-border/60 my-1" />
 

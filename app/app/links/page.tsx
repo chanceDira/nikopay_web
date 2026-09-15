@@ -6,12 +6,12 @@ import { useWalletSession } from "@/components/pay/use-wallet-session";
 import Link from "next/link";
 
 export default function PayLinksPage() {
-  const { walletAddress, hydrated } = useWalletSession();
+  const { walletAddress, walletName, hydrated } = useWalletSession();
 
   return (
     <PageHeader
       title="Payout links"
-      description="Create a one-time link someone else can open to pay USDT into mobile money for your recipient."
+      description="Create a one-time link someone else can open to pay USDT into mobile money for your recipient. Each wallet only sees its own links."
     >
       {!hydrated ? (
         <div className="flex justify-center py-12">
@@ -30,7 +30,11 @@ export default function PayLinksPage() {
           </Link>
         </div>
       ) : (
-        <CheckoutLinksManager mode="user" walletAddress={walletAddress} />
+        <CheckoutLinksManager
+          mode="user"
+          walletAddress={walletAddress}
+          walletKind={walletName}
+        />
       )}
     </PageHeader>
   );

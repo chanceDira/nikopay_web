@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { DEFAULT_FX_CURRENCY } from "@/lib/fx-currencies";
 import { isAborted, listQuoteCurrencies, requestQuote } from "@/lib/pay-api";
 import { MAX_USDT } from "@/lib/quote-limits";
 import { formatLocalAmount, formatUsdt } from "@/lib/rates";
-import { usdtForTargetLocal } from "@/lib/settlement/quote";
+import { defaultCountryForCurrency } from "@/lib/settlement/corridor-fee-defaults";
 
 const DEBOUNCE_MS = 400;
 const DEFAULT_AMOUNT = "100";
-const PROBE_USDT = 100;
 
 type Direction = "usdt-to-local" | "local-to-usdt";
 
@@ -20,12 +19,9 @@ type Payout = {
   rate: number;
   feePercent: number;
   currency: string;
-};
-
-type Fx = {
-  rate: number;
-  feePercent: number;
-  currency: string;
+  pawapayFeeLocal: number;
+  mnoFeeLocal: number;
+  nikopayFeeLocal: number;
 };
 
 type State = {
@@ -33,43 +29,6 @@ type State = {
   loading: boolean;
   error: string | null;
 };
-
-function resolveUsdtAmount(
-  parsed: number,
-  sendingUsdt: boolean,
-  fx: Fx | null,
-  currency: string,
-): { ok: true; usdtAmount: number } | { ok: false; error: string } {
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return { ok: false, error: "Enter an amount greater than zero." };
-  }
-
-  if (sendingUsdt) {
-    if (parsed > MAX_USDT) {
-      return {
-        ok: false,
-        error: `Enter up to ${MAX_USDT.toLocaleString()} USDT.`,
-      };
-    }
-    return { ok: true, usdtAmount: parsed };
-  }
-
-  if (!fx || fx.currency !== currency) {
-    return { ok: false, error: "Unable to load exchange rate." };
-  }
-
-  const inverted = usdtForTargetLocal(parsed, fx.rate, fx.feePercent);
-  if (!inverted) {
-    return { ok: false, error: "Unable to convert that amount." };
-  }
-  if (inverted > MAX_USDT) {
-    return {
-      ok: false,
-      error: `That payout needs more than ${MAX_USDT.toLocaleString()} USDT. Enter a smaller ${currency} amount.`,
-    };
-  }
-  return { ok: true, usdtAmount: inverted };
-}
 
 export function RateCalculator() {
   const [direction, setDirection] = useState<Direction>("usdt-to-local");
@@ -81,7 +40,6 @@ export function RateCalculator() {
     loading: false,
     error: null,
   });
-  const fxRef = useRef<Fx | null>(null);
 
   const parsed = parseFloat(amount) || 0;
   const sendingUsdt = direction === "usdt-to-local";
@@ -117,66 +75,38 @@ export function RateCalculator() {
         return;
       }
 
-      setState((prev) => ({ ...prev, loading: true, error: null }));
-
-      if (sendingUsdt) {
-        const check = resolveUsdtAmount(parsed, true, null, currency);
-        if (!check.ok) {
-          setState({ payout: null, loading: false, error: check.error });
-          return;
-        }
-      } else if (!fxRef.current || fxRef.current.currency !== currency) {
-        const probe = await requestQuote(
-          PROBE_USDT,
-          "base",
-          controller.signal,
-          currency,
-        );
-        if (cancelled || controller.signal.aborted || isAborted(probe)) {
-          return;
-        }
-        if (!probe.ok) {
-          setState({
-            payout: null,
-            loading: false,
-            error: probe.reason || "Unable to load exchange rate.",
-          });
-          return;
-        }
-        fxRef.current = {
-          rate: probe.data.rate,
-          feePercent: probe.data.feePercent,
-          currency: probe.data.currency,
-        };
-      }
-
-      const check = resolveUsdtAmount(
-        parsed,
-        sendingUsdt,
-        fxRef.current,
-        currency,
-      );
-      if (!check.ok) {
-        setState({ payout: null, loading: false, error: check.error });
+      if (sendingUsdt && parsed > MAX_USDT) {
+        setState({
+          payout: null,
+          loading: false,
+          error: `Enter up to ${MAX_USDT.toLocaleString()} USDT.`,
+        });
         return;
       }
 
-      const result = await requestQuote(
-        check.usdtAmount,
-        "base",
-        controller.signal,
-        currency,
-      );
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+
+      const country = defaultCountryForCurrency(currency);
+      const result = sendingUsdt
+        ? await requestQuote({
+            usdtAmount: parsed,
+            chain: "base",
+            currency,
+            country,
+            signal: controller.signal,
+          })
+        : await requestQuote({
+            netLocal: parsed,
+            chain: "base",
+            currency,
+            country,
+            signal: controller.signal,
+          });
       if (cancelled || controller.signal.aborted || isAborted(result)) {
         return;
       }
 
       if (result.ok) {
-        fxRef.current = {
-          rate: result.data.rate,
-          feePercent: result.data.feePercent,
-          currency: result.data.currency,
-        };
         setState({
           loading: false,
           error: null,
@@ -187,6 +117,9 @@ export function RateCalculator() {
             rate: result.data.rate,
             feePercent: result.data.feePercent,
             currency: result.data.currency,
+            pawapayFeeLocal: result.data.pawapayFeeLocal,
+            mnoFeeLocal: result.data.mnoFeeLocal,
+            nikopayFeeLocal: result.data.nikopayFeeLocal,
           },
         });
         return;
@@ -212,7 +145,6 @@ export function RateCalculator() {
     if (next === currency) {
       return;
     }
-    fxRef.current = null;
     setState({ payout: null, error: null, loading: true });
     setCurrency(next);
   };
@@ -345,11 +277,25 @@ export function RateCalculator() {
             </dd>
           </div>
           <div className="flex justify-between">
+            <dt className="text-niko-muted">PawaPay fee</dt>
+            <dd className="font-mono text-foreground">
+              {formatLocalAmount(payout.pawapayFeeLocal, payout.currency)}
+            </dd>
+          </div>
+          {payout.mnoFeeLocal > 0 ? (
+            <div className="flex justify-between">
+              <dt className="text-niko-muted">Mobile money fee</dt>
+              <dd className="font-mono text-foreground">
+                {formatLocalAmount(payout.mnoFeeLocal, payout.currency)}
+              </dd>
+            </div>
+          ) : null}
+          <div className="flex justify-between">
             <dt className="text-niko-muted">
-              Service fee ({payout.feePercent}%)
+              NikoPay fee ({payout.feePercent}%)
             </dt>
             <dd className="font-mono text-foreground">
-              {formatLocalAmount(payout.feeLocal, payout.currency)}
+              {formatLocalAmount(payout.nikopayFeeLocal, payout.currency)}
             </dd>
           </div>
           <div className="flex justify-between font-medium">

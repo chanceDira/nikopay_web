@@ -2,10 +2,14 @@ import {
   asRecord,
   jsonData,
   jsonError,
+  parsePositiveAmount,
   parseUsdtAmount,
   readJsonBody,
 } from "@/lib/http";
-import { normalizeCorridorCountry } from "@/lib/corridor";
+import {
+  normalizeCorridorCountry,
+  normalizeCorridorProvider,
+} from "@/lib/corridor";
 import {
   allowIpRequest,
   clientIp,
@@ -34,21 +38,46 @@ export async function POST(request: Request) {
     return jsonError("invalid request body", 400);
   }
 
-  const amount = parseUsdtAmount(body.usdtAmount);
-  if (!amount.ok) {
-    return jsonError(amount.reason, 400);
+  const hasUsdt = body.usdtAmount != null;
+  const hasNet = body.netLocal != null;
+  if (hasUsdt === hasNet) {
+    return jsonError(
+      "quote requires either usdt amount or recipient amount",
+      400,
+    );
   }
 
-  const result = await createServerQuote(
-    amount.amount,
-    body.chain,
-    body.currency ?? "RWF",
-  );
+  let usdtAmount: number | undefined;
+  let netLocal: number | undefined;
+  if (hasUsdt) {
+    const amount = parseUsdtAmount(body.usdtAmount);
+    if (!amount.ok) {
+      return jsonError(amount.reason, 400);
+    }
+    usdtAmount = amount.amount;
+  } else {
+    const amount = parsePositiveAmount(body.netLocal, "recipient amount");
+    if (!amount.ok) {
+      return jsonError(amount.reason, 400);
+    }
+    netLocal = amount.amount;
+  }
+
+  const country = normalizeCorridorCountry(body.country);
+  const provider = normalizeCorridorProvider(body.provider);
+
+  const result = await createServerQuote({
+    usdtAmount,
+    netLocal,
+    chain: body.chain,
+    currency: body.currency ?? "RWF",
+    country: country.ok ? country.country : undefined,
+    provider: provider.ok ? provider.provider : undefined,
+  });
   if (!result.ok) {
     return jsonError(result.reason, result.status);
   }
 
-  const country = normalizeCorridorCountry(body.country);
   if (country.ok) {
     const funds = await assertPayoutFunds({
       country: country.country,

@@ -57,6 +57,12 @@ export function toPaymentIntent(
     feePercent: toNumber(row.fee_percent),
     feeRwf: toNumber(row.fee_rwf),
     netRwf: toNumber(row.net_rwf),
+    pawapayPercent: optionalStoredNumber(row.pawapay_percent),
+    mnoFixed: optionalStoredNumber(row.mno_fee_local),
+    pawapayFeeLocal: optionalStoredNumber(row.pawapay_fee_local),
+    mnoFeeLocal: optionalStoredNumber(row.mno_fee_local),
+    nikopayFeeLocal: optionalStoredNumber(row.nikopay_fee_local),
+    grossLocal: optionalStoredNumber(row.gross_local),
     treasuryAddress: row.treasury_address,
     expiresAt: row.expires_at,
     createdAt: row.created_at,
@@ -74,6 +80,7 @@ export function toPaymentIntent(
 
 export async function createPaymentIntent(input: {
   usdtAmount: number;
+  netLocal?: number;
   chain: unknown;
   msisdn: unknown;
   walletAddress: unknown;
@@ -116,11 +123,14 @@ export async function createPaymentIntent(input: {
     return { ok: false, reason: notifyEmail.reason, status: 400 };
   }
 
-  const quoted = await createServerQuote(
-    input.usdtAmount,
-    input.chain,
-    currency.currency,
-  );
+  const quoted = await createServerQuote({
+    usdtAmount: input.netLocal != null ? undefined : input.usdtAmount,
+    netLocal: input.netLocal,
+    chain: input.chain,
+    currency: currency.currency,
+    country: country.country,
+    provider: provider.provider,
+  });
   if (!quoted.ok) {
     return quoted;
   }
@@ -186,6 +196,11 @@ export async function createPaymentIntent(input: {
       fee_percent: quoted.quote.feePercent,
       fee_rwf: quoted.quote.feeRwf,
       net_rwf: quoted.quote.netRwf,
+      pawapay_fee_local: quoted.quote.pawapayFeeLocal,
+      mno_fee_local: quoted.quote.mnoFeeLocal,
+      nikopay_fee_local: quoted.quote.nikopayFeeLocal,
+      gross_local: quoted.quote.grossLocal,
+      pawapay_percent: quoted.quote.pawapayPercent,
       treasury_address: treasury.address,
       expires_at: quoted.quote.expiresAt,
       notify_email: notifyEmail.email,
@@ -219,6 +234,11 @@ async function insertOpenIntent(input: {
     fee_percent: number;
     fee_rwf: number;
     net_rwf: number;
+    pawapay_fee_local?: number | null;
+    mno_fee_local?: number | null;
+    nikopay_fee_local?: number | null;
+    gross_local?: number | null;
+    pawapay_percent?: number | null;
     treasury_address: string;
     expires_at: string;
     notify_email: string | null;
@@ -436,4 +456,9 @@ export async function listPaymentIntents(
   }
 
   return { ok: true, intents };
+}
+
+function optionalStoredNumber(value: unknown): number | undefined {
+  const parsed = toNumber(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }

@@ -13,6 +13,8 @@ import {
   PaginationControls,
   TABLE_PAGE_SIZE,
 } from "@/components/shared/pagination-controls";
+import { asWalletKind, type WalletKind } from "@/lib/wallet/browser";
+import { ensureWalletSession } from "@/lib/wallet/user";
 
 export type CheckoutRow = {
   id: string;
@@ -41,11 +43,13 @@ const FIELD_CLASS =
 type CheckoutLinksManagerProps = {
   mode: "admin" | "user";
   walletAddress?: string | null;
+  walletKind?: WalletKind | string | null;
 };
 
 export function CheckoutLinksManager({
   mode,
   walletAddress,
+  walletKind,
 }: CheckoutLinksManagerProps) {
   const [rows, setRows] = useState<CheckoutRow[]>([]);
   const [label, setLabel] = useState("");
@@ -69,15 +73,27 @@ export function CheckoutLinksManager({
   const paged = paginate(rows, page, TABLE_PAGE_SIZE);
 
   const loadLinks = async () => {
-    const url =
-      mode === "admin"
-        ? "/api/admin/checkouts"
-        : `/api/checkouts?wallet=${encodeURIComponent(walletAddress ?? "")}`;
+    const url = mode === "admin" ? "/api/admin/checkouts" : "/api/checkouts";
     if (mode === "user" && !walletAddress) {
       setRows([]);
       return;
     }
+    if (mode === "user") {
+      const session = await ensureWalletSession(
+        asWalletKind(walletKind ?? "MetaMask"),
+      );
+      if (!session.ok) {
+        setRows([]);
+        setErrorMsg(session.reason);
+        return;
+      }
+    }
     const res = await fetch(url);
+    if (res.status === 401) {
+      setRows([]);
+      setErrorMsg("Sign with your wallet to view your payout links.");
+      return;
+    }
     if (!res.ok) {
       return;
     }
@@ -188,7 +204,14 @@ export function CheckoutLinksManager({
       expiresHours: Number(expiresHours),
     };
     if (mode === "user") {
-      body.walletAddress = walletAddress;
+      const session = await ensureWalletSession(
+        asWalletKind(walletKind ?? "MetaMask"),
+      );
+      if (!session.ok) {
+        setFormState("error");
+        setErrorMsg(session.reason);
+        return;
+      }
     }
     const res = await fetch(
       mode === "admin" ? "/api/admin/checkouts" : "/api/checkouts",
@@ -213,6 +236,15 @@ export function CheckoutLinksManager({
 
   const handleRevoke = async (id: string) => {
     setErrorMsg("");
+    if (mode === "user") {
+      const session = await ensureWalletSession(
+        asWalletKind(walletKind ?? "MetaMask"),
+      );
+      if (!session.ok) {
+        setErrorMsg(session.reason);
+        return;
+      }
+    }
     const res = await fetch(
       mode === "admin"
         ? `/api/admin/checkouts/${id}/revoke`
@@ -220,10 +252,7 @@ export function CheckoutLinksManager({
       {
         method: "POST",
         headers: HEADERS,
-        body:
-          mode === "user"
-            ? JSON.stringify({ walletAddress })
-            : JSON.stringify({}),
+        body: JSON.stringify({}),
       },
     );
     const json = (await res.json()) as { error?: string };
@@ -378,9 +407,13 @@ export function CheckoutLinksManager({
 
       <div className="niko-panel overflow-hidden">
         <div className="border-b border-niko-border/40 bg-niko-well/40 px-5 py-4 sm:px-6">
-          <h2 className="text-sm font-semibold text-foreground">Your links</h2>
+          <h2 className="text-sm font-semibold text-foreground">
+            {mode === "admin" ? "All payout links" : "Your links"}
+          </h2>
           <p className="mt-1 text-xs text-niko-muted">
-            Active links stand out below. Copy and send the payout URL.
+            {mode === "admin"
+              ? "Active links stand out below. Copy and send the payout URL."
+              : "Only this wallet can see these links. Sign once to prove possession."}
           </p>
         </div>
         <div className="overflow-x-auto">

@@ -1,8 +1,10 @@
+import { loadCorridorFees } from "@/lib/corridor-fees";
 import { normalizeCorridorCurrency } from "@/lib/corridor";
 import { DEFAULT_FX_CURRENCY } from "@/lib/fx-currencies";
 import { toNumber } from "@/lib/numbers";
 import { MAX_USDT } from "@/lib/quote-limits";
-import { createQuote } from "@/lib/settlement/quote";
+import { defaultCountryForCurrency } from "@/lib/settlement/corridor-fee-defaults";
+import { createQuote, localDecimalsForCurrency } from "@/lib/settlement/quote";
 import {
   isChainId,
   type ChainId,
@@ -92,14 +94,17 @@ export async function loadActiveFx(
   return { ok: true, fx };
 }
 
-export async function createServerQuote(
-  usdtAmount: number,
-  chain: unknown,
-  currency: unknown = DEFAULT_QUOTE_CURRENCY,
-): Promise<
+export async function createServerQuote(input: {
+  chain: unknown;
+  currency?: unknown;
+  country?: unknown;
+  provider?: unknown;
+  usdtAmount?: number;
+  netLocal?: number;
+}): Promise<
   { ok: true; quote: Quote } | { ok: false; reason: string; status: number }
 > {
-  if (!isChainId(chain)) {
+  if (!isChainId(input.chain)) {
     return {
       ok: false,
       reason: "chain must be polygon or base",
@@ -108,13 +113,23 @@ export async function createServerQuote(
   }
 
   const currencyResult = normalizeCorridorCurrency(
-    currency ?? DEFAULT_QUOTE_CURRENCY,
+    input.currency ?? DEFAULT_QUOTE_CURRENCY,
   );
   if (!currencyResult.ok) {
     return { ok: false, reason: currencyResult.reason, status: 400 };
   }
 
-  if (usdtAmount > MAX_USDT) {
+  const hasUsdt = input.usdtAmount != null;
+  const hasNet = input.netLocal != null;
+  if (hasUsdt === hasNet) {
+    return {
+      ok: false,
+      reason: "quote requires either usdt amount or recipient amount",
+      status: 400,
+    };
+  }
+
+  if (input.usdtAmount != null && input.usdtAmount > MAX_USDT) {
     return {
       ok: false,
       reason: `usdt amount must be at most ${MAX_USDT}`,
@@ -122,7 +137,7 @@ export async function createServerQuote(
     };
   }
 
-  const chainReady = await assertChainActive(chain);
+  const chainReady = await assertChainActive(input.chain);
   if (!chainReady.ok) {
     return { ok: false, reason: chainReady.reason, status: 409 };
   }
@@ -136,15 +151,40 @@ export async function createServerQuote(
     };
   }
 
+  const country =
+    typeof input.country === "string"
+      ? defaultCountryForCurrency(currencyResult.currency, input.country)
+      : defaultCountryForCurrency(currencyResult.currency);
+  const provider =
+    typeof input.provider === "string" ? input.provider : undefined;
+
+  const fees = await loadCorridorFees({
+    currency: currencyResult.currency,
+    nikopayPercent: fxResult.fx.feePercent,
+    country,
+    provider,
+  });
+
   const quoted = createQuote({
-    usdtAmount,
-    chain,
+    chain: input.chain,
     fx: fxResult.fx,
+    fees,
     expiresAt: new Date(Date.now() + QUOTE_TTL_MS),
+    usdtAmount: input.usdtAmount,
+    netLocal: input.netLocal,
+    decimals: localDecimalsForCurrency(currencyResult.currency),
   });
 
   if (!quoted.ok) {
     return { ok: false, reason: quoted.reason, status: 400 };
+  }
+
+  if (quoted.quote.usdtAmount > MAX_USDT) {
+    return {
+      ok: false,
+      reason: `usdt amount must be at most ${MAX_USDT}`,
+      status: 400,
+    };
   }
 
   return { ok: true, quote: quoted.quote };

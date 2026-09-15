@@ -1,5 +1,4 @@
 import { StatusTimeline } from "@/components/pay/status-timeline";
-import { PageHeader } from "@/components/shared/page-header";
 
 type PaymentStatusPageProps = {
   params: Promise<{ id: string }>;
@@ -11,8 +10,16 @@ export default async function PaymentStatusPage({
   const { id } = await params;
 
   return (
-    <PageHeader title="Payment status" description={`Track payment ${id}`}>
-      <StatusTimeline id={id} />
-    </PageHeader>
+    <div className="mx-auto w-full max-w-5xl">
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+        Payment status
+      </h1>
+      <p className="mt-2 max-w-2xl text-sm text-niko-muted">
+        Track this payout from deposit to mobile money.
+      </p>
+      <div className="mt-8">
+        <StatusTimeline id={id} />
+      </div>
+    </div>
   );
 }
