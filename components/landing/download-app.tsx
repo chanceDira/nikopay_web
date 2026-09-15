@@ -180,7 +180,6 @@ export function DownloadApp() {
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
         <div className="animate-fade-up">
-          <BrandLogo className="h-10" priority />
           <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
             Get NikoPay on{" "}
             <span className="niko-gradient-text">your phone</span>

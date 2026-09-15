@@ -6,7 +6,7 @@ const faqs = [
   {
     question: "What can I send?",
     answer:
-      "USDT on Polygon and Base today. USDC is planned. You send from your own wallet. Other coins and chains are not available yet.",
+      "USDT on Base Sepolia today. Polygon Amoy and USDC are planned. You send from your own wallet. Other coins and chains are not available yet.",
   },
   {
     question: "Is NikoPay a wallet or an exchange?",

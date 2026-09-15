@@ -11,7 +11,7 @@ import {
 } from "@/lib/settlement/corridor-fee-defaults";
 
 const DEBOUNCE_MS = 400;
-const DEFAULT_AMOUNT = "100";
+const DEFAULT_AMOUNT = "1";
 const PREVIEW_MAX_DIGITS = 6;
 
 function clampHeroAmount(raw: string, sendingUsdt: boolean): string {
@@ -230,8 +230,8 @@ export function RateCalculator() {
   const resultHint = sendingUsdt ? "via mobile money" : "from your wallet";
 
   return (
-    <div className="niko-glow w-full max-w-md rounded-md border border-niko-border bg-niko-surface p-5 sm:p-6">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="niko-glow w-full max-w-md rounded-md border border-niko-border bg-niko-surface p-4 sm:p-5">
+      <div className="mb-3 flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-wider text-niko-muted">
           Rate calculator
         </span>
@@ -269,7 +269,7 @@ export function RateCalculator() {
         )}
       </div>
 
-      <div className="my-4 flex items-center justify-center">
+      <div className="my-3 flex items-center justify-center">
         <button
           type="button"
           onClick={swapDirection}
@@ -343,7 +343,7 @@ export function RateCalculator() {
         </p>
       ) : null}
 
-      <p className="mt-4 text-xs leading-relaxed text-niko-muted">
+      <p className="mt-3 text-xs leading-relaxed text-niko-muted">
         Preview only. Try amounts up to {PREVIEW_MAX_USDT.toLocaleString()}{" "}
         USDT. Paying on the app is capped lower. Rate locks when you confirm.
       </p>

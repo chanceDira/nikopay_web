@@ -25,8 +25,8 @@ export function SwaggerDocs() {
         url: "/api/openapi",
         domNode: host,
         deepLinking: true,
-        persistAuthorization: true,
-        tryItOutEnabled: true,
+        tryItOutEnabled: false,
+        persistAuthorization: false,
         docExpansion: "list",
         defaultModelsExpandDepth: 1,
         requestInterceptor: (req) => {

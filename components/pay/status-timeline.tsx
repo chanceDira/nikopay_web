@@ -199,8 +199,8 @@ export function StatusTimeline({ id }: StatusTimelineProps) {
       return {
         title: "Processing mobile money payout",
         desc: intent.payout
-          ? `Payout status: ${payoutStatusLabel(intent.payout.status)}. Sandbox does not send SMS; watch this page until it shows completed.`
-          : `The ${currency} payout has been submitted to mobile money. Sandbox does not send SMS; this page updates when the provider confirms.`,
+          ? `Payout status: ${payoutStatusLabel(intent.payout.status)}. Watch this page until it shows completed.`
+          : `The ${currency} payout has been submitted to mobile money. This page updates when the provider confirms.`,
       };
     }
     if (status === "paid") {
@@ -623,7 +623,7 @@ function payoutStatusHint(status: IntentPayout["status"]) {
     case "successful":
       return "The provider confirmed the disbursement. Funds were sent to the payee wallet.";
     case "pending":
-      return "Submitted to the mobile money provider. In sandbox there is no SMS. We poll until the provider returns successful or failed.";
+      return "Submitted to the mobile money provider. We poll until the provider returns successful or failed.";
     case "enqueued":
       return "The provider queued this payout. It is not paid yet. Ops can cancel it from admin if the network is down.";
     case "failed":

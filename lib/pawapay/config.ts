@@ -19,9 +19,15 @@ export function getPawapayConfig():
     return { ok: false, reason: "pawapay is not configured" };
   }
 
-  const baseUrl = (
-    process.env.PAWAPAY_BASE_URL?.trim() || SANDBOX_BASE_URL
-  ).replace(/\/$/, "");
+  const rawBaseUrl = process.env.PAWAPAY_BASE_URL?.trim();
+  if (!rawBaseUrl && process.env.NODE_ENV === "production") {
+    return {
+      ok: false,
+      reason: "PAWAPAY_BASE_URL is required in production",
+    };
+  }
+
+  const baseUrl = (rawBaseUrl || SANDBOX_BASE_URL).replace(/\/$/, "");
 
   const callbackPath =
     process.env.PAWAPAY_CALLBACK_PATH?.trim() || DEFAULT_CALLBACK_PATH;
@@ -32,9 +38,26 @@ export function getPawapayConfig():
       baseUrl,
       apiToken,
       callbackPath,
-      verifyCallbacks: process.env.PAWAPAY_VERIFY_CALLBACKS?.trim() === "true",
+      verifyCallbacks: resolveVerifyCallbacks(baseUrl, process.env),
     },
   };
+}
+
+export function resolveVerifyCallbacks(
+  baseUrl: string,
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  const isSandbox = pawapayEnvironment(baseUrl) === "sandbox";
+  const raw = env.PAWAPAY_VERIFY_CALLBACKS?.trim().toLowerCase();
+
+  if (raw === "true" || raw === "1" || raw === "yes") {
+    return true;
+  }
+  if (raw === "false" || raw === "0" || raw === "no") {
+    return isSandbox ? false : true;
+  }
+
+  return !isSandbox;
 }
 
 export function pawapayDashboardUrl(baseUrl: string): string {

@@ -1,10 +1,5 @@
-import { PageHeader } from "@/components/shared/page-header";
+import { redirect } from "next/navigation";
 
 export default function ProfilePage() {
-  return (
-    <PageHeader
-      title="Profile"
-      description="Manage your account and mobile money number."
-    />
-  );
+  redirect("/app/pay");
 }

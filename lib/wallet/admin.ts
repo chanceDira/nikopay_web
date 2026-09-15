@@ -12,7 +12,7 @@ export async function proveAdminWallet(
 ): Promise<{ ok: true; address: string } | { ok: false; reason: string }> {
   const challenge = await fetch("/api/admin/challenge");
   const challengeBody = (await challenge.json()) as {
-    data?: { message?: string; admins?: string[] };
+    data?: { message?: string };
     error?: string;
   };
   if (!challenge.ok || typeof challengeBody.data?.message !== "string") {
@@ -30,13 +30,6 @@ export async function proveAdminWallet(
   const account = await requestAccounts(providerResult.provider);
   if (!account.ok) {
     return account;
-  }
-
-  const admins = (challengeBody.data.admins ?? []).map((item) =>
-    item.toLowerCase(),
-  );
-  if (admins.length > 0 && !admins.includes(account.address)) {
-    return { ok: false, reason: "connected wallet is not an admin wallet" };
   }
 
   const signed = await signPersonalMessage(

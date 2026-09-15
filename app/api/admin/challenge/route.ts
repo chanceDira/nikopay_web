@@ -13,6 +13,5 @@ export async function GET() {
 
   return jsonData({
     message: buildAdminChallenge(secret),
-    admins: admins.addresses,
   });
 }
